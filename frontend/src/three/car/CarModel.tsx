@@ -21,8 +21,12 @@ export interface CarModelProps {
   /** Color del "fantasma" de rayos X (token --info). */
   ghostColor?: string
   highlight?: { zone: Zone; color: string; pulse: boolean } | null
-  /** Recorte para la transición de la portada: la parte sólida y la de rayos X se reparten el coche. */
-  clip?: { solid: THREE.Plane; ghost: THREE.Plane } | null
+  /**
+   * Recorte (portada): la parte sólida y la de rayos X se reparten el coche con dos planos.
+   * `ghost: null` ⇒ solo se dibuja la parte sólida recortada (cortinilla entre dos coches).
+   * Los planos pueden moverse en cada fotograma (se leen al pintar); los materiales se clonan una vez por plano.
+   */
+  clip?: { solid: THREE.Plane; ghost: THREE.Plane | null } | null
   onClick?: (e: { point: THREE.Vector3; stopPropagation: () => void }) => void
 }
 
@@ -42,16 +46,18 @@ export function CarModel({
   const baseMats = useMemo(() => getCarMaterials(color, { accent, night, rim: BODY_SPECS[body].rim }), [color, accent, night, body])
 
   // Con recorte, materiales propios (clonados) para no afectar a los compartidos
+  const clipSolid = clip?.solid ?? null
+  const clipGhost = clip?.ghost ?? null
   const mats = useMemo(() => {
-    if (!clip) return baseMats
+    if (!clipSolid) return baseMats
     const out = {} as Record<MatKey, THREE.Material>
     for (const k of Object.keys(baseMats) as MatKey[]) {
       const m = baseMats[k].clone()
-      m.clippingPlanes = [clip.solid]
+      m.clippingPlanes = [clipSolid]
       out[k] = m
     }
     return out
-  }, [baseMats, clip])
+  }, [baseMats, clipSolid])
   useEffect(() => {
     if (mats === baseMats) return
     return () => Object.values(mats).forEach((m) => m.dispose())
@@ -59,21 +65,21 @@ export function CarModel({
 
   const ghost = useMemo(() => {
     const m = fresnelMaterial({ color: ghostColor, opacity: 0.85, fill: 0.035, power: 2.4 })
-    if (clip) m.clippingPlanes = [clip.ghost]
+    if (clipGhost) m.clippingPlanes = [clipGhost]
     return m
-  }, [ghostColor, clip])
+  }, [ghostColor, clipGhost])
   useEffect(() => () => ghost.dispose(), [ghost])
 
   const internalsMats = useMemo(() => {
-    if (!clip) return baseMats
+    if (!clipGhost) return baseMats
     const out = {} as Record<MatKey, THREE.Material>
     for (const k of Object.keys(baseMats) as MatKey[]) {
       const m = baseMats[k].clone()
-      m.clippingPlanes = [clip.ghost]
+      m.clippingPlanes = [clipGhost]
       out[k] = m
     }
     return out
-  }, [baseMats, clip])
+  }, [baseMats, clipGhost])
   useEffect(() => {
     if (internalsMats === baseMats) return
     return () => Object.values(internalsMats).forEach((m) => m.dispose())
@@ -110,8 +116,8 @@ export function CarModel({
     return { lower, cabin }
   }, [build])
 
-  const showGhost = xray || !!clip
-  const showSolid = !xray || !!clip
+  const showGhost = xray || !!clipGhost
+  const showSolid = !xray || !!clipSolid
 
   return (
     <group
@@ -131,13 +137,14 @@ export function CarModel({
         build.parts.map((p) => {
           if (HIDDEN_IN_XRAY.has(p.mat)) return null
           if (SOLID_IN_XRAY.has(p.mat)) {
-            return clip ? <mesh key={`x-${p.mat}`} geometry={p.geometry} material={internalsMats[p.mat]} raycast={noRaycast} /> : null
+            // discos y pinzas se ven sólidos a través de la carrocería fantasma (con recorte, solo en la parte de rayos X)
+            return <mesh key={`x-${p.mat}`} geometry={p.geometry} material={clipGhost ? internalsMats[p.mat] : mats[p.mat]} raycast={noRaycast} />
           }
           return <mesh key={`g-${p.mat}`} geometry={p.geometry} material={ghost} renderOrder={2} raycast={noRaycast} />
         })}
       {showGhost &&
         build.xrayParts.map((p) => (
-          <mesh key={`i-${p.mat}`} geometry={p.geometry} material={clip ? internalsMats[p.mat] : mats[p.mat]} raycast={noRaycast} />
+          <mesh key={`i-${p.mat}`} geometry={p.geometry} material={clipGhost ? internalsMats[p.mat] : mats[p.mat]} raycast={noRaycast} />
         ))}
       {onClick && (
         <>

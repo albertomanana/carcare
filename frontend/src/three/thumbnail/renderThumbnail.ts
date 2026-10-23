@@ -5,7 +5,6 @@
  */
 import * as THREE from 'three'
 import type { BodyType } from '@/api/types'
-import { getCarLayout } from '../car/anchors'
 import { getCarBuild } from '../car/build'
 import { getCarMaterials } from '../car/materials'
 import { BODY_SPECS } from '../car/specs'
@@ -13,6 +12,8 @@ import { BODY_SPECS } from '../car/specs'
 const W = 640
 const H = 360
 const IDLE_MS = 15000
+const THUMB_AZIMUTH = 60
+const THUMB_ELEVATION = 11
 
 let renderer: THREE.WebGLRenderer | null = null
 let envRT: THREE.WebGLRenderTarget | null = null
@@ -157,9 +158,11 @@ function renderNow(body: BodyType, color: string, accent: string): Promise<strin
   scene.add(shadow)
 
   const camera = new THREE.PerspectiveCamera(24, W / H, 0.1, 60)
-  const layout = getCarLayout(body)
-  const dir = new THREE.Vector3(...layout.framing.direction).normalize()
-  dir.set(dir.x, dir.y * 0.8, dir.z).normalize()
+  // 3/4 delantero más lateral que el del visor (≈60° desde el morro, 11° de elevación): en miniatura, el tipo de
+  // carrocería se reconoce por el perfil (portón, maletero, tercera ventanilla…), no por el frontal.
+  const az = THREE.MathUtils.degToRad(THUMB_AZIMUTH)
+  const el = THREE.MathUtils.degToRad(THUMB_ELEVATION)
+  const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az))
   const box = new THREE.Box3().setFromObject(group)
   box.min.y = 0
   const target = box.getCenter(new THREE.Vector3())
