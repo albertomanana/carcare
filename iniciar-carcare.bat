@@ -8,16 +8,20 @@ echo.
 echo   CarCare - arranque local
 echo   ------------------------
 
-rem 1. MySQL de XAMPP
+rem 1. MySQL de XAMPP (no se lanza otro si ya hay uno arrancando; se espera a que acepte conexiones)
 netstat -an | findstr /r /c:":3306 .*LISTENING" >nul
 if errorlevel 1 (
-  if exist "C:\xampp\mysql_start.bat" (
-    echo   MySQL no esta arrancado: iniciandolo desde XAMPP...
-    start "MySQL (XAMPP)" /min /D "C:\xampp" cmd /c mysql_start.bat
-    timeout /t 6 /nobreak >nul
-  ) else (
-    echo   [AVISO] No encuentro XAMPP. Arranca MySQL desde el panel de control de XAMPP.
+  tasklist /fi "imagename eq mysqld.exe" | findstr /i "mysqld.exe" >nul
+  if errorlevel 1 (
+    if exist "C:\xampp\mysql_start.bat" (
+      echo   MySQL no esta arrancado: iniciandolo desde XAMPP...
+      start "MySQL (XAMPP)" /min /D "C:\xampp" cmd /c mysql_start.bat
+    ) else (
+      echo   [AVISO] No encuentro XAMPP. Arranca MySQL desde el panel de control de XAMPP.
+    )
   )
+  echo   Esperando a que MySQL este listo ^(hasta 2 minutos^)...
+  powershell -NoProfile -Command "$d=(Get-Date).AddSeconds(120); do { $c=New-Object Net.Sockets.TcpClient; try { $c.Connect('127.0.0.1',3306); $ok=$true } catch { $ok=$false; Start-Sleep 2 } finally { $c.Dispose() } } until ($ok -or (Get-Date) -gt $d); if ($ok) { '  MySQL listo.' } else { '  [AVISO] MySQL no responde: revisa el panel de XAMPP.' }"
 ) else (
   echo   MySQL ya esta en marcha.
 )

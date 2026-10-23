@@ -39,14 +39,27 @@ function Test-Port([int]$Port) {
   [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
 }
 
+# true si MySQL acepta conexiones TCP (no basta con que el proceso exista: tras un apagado brusco tarda en estar listo).
+function Test-MySqlReady {
+  $client = New-Object System.Net.Sockets.TcpClient
+  try { $client.Connect('127.0.0.1', 3306); return $true } catch { return $false } finally { $client.Dispose() }
+}
+
 function Start-DevServices {
-  if (-not (Test-Port 3306)) {
-    if (Test-Path 'C:\xampp\mysql\bin\mysqld.exe') {
-      Start-Process -FilePath 'C:\xampp\mysql\bin\mysqld.exe' -ArgumentList '--defaults-file=C:\xampp\mysql\bin\my.ini', '--standalone' -WindowStyle Hidden
-      Write-Log 'MySQL (XAMPP) arrancado.'
-    } else {
-      Write-Log 'AVISO: no se encuentra XAMPP; MySQL no arrancado.'
+  if (-not (Test-MySqlReady)) {
+    # Si ya hay un mysqld arrancando (XAMPP, servicio de Windows u otra ejecucion), no se lanza otro: chocarian.
+    if (-not (Get-Process -Name 'mysqld' -ErrorAction SilentlyContinue)) {
+      if (Test-Path 'C:\xampp\mysql\bin\mysqld.exe') {
+        Start-Process -FilePath 'C:\xampp\mysql\bin\mysqld.exe' -ArgumentList '--defaults-file=C:\xampp\mysql\bin\my.ini', '--standalone' -WindowStyle Hidden
+        Write-Log 'MySQL (XAMPP) arrancado.'
+      } else {
+        Write-Log 'AVISO: no se encuentra XAMPP; MySQL no arrancado.'
+      }
     }
+    # La API no se levanta hasta que MySQL responde: si no, el login falla con "Error del servidor".
+    $deadline = (Get-Date).AddSeconds(120)
+    while (-not (Test-MySqlReady) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+    if (Test-MySqlReady) { Write-Log 'MySQL listo.' } else { Write-Log 'AVISO: MySQL no responde tras 2 minutos; revisa el panel de XAMPP.' }
   }
   if (-not (Test-Port 8000)) {
     # Con OPcache (XAMPP lo trae desactivado y la API va ~10 veces mas lenta sin el)
