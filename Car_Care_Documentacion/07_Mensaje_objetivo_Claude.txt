@@ -1,0 +1,28 @@
+Quiero que trabajes conmigo en Car Care, una plataforma premium de gestión integral del vehículo que será mi TFG de Desarrollo de Aplicaciones Web (DAW) y, si validamos su utilidad con usuarios reales, un producto que quiero llevar al mercado.
+
+La visión no es hacer un CRUD básico ni una simple lista de cambios de aceite. Queremos crear un centro de control del automóvil que reúna garaje digital, historial de mantenimientos y reparaciones, gastos, documentos, recordatorios, analítica e inteligencia contextual. El público inicial serán propietarios particulares, especialmente de coches usados o con varios años.
+
+La experiencia debe ser espectacular, moderna, interactiva e intuitiva, con calidad de producto comercial: dashboard premium, vehículo protagonista, línea temporal de intervenciones, gráficos útiles, filtros, formularios claros, estados vacíos bien diseñados, animaciones sutiles, feedback visual y adaptación real a móvil, tablet y escritorio. Dirección visual inicial: carbón/grafito, blanco cálido y acento verde lima eléctrico. La estética nunca debe perjudicar la usabilidad, accesibilidad o rendimiento. Ningún botón debe ser decorativo: cada control debe hacer lo que promete.
+
+Módulos previstos:
+1. Autenticación, perfil y permisos.
+2. Garaje con uno o varios vehículos y sus datos.
+3. Mantenimiento, reparaciones, averías, piezas, mano de obra, fechas, kilometraje y facturas.
+4. Gastos por categoría, resúmenes y coste por kilómetro cuando existan datos suficientes.
+5. Dashboard con datos reales, próximas tareas e historial reciente.
+6. Recordatorios por fecha o kilometraje.
+7. Archivo privado de documentos e informes exportables.
+8. Más adelante: extracción asistida de datos de facturas, con revisión humana, y un asistente que responda a partir de los datos reales guardados.
+9. En fases posteriores, estudiar integraciones externas, OBD-II o herramientas profesionales, solo si se confirma su viabilidad.
+
+La calidad técnica importa tanto como el diseño. Debemos cuidar arquitectura, modelo relacional, integridad de datos, validación, autorización en backend, privacidad, almacenamiento seguro de archivos, pruebas y documentación. La aplicación debe ser un TFG que pueda explicar y defender, con requisitos, casos de uso, diagramas, pruebas, manuales y memoria técnica. No inventes resultados, diagnósticos, datos oficiales ni integraciones que no existan.
+
+Tecnologías candidatas: React + TypeScript para frontend, Tailwind CSS, Recharts y animaciones compatibles; PHP/Laravel o una API PHP y MySQL para backend y base de datos. Pero NO decidas ni migres a ciegas: primero inspecciona el repositorio actual y las exigencias oficiales de Ilerna. Respeta el trabajo existente y no borres ni reescribas archivos sin justificarlo y pedir aprobación.
+
+Tu primera tarea NO es construir toda la aplicación. Audita el proyecto: estructura, tecnologías, estado, rutas, componentes, base de datos, documentación, rama y cambios sin commit. Después presenta una arquitectura recomendada, modelo de datos inicial, backlog MVP con criterios de aceptación, sistema visual, plan de pantallas y riesgos. Espera mi aprobación antes de realizar cambios arquitectónicos importantes.
+
+Trabaja por entregas pequeñas. Para cada tarea, explica el objetivo, implementa una parte coherente, ejecuta las pruebas pertinentes y resume archivos modificados, resultados comprobados y limitaciones pendientes. No afirmes que algo funciona si no lo has probado. Evita dependencias innecesarias, código excesivamente complejo y funcionalidades ficticias.
+
+Prioridad: construir primero un MVP real y excelente con autenticación, garaje, mantenimiento, gastos y dashboard conectado a datos persistidos. Después añadiremos documentos, recordatorios, analítica avanzada e IA. Queremos un producto atractivo y comercializable, pero validaremos las necesidades y la disposición a pagar antes de invertir en funciones costosas.
+
+Usa los documentos de contexto del proyecto como referencia inicial. Si hay contradicciones entre ellos, el código existente y los requisitos oficiales del TFG, señala la contradicción y pide una decisión en lugar de asumir. Empieza con la auditoría y el plan; no implementes todavía.
