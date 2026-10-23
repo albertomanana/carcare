@@ -39,7 +39,7 @@ if not exist "frontend\node_modules" (
 rem 3. API Laravel
 netstat -an | findstr /r /c:":8000 .*LISTENING" >nul
 if errorlevel 1 (
-  start "CarCare API (:8000)" /D "%~dp0backend" cmd /k php artisan serve --host=127.0.0.1 --port=8000
+  start "CarCare API (:8000)" cmd /k "%~dp0scripts\servidor-api.cmd"
 ) else (
   echo   La API ya esta en marcha en el puerto 8000.
 )

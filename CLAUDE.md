@@ -28,8 +28,10 @@ Un agente **no edita archivos fuera de su zona** sin decirlo en su informe. Si n
 ## Comandos
 
 ```bash
+# API en http://127.0.0.1:8000 CON OPcache (desde la raíz). Usar esto, no "php artisan serve":
+cmd.exe //c scripts\\servidor-api.cmd   # XAMPP trae OPcache desactivado: sin él cada petición tarda ~10 veces más
+
 # Backend (desde backend/)
-php artisan serve                    # API en http://127.0.0.1:8000
 php artisan migrate:fresh --seed     # BD limpia + datos demo
 php artisan test                     # tests (SQLite en memoria)
 ../.tools/composer require paquete   # Composer NO está en el PATH: usar este envoltorio

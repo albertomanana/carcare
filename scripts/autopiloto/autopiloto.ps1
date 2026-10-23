@@ -49,7 +49,8 @@ function Start-DevServices {
     }
   }
   if (-not (Test-Port 8000)) {
-    Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'title CarCare API (:8000) && php artisan serve --host=127.0.0.1 --port=8000' -WorkingDirectory (Join-Path $Root 'backend') -WindowStyle Minimized
+    # Con OPcache (XAMPP lo trae desactivado y la API va ~10 veces mas lenta sin el)
+    Start-Process -FilePath (Join-Path $Root 'scripts\servidor-api.cmd') -WindowStyle Minimized
     Write-Log 'API Laravel arrancada en :8000.'
   }
   if (-not (Test-Port 5173)) {
