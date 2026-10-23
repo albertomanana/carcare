@@ -5,15 +5,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
-
-/** Enlace más útil para una entrada de actividad: la orden, el cliente o el vehículo. */
-export function activityHref(base: string, a: Activity): string | null {
-  if (a.entity_type === 'work_order') return `${base}/ordenes/${a.entity_id}`
-  if (a.entity_type === 'customer') return `${base}/clientes/${a.entity_id}`
-  if (a.entity_type === 'member') return `${base}/equipo`
-  if (a.vehicle_id) return `${base}/vehiculos/${a.vehicle_id}`
-  return null
-}
+import { activityHref } from './floor'
 
 /** Actividad del equipo: quién hizo qué y cuándo (frases que redacta el servidor). */
 export function TeamActivity({ items, limit = 8 }: { items: Activity[]; limit?: number }) {
@@ -30,7 +22,7 @@ export function TeamActivity({ items, limit = 8 }: { items: Activity[]; limit?: 
               <span className="block text-sm text-fg">{a.summary}</span>
               <span className="block text-xs text-fg-subtle">
                 <time dateTime={a.created_at} title={formatDateTime(a.created_at)}>
-                  {formatRelativeTime(a.created_at, new Date(), { pastOnly: true })}
+                  {formatRelativeTime(a.created_at, undefined, { pastOnly: true })}
                 </time>
               </span>
             </span>

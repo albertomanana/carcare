@@ -471,10 +471,3 @@ function OrderSheet({
     </>
   )
 }
-
-/** Resumen corto para el encabezado: "Elevadores ocupados: 3 de 4 · 11 en espera". */
-export function floorSummary(bays: Bay[], orders: WorkOrder[] | undefined): string {
-  const { total, busy } = baysSummary(bays)
-  const waiting = orders ? waitingOrders(orders).length : null
-  return `Elevadores ocupados: ${busy} de ${total}${waiting !== null ? ` · ${waiting} en espera` : ''}`
-}

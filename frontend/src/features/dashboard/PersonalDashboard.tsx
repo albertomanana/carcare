@@ -74,7 +74,8 @@ function Cockpit({ data }: { data: PersonalDashboardData }) {
   const vehicle = data.vehicles.find((v) => v.id === selectedId) ?? data.vehicles[0]
   const summary = useVehicleSummary(vehicle.id)
   const canOperate = ctx.can('operate')
-  const reminderActions = useReminderActions({ canOperate, currentMileage: vehicle.current_mileage })
+  // La lista de vencimientos mezcla vehículos: los km de referencia se deducen de cada recordatorio
+  const reminderActions = useReminderActions({ canOperate })
 
   const select = (id: number) => {
     setSelectedId(id)

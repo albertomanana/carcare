@@ -148,7 +148,13 @@ export function useReminderCommands() {
     mutationFn: (reminder: Pick<Reminder, 'id' | 'vehicle_id'>) => api.delete<void>(`/reminders/${reminder.id}`),
     onSuccess: (_d, reminder) => invalidateVehicle(qc, reminder.vehicle_id),
   })
-  return { complete, dismiss, remove }
+  /** Cambio parcial (p. ej. posponer: nueva due_date / due_mileage). */
+  const update = useMutation({
+    mutationFn: async ({ reminder, input }: { reminder: Pick<Reminder, 'id' | 'vehicle_id'>; input: Partial<ReminderInput> }) =>
+      (await api.patch<Resource<Reminder>>(`/reminders/${reminder.id}`, input)).data,
+    onSuccess: (_d, { reminder }) => invalidateVehicle(qc, reminder.vehicle_id),
+  })
+  return { complete, dismiss, remove, update }
 }
 
 // ───────── Documentos ─────────

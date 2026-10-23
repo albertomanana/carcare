@@ -1,4 +1,4 @@
-import { CalendarDays, CircleCheck, EllipsisVertical, Gauge, Pencil, Repeat, Trash2, X } from 'lucide-react'
+import { AlarmClockPlus, CalendarDays, CircleCheck, EllipsisVertical, Gauge, Pencil, Repeat, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router'
 import type { Reminder } from '@/api/types'
 import { Badge, StatusPill } from '@/components/ui/Badge'
@@ -15,6 +15,8 @@ import { VehicleSwatch } from './VehicleVisuals'
 export interface ReminderActions {
   onComplete?: (r: Reminder) => void
   onEdit?: (r: Reminder) => void
+  /** Mover el vencimiento más adelante (fecha y/o km). */
+  onPostpone?: (r: Reminder) => void
   onDismiss?: (r: Reminder) => void
   onDelete?: (r: Reminder) => void
 }
@@ -38,7 +40,7 @@ export function ReminderItem({
   const byKm = dueByMileage(reminder)
   const recurrence = recurrenceText(reminder)
   const pending = reminder.status === 'pending'
-  const hasMenu = pending && !!(actions.onEdit || actions.onDismiss || actions.onDelete)
+  const hasMenu = pending && !!(actions.onEdit || actions.onPostpone || actions.onDismiss || actions.onDelete)
   const progressTone = state?.tone === 'danger' ? 'danger' : state?.tone === 'warning' ? 'warning' : state?.tone === 'ok' ? 'ok' : 'neutral'
   const pct = reminder.progress === null ? null : Math.round(reminder.progress * 100)
 
@@ -148,6 +150,11 @@ export function ReminderItem({
                 {actions.onEdit && (
                   <DropdownMenuItem icon={<Pencil aria-hidden />} onSelect={() => actions.onEdit?.(reminder)}>
                     Editar
+                  </DropdownMenuItem>
+                )}
+                {actions.onPostpone && (
+                  <DropdownMenuItem icon={<AlarmClockPlus aria-hidden />} onSelect={() => actions.onPostpone?.(reminder)}>
+                    Posponer
                   </DropdownMenuItem>
                 )}
                 {actions.onDismiss && (

@@ -121,3 +121,52 @@ export function waitingOrders(orders: WorkOrder[] | undefined): WorkOrder[] {
     .filter((o) => o.bay === null && !isFinalStatus(o.status))
     .sort((a, b) => Number(b.is_late) - Number(a.is_late) || rank[a.priority] - rank[b.priority])
 }
+
+// ───────── Flujo de estados (stepper) ─────────
+
+/** Flujo natural de una orden. «Esperando piezas» es un desvío opcional. */
+export const ORDER_FLOW: WorkOrderStatus[] = ['received', 'diagnosing', 'waiting_parts', 'in_progress', 'ready', 'delivered']
+
+export type StepState = 'done' | 'current' | 'todo' | 'optional'
+
+/**
+ * Estado de cada paso respecto al estado actual. No conocemos el historial de estados, así que
+ * «Esperando piezas» nunca se marca como hecho: si no es el actual, queda como paso opcional.
+ */
+export function stepStates(status: WorkOrderStatus): Record<WorkOrderStatus, StepState> {
+  const current = ORDER_FLOW.indexOf(status)
+  const result = {} as Record<WorkOrderStatus, StepState>
+  ORDER_FLOW.forEach((s, i) => {
+    if (i === current) result[s] = 'current'
+    else if (s === 'waiting_parts') result[s] = 'optional'
+    else if (current >= 0 && i < current) result[s] = 'done'
+    else result[s] = 'todo'
+  })
+  result.cancelled = status === 'cancelled' ? 'current' : 'todo'
+  return result
+}
+
+// ───────── Fecha prometida: atajos ─────────
+
+/** Atajos habituales en un taller: hoy a última hora (si aún da tiempo), mañana a mediodía o por la tarde, pasado mañana. */
+export function promisedShortcuts(now: Date = new Date()): { label: string; value: string }[] {
+  const list: { label: string; value: string }[] = []
+  if (now.getHours() < 18) list.push({ label: 'Hoy, 19:00', value: dateTimeLocalAt(0, 19, 0, now) })
+  list.push({ label: 'Mañana, 13:00', value: dateTimeLocalAt(1, 13, 0, now) })
+  list.push({ label: 'Mañana, 19:00', value: dateTimeLocalAt(1, 19, 0, now) })
+  list.push({ label: 'Pasado mañana, 19:00', value: dateTimeLocalAt(2, 19, 0, now) })
+  return list
+}
+
+/** true si la fecha (valor datetime-local) ya ha pasado. */
+export function isPastLocal(value: string, now: Date = new Date()): boolean {
+  const iso = fromDateTimeLocal(value)
+  return !!iso && new Date(iso).getTime() < now.getTime()
+}
+
+/** Resumen corto para el encabezado: "Elevadores ocupados: 3 de 4 · 11 en espera". */
+export function floorSummary(bays: Bay[], orders: WorkOrder[] | undefined): string {
+  const { total, busy } = baysSummary(bays)
+  const waiting = orders ? waitingOrders(orders).length : null
+  return `Elevadores ocupados: ${busy} de ${total}${waiting !== null ? ` · ${waiting} en espera` : ''}`
+}

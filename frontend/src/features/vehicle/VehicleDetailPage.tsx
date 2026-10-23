@@ -6,6 +6,7 @@ import {
   ClipboardPlus,
   EllipsisVertical,
   FileText,
+  OctagonAlert,
   Gauge,
   Pencil,
   Plus,
@@ -35,6 +36,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { cn } from '@/lib/cn'
 import { formatDate, formatKm, formatRelativeDate } from '@/lib/format'
 import { FUEL_LABEL, TRANSMISSION_LABEL } from '@/lib/labels'
+import { plural } from '@/lib/text'
 import { WORK_ORDER_STATUS } from '@/lib/status'
 import type { VehicleOutletContext } from './vehicle-outlet'
 
@@ -187,7 +189,11 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
                 <StatusPill status={WORK_ORDER_STATUS[order.status]} label={`${order.number} · ${WORK_ORDER_STATUS[order.status].label}${order.bay ? ` · Elevador ${order.bay}` : ''}`} />
               </Link>
             )}
-            {vehicle.stats.overdue_reminders > 0 && <Badge tone="danger">{vehicle.stats.overdue_reminders} recordatorio(s) vencido(s)</Badge>}
+            {vehicle.stats.overdue_reminders > 0 && (
+              <Badge tone="danger" icon={<OctagonAlert aria-hidden />}>
+                {plural(vehicle.stats.overdue_reminders, 'recordatorio vencido', 'recordatorios vencidos')}
+              </Badge>
+            )}
           </div>
         </div>
 

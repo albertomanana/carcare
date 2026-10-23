@@ -5,7 +5,7 @@
 import { z } from 'zod'
 import type { Priority, WorkOrder, WorkOrderInput } from '@/api/types'
 import { formToLine, lineItemSchema, lineToForm } from '@/components/forms/LineItemsEditor'
-import { parseIntegerInput } from '@/lib/format'
+import { formatNumber, parseIntegerInput } from '@/lib/format'
 import { mileageError } from '@/lib/validation'
 import { fromDateTimeLocal, toDateTimeLocal } from './orderUtils'
 
@@ -38,7 +38,7 @@ export function orderToValues(order: WorkOrder | null): OrderValues {
     diagnosis: order?.diagnosis ?? '',
     priority: order?.priority ?? 'normal',
     assigned_to: order?.assigned_to ? String(order.assigned_to.id) : '',
-    mileage_in: order?.mileage_in != null ? String(order.mileage_in) : '',
+    mileage_in: order?.mileage_in != null ? formatNumber(order.mileage_in) : '',
     promised_at: toDateTimeLocal(order?.promised_at),
     items: order?.items.map(lineToForm) ?? [],
   }

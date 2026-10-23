@@ -316,6 +316,36 @@
   }
 }
 
+/*
+ * Hoja del informe: siempre en claro, con cualquier tema. En pantalla imita el papel;
+ * al imprimir o guardar en PDF sale exactamente igual (sin gastar tinta en fondos oscuros).
+ */
+.paper {
+  color-scheme: light;
+  --base: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --surface-3: #eceae4;
+  --line: #dcd9d1;
+  --line-strong: #8c8a82;
+  --fg: #14181b;
+  --fg-warm: #111518;
+  --fg-muted: #4a5459;
+  --fg-subtle: #5b666c;
+  --accent-ink: #3f6600;
+  --accent-soft: rgb(124 170 20 / 0.14);
+  --danger: #b42828;
+  --danger-soft: rgb(201 52 52 / 0.1);
+  --warning: #8a5700;
+  --warning-soft: rgb(245 184 74 / 0.2);
+  --ok: #0f7a68;
+  --ok-soft: rgb(15 122 104 / 0.1);
+  --info: #1f6fae;
+  --info-soft: rgb(31 111 174 / 0.1);
+  background-color: var(--surface);
+  color: var(--fg);
+}
+
 /* ───────── Impresión (informe del vehículo) ───────── */
 @media print {
   :root,

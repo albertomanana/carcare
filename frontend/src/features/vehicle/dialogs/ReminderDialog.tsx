@@ -39,7 +39,7 @@ const schema = z
     if (rkm) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['recurrence_km'], message: rkm })
     if (v.recurrence_months.trim()) {
       const n = Number(v.recurrence_months)
-      if (!Number.isInteger(n) || n < 1 || n > 240) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['recurrence_months'], message: 'Entre 1 y 240 meses.' })
+      if (!Number.isInteger(n) || n < 1 || n > 120) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['recurrence_months'], message: 'Entre 1 y 120 meses.' })
     }
   })
 type Values = z.infer<typeof schema>

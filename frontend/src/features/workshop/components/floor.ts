@@ -4,7 +4,7 @@
  */
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router'
-import type { Bay, WorkOrder } from '@/api/types'
+import type { Activity, Bay, WorkOrder } from '@/api/types'
 
 export interface FloorSelectionState {
   bay: number | null
@@ -71,4 +71,13 @@ export function resolveSelection(sel: FloorSelectionState, bays: Bay[], orders: 
 /** `tel:` limpio a partir de un teléfono escrito a mano ('600 000 002' → 'tel:600000002'). */
 export function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`
+}
+
+/** Enlace más útil para una entrada de actividad: la orden, el cliente o el vehículo. */
+export function activityHref(base: string, a: Activity): string | null {
+  if (a.entity_type === 'work_order') return `${base}/ordenes/${a.entity_id}`
+  if (a.entity_type === 'customer') return `${base}/clientes/${a.entity_id}`
+  if (a.entity_type === 'member') return `${base}/equipo`
+  if (a.vehicle_id) return `${base}/vehiculos/${a.vehicle_id}`
+  return null
 }

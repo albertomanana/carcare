@@ -36,6 +36,29 @@ export function useWorkspaceReminders(ws: ID, params: QueryParams = {}) {
   })
 }
 
+/** Tope de páginas de la agenda (100 por página): si se alcanza, la pantalla lo dice. */
+export const AGENDA_MAX_PAGES = 10
+
+/**
+ * Todos los recordatorios pendientes del espacio (agenda: lista por urgencia + calendario).
+ * Pide páginas de 100 hasta completar el total o llegar a AGENDA_MAX_PAGES.
+ */
+export function useAllWorkspaceReminders(ws: ID) {
+  return useQuery({
+    queryKey: qk.wsReminders(ws, { all: 1 }),
+    queryFn: async ({ signal }) => {
+      const first = await api.get<Paginated<Reminder>>(`/workspaces/${ws}/reminders`, { per_page: 100, page: 1 }, { signal })
+      const items = [...first.data]
+      const last = Math.min(first.meta.last_page, AGENDA_MAX_PAGES)
+      for (let page = 2; page <= last; page++) {
+        const next = await api.get<Paginated<Reminder>>(`/workspaces/${ws}/reminders`, { per_page: 100, page }, { signal })
+        items.push(...next.data)
+      }
+      return { items, total: first.meta.total }
+    },
+  })
+}
+
 export function useAnalytics(ws: ID, params: QueryParams = {}, enabled = true) {
   return useQuery({
     queryKey: qk.analytics(ws, params),
