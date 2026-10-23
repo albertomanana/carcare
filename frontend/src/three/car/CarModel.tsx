@@ -1,0 +1,167 @@
+import { useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useMemo } from 'react'
+import * as THREE from 'three'
+import type { BodyType, Zone } from '@/api/types'
+import { getCarBuild } from './build'
+import type { Detail, MatKey } from './geometry'
+import { fresnelMaterial, getCarMaterials } from './materials'
+import { BODY_SPECS } from './specs'
+
+/** En rayos X estas piezas se ven sólidas (el resto de la carrocería pasa a "fantasma"). */
+const SOLID_IN_XRAY = new Set<MatKey>(['disc', 'caliper', 'engine', 'engineDark', 'battery', 'exhaust', 'spring'])
+const HIDDEN_IN_XRAY = new Set<MatKey>(['underbody', 'interior', 'bedliner'])
+
+export interface CarModelProps {
+  body: BodyType
+  color: string
+  accent: string
+  detail?: Detail
+  night?: boolean
+  xray?: boolean
+  /** Color del "fantasma" de rayos X (token --info). */
+  ghostColor?: string
+  highlight?: { zone: Zone; color: string; pulse: boolean } | null
+  /** Recorte para la transición de la portada: la parte sólida y la de rayos X se reparten el coche. */
+  clip?: { solid: THREE.Plane; ghost: THREE.Plane } | null
+  onClick?: (e: { point: THREE.Vector3; stopPropagation: () => void }) => void
+}
+
+export function CarModel({
+  body,
+  color,
+  accent,
+  detail = 'high',
+  night = false,
+  xray = false,
+  ghostColor = '#7cc4fa',
+  highlight = null,
+  clip = null,
+  onClick,
+}: CarModelProps) {
+  const build = useMemo(() => getCarBuild(body, detail), [body, detail])
+  const baseMats = useMemo(() => getCarMaterials(color, { accent, night, rim: BODY_SPECS[body].rim }), [color, accent, night, body])
+
+  // Con recorte, materiales propios (clonados) para no afectar a los compartidos
+  const mats = useMemo(() => {
+    if (!clip) return baseMats
+    const out = {} as Record<MatKey, THREE.Material>
+    for (const k of Object.keys(baseMats) as MatKey[]) {
+      const m = baseMats[k].clone()
+      m.clippingPlanes = [clip.solid]
+      out[k] = m
+    }
+    return out
+  }, [baseMats, clip])
+  useEffect(() => {
+    if (mats === baseMats) return
+    return () => Object.values(mats).forEach((m) => m.dispose())
+  }, [mats, baseMats])
+
+  const ghost = useMemo(() => {
+    const m = fresnelMaterial({ color: ghostColor, opacity: 0.85, fill: 0.035, power: 2.4 })
+    if (clip) m.clippingPlanes = [clip.ghost]
+    return m
+  }, [ghostColor, clip])
+  useEffect(() => () => ghost.dispose(), [ghost])
+
+  const internalsMats = useMemo(() => {
+    if (!clip) return baseMats
+    const out = {} as Record<MatKey, THREE.Material>
+    for (const k of Object.keys(baseMats) as MatKey[]) {
+      const m = baseMats[k].clone()
+      m.clippingPlanes = [clip.ghost]
+      out[k] = m
+    }
+    return out
+  }, [baseMats, clip])
+  useEffect(() => {
+    if (internalsMats === baseMats) return
+    return () => Object.values(internalsMats).forEach((m) => m.dispose())
+  }, [internalsMats, baseMats])
+
+  const hl = useMemo(
+    () => (highlight ? fresnelMaterial({ color: highlight.color, opacity: 1, fill: 0.22, power: 1.6, depthTest: false }) : null),
+    [highlight],
+  )
+  useEffect(() => () => hl?.dispose(), [hl])
+
+  // Pulso del resaltado (solo si se permite animación)
+  const invalidate = useThree((s) => s.invalidate)
+  useFrame(({ clock }) => {
+    if (!hl || !highlight?.pulse) return
+    const t = clock.getElapsedTime()
+    ;(hl.uniforms.uOpacity as { value: number }).value = 0.72 + 0.28 * Math.sin(t * 3.2)
+    invalidate()
+  })
+
+  // Cajas invisibles para el clic (el raycasting sobre la malla real sería caro)
+  const proxy = useMemo(() => {
+    const sh = build.shape
+    const { length, width } = build.size
+    const lowTop = Math.max(...sh.top.samples.map((p) => p[1]))
+    const lower = { position: [(sh.front + sh.rear) / 2, lowTop / 2 + 0.05, 0] as [number, number, number], size: [length, lowTop - 0.1, width] as [number, number, number] }
+    const cabin =
+      sh.ghRange && sh.roof
+        ? {
+            position: [(sh.ghRange[0] + sh.ghRange[1]) / 2, (lowTop + build.size.height) / 2, 0] as [number, number, number],
+            size: [(sh.ghRange[1] - sh.ghRange[0]) * 0.8, build.size.height - lowTop, width * 0.8] as [number, number, number],
+          }
+        : null
+    return { lower, cabin }
+  }, [build])
+
+  const showGhost = xray || !!clip
+  const showSolid = !xray || !!clip
+
+  return (
+    <group
+      onClick={
+        onClick
+          ? (e) => {
+              onClick({ point: e.point, stopPropagation: () => e.stopPropagation() })
+            }
+          : undefined
+      }
+    >
+      {showSolid &&
+        build.parts.map((p) => (
+          <mesh key={`s-${p.mat}`} geometry={p.geometry} material={mats[p.mat]} raycast={noRaycast} />
+        ))}
+      {showGhost &&
+        build.parts.map((p) => {
+          if (HIDDEN_IN_XRAY.has(p.mat)) return null
+          if (SOLID_IN_XRAY.has(p.mat)) {
+            return clip ? <mesh key={`x-${p.mat}`} geometry={p.geometry} material={internalsMats[p.mat]} raycast={noRaycast} /> : null
+          }
+          return <mesh key={`g-${p.mat}`} geometry={p.geometry} material={ghost} renderOrder={2} raycast={noRaycast} />
+        })}
+      {showGhost &&
+        build.xrayParts.map((p) => (
+          <mesh key={`i-${p.mat}`} geometry={p.geometry} material={clip ? internalsMats[p.mat] : mats[p.mat]} raycast={noRaycast} />
+        ))}
+      {onClick && (
+        <>
+          <mesh position={proxy.lower.position} material={PROXY_MAT}>
+            <boxGeometry args={proxy.lower.size} />
+          </mesh>
+          {proxy.cabin && (
+            <mesh position={proxy.cabin.position} material={PROXY_MAT}>
+              <boxGeometry args={proxy.cabin.size} />
+            </mesh>
+          )}
+        </>
+      )}
+      {hl &&
+        highlight &&
+        build.highlight[highlight.zone].map((g, i) => (
+          <mesh key={`h-${highlight.zone}-${i}`} geometry={g} material={hl} renderOrder={10} raycast={noRaycast} />
+        ))}
+    </group>
+  )
+}
+
+const PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+
+function noRaycast() {
+  /* las mallas visibles no participan en el raycasting (se usa una caja proxy) */
+}
