@@ -6,7 +6,7 @@
 
 | Agente | Encargo actual | Estado | Último informe | Bloqueos |
 |--------|----------------|--------|----------------|----------|
-| **Sesión interactiva** (Alberto + sesión principal) | Oleada 1d: relanzar los 4 agentes donde se cortaron (límite de uso 23/10 01:40). Inicio: 2026-10-23 08:55 | En curso | — | — |
+| **Sesión interactiva** (Alberto + sesión principal) | Simplificación de la interfaz (auditoría de disenador-ux) y arreglos de arranque. Inicio: 2026-10-23 22:50 | En curso | — | — |
 | **Piloto automático** | Ver [AUTOPILOTO.md](AUTOPILOTO.md). Última ejecución 2026-10-23 08:56: sin tarea elegible; corregido el bucle del lanzador que relanzaba sin esperar. **En PAUSA** hasta que Alberto lo reinicie | Libre | [nota 08:56](../../CarCare/05_sesiones/2026-10-23-autopiloto-0856.md) | Reanudar: cerrar la ventana del piloto → `reanudar.cmd` → relanzarlo. Tarea 0: falta sesión de GitHub |
 | arquitecto | Contrato v1, ADR 0001‑0004, reparto de la oleada 1 (sesión principal) | Hecho | — | — |
 | producto | Backlog E0‑E15 contra el contrato v1, decisiones D1‑D15, riesgos, competencia con fuentes, guion de pruebas con usuarios | Hecho | [2026-10-21-producto-backlog-y-decisiones](informes/2026-10-21-producto-backlog-y-decisiones.md) | Esperan a Alberto: D6, D1, D9, D15 |
@@ -14,7 +14,7 @@
 | frontend-react | Oleada 1: SPA completa (particular + taller) | En curso | — | — |
 | frontend-react (taller) | Oleada 1d: terminar el modo taller (detalle y nueva orden, clientes, equipo, taller 3D a pantalla completa, pestaña Órdenes del vehículo). Inicio: 2026-10-23 | En curso | — | — |
 | experto-3d | Oleada 1: coche 3D, zonas, rayos X, taller 3D, portada | En curso | — | — |
-| disenador-ux | — | Libre | — | — |
+| disenador-ux | Auditoría de la app real y plan de simplificación + 2‑3 direcciones visuales "naturales" para que elija Alberto. Inicio: 2026-10-23 | En curso | — | — |
 | qa-tester | — | Libre | — | — |
 | seguridad | — | Libre | — | — |
 | devops | — | Libre | — | — |
@@ -32,6 +32,14 @@
 | 2 | Integración real API ↔ SPA, corrección de desajustes | sesión principal + agentes dueños | Pendiente |
 | 3 | Calidad: E2E, accesibilidad, seguridad, revisión UX | qa-tester ∥ seguridad ∥ disenador-ux | Pendiente |
 | 4 | Correcciones, CI, scripts de arranque, manuales | agentes dueños + devops + documentador-tfg | Pendiente |
+
+## Preguntas para Alberto
+
+*Dudas que solo puede resolver Alberto (gustos, alcance, prioridades, decisiones del TFG). El agente la escribe aquí y en su resumen; la sesión principal se la traslada y anota la respuesta. Mientras no haya respuesta, el agente sigue con lo que no dependa de ella.*
+
+| # | Fecha | Agente | Pregunta | Opciones y recomendación | Respuesta de Alberto |
+|---|-------|--------|----------|--------------------------|----------------------|
+| | | | | | |
 
 ## Peticiones entre agentes
 

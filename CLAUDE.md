@@ -78,6 +78,8 @@ Cada agente, al terminar un encargo:
 2. Actualiza su fila en `docs/equipo/TABLERO.md`.
 3. Devuelve un resumen breve al líder (Alberto o la sesión principal).
 
+**Dudas:** si algo solo lo puede decidir Alberto (gustos de diseño, alcance, prioridades, el TFG), no lo decidas tú: escríbelo en "Preguntas para Alberto" de `docs/equipo/TABLERO.md` con opciones y tu recomendación, inclúyelo en tu resumen y sigue con lo que no dependa de la respuesta. Alberto ha pedido expresamente que le consultéis.
+
 Guía completa para dirigir al equipo: [`docs/equipo/GUIA-LIDERAZGO.md`](docs/equipo/GUIA-LIDERAZGO.md).
 
 **Piloto automático:** cada hora (y al iniciar Windows) una sesión no interactiva trabaja según la cola de [`docs/equipo/AUTOPILOTO.md`](docs/equipo/AUTOPILOTO.md). La sesión interactiva pone su fila del tablero ("Sesión interactiva") en `En curso` con la hora al empezar y en `Libre` al terminar, y mantiene la cola al día (marca `Hecho` lo que termine). Así el piloto no pisa el trabajo en directo.

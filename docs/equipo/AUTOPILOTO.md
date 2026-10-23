@@ -34,17 +34,20 @@ Estados: `Pendiente` · `En curso` · `Hecho` · `Bloqueado`. Prioridad de arrib
 | # | Tarea | Agente | Depende de | Estado |
 |---|-------|--------|------------|--------|
 | 0 | **Publicar en GitHub** (pedido por Alberto el 23/10): si `.tools/gh/bin/gh.exe auth status` dice que hay sesión y `git remote` está vacío, ejecutar `bash scripts/github/publicar-repo.sh` (crea el repo privado, `main` mínima y `develop` con commits por área). Si no hay sesión, dejarla `Pendiente` y anotar en "Últimas ejecuciones": "Alberto: ejecuta scripts/github/conectar-github.cmd" | sesión principal | Sesión de GitHub iniciada por Alberto | Pendiente |
-| 1 | Oleada 1c: terminar pantallas del modo particular (intervención, documentos, datos, agenda, analítica, informe, ajustes, index.html) | frontend-react | — | En curso (sesión interactiva, 23/10) |
-| 2 | Oleada 1c: terminar modo taller (centro de control, kanban, órdenes, clientes, equipo, taller 3D, pestaña órdenes) | frontend-react | — | En curso (sesión interactiva, 23/10) |
+| 1 | Oleada 1c/1d: pantallas del modo particular | frontend-react | — | Hecho (23/10) salvo `AnalyticsPage` (pasa a la tarea 17). Commit 779dc5c. Sin informe final (cortado por límite): se incluye en la tarea 16 |
+| 2 | Oleada 1c/1d: modo taller completo | frontend-react | — | Hecho (23/10). Commit 779dc5c. Sin informe final (cortado por límite): se incluye en la tarea 16 |
 | 3 | Oleada 1c: cerrar tests de la API e informe | backend-laravel | — | Hecho (23/10): 462 tests / 6959 aserciones en verde, verificado por la sesión principal. [Informe](informes/2026-10-23-backend-laravel-api-v1.md) |
-| 4 | Oleada 1c: taller 3D, escena de portada, marcadores de zona sin solapes, pulido | experto-3d | — | En curso (sesión interactiva, 23/10) |
-| 5 | Integración: recorrer TODA la app con las 4 cuentas demo (particular, owner, manager, mechanic) a 1280 y 360 px; anotar y repartir cada fallo a su agente; corregir desajustes de contrato | sesión principal + dueños | 1‑4 | Pendiente |
+| 4 | Oleada 1c/1d: portada 3D, marcadores de zona, miniaturas | experto-3d | — | Hecho (23/10). Commit 1921a16. Sin informe final: se incluye en la tarea 16 |
+| 16 | **Simplificar mucho la interfaz** (pedido por Alberto el 23/10: "la veo sobrecargada, quiero que sea más simple y que cargue más rápido"). Paso 1: auditoría y plan por pantalla de `disenador-ux` (en curso en la sesión interactiva). Paso 2: aplicar el plan, repartido entre frontend-react (particular), frontend-react (taller) y experto-3d según la lista de tareas del informe de UX. Cada agente cierra con su informe incluyendo lo de las oleadas 1c/1d | disenador-ux → frontend-react ×2, experto-3d | — | En curso (sesión interactiva, 23/10 22:50): paso 1 |
+| 17 | `AnalyticsPage` (única pantalla que sigue vacía), ya simplificada según la tarea 16 | frontend-react | 16 | Pendiente |
+| 18 | **Dirección visual natural** ("se nota hecho con IA"): aplicar la propuesta que elija Alberto entre las del informe de UX | frontend-react, experto-3d | Decide Alberto (Preguntas para Alberto del tablero) | Bloqueado: Decide Alberto |
+| 5 | Integración: recorrer TODA la app con las 4 cuentas demo (particular, owner, manager, mechanic) a 1280 y 360 px; anotar y repartir cada fallo a su agente; corregir desajustes de contrato | sesión principal + dueños | 1‑4, 16 | Pendiente |
 | 6 | E2E con Playwright de los flujos principales (`frontend/e2e/`) + auditoría axe de cada pantalla | qa-tester | 5 | Pendiente |
-| 7 | Auditoría de seguridad y privacidad (aislamiento, roles, archivos, Sanctum, dependencias) | seguridad | 5 | Pendiente |
+| 7 | Auditoría de seguridad y privacidad (aislamiento, roles, archivos, Sanctum, dependencias) | seguridad | 3 | Pendiente |
 | 8 | Revisión UX/accesibilidad de todas las pantallas (360/768/1280, contraste, teclado, microcopias) | disenador-ux | 5 | Pendiente |
 | 9 | Corregir hallazgos críticos y altos de 6‑8 | dueños | 6, 7, 8 | Pendiente |
 | 10 | Documentación TFG contra el código real: modelo de datos, clases, secuencia, API (OpenAPI o tabla), manual de usuario con capturas, manual de instalación | documentador-tfg | 5 | Pendiente |
-| 11 | CI en `.github/workflows/ci.yml` (PHP + Node) probado en local, y revisión de `iniciar-carcare.bat` | devops | 5 | Pendiente |
+| 11 | CI en `.github/workflows/ci.yml` (PHP + Node) probado en local, y revisión de `iniciar-carcare.bat` | devops | 3 | Pendiente |
 | 12 | ~~Investigar proveedores con licencia de modelos reales y logotipos~~ | producto | — | Descartada (D16, 23/10: el proyecto no es comercial) |
 | 13 | ~~Proponer contrato y ADR para la foto de portada del vehículo~~ | arquitecto | — | Aparcada (D16: "mantener la silueta y ya"; se reactiva solo si Alberto lo pide) |
 | 14 | ~~Implementar la foto de portada~~ | backend-laravel, frontend-react | 13 | Aparcada (D16) |
