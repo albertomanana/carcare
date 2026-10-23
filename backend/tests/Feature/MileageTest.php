@@ -63,6 +63,17 @@ it('a igual fecha gana la lectura de mayor km', function () {
     expect($this->vehicle->fresh()->current_mileage)->toBe(1200);
 });
 
+it('lista por fecha descendente y, a igual fecha, por km descendente', function () {
+    addReading($this->vehicle, 1000, day(-5));
+    addReading($this->vehicle, 1300, day(-1));
+    addReading($this->vehicle, 1200, day(-1));
+
+    $this->getJson("/api/v1/vehicles/{$this->vehicle->id}/mileage")
+        ->assertOk()
+        ->assertJsonPath('data', fn ($logs) => array_column($logs, 'mileage') === [1300, 1200, 1000]);
+    expect($this->vehicle->fresh()->current_mileage)->toBe(1300);
+});
+
 it('no admite fechas futuras ni km fuera de rango', function () {
     $this->postJson("/api/v1/vehicles/{$this->vehicle->id}/mileage", ['recorded_at' => day(1), 'mileage' => -5])
         ->assertUnprocessable()

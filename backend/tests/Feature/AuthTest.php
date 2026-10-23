@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 
 /** Las peticiones de la SPA llegan desde el origen de Vite: Sanctum las trata con sesión. */
 function spa(): \Tests\TestCase
@@ -136,4 +137,21 @@ it('borra la cuenta con su espacio personal y los talleres donde es único propi
         ->and(\App\Models\Workspace::find($w->wws->id))->toBeNull()
         ->and(\App\Models\Vehicle::find($w->vehicle->id))->toBeNull()
         ->and(User::find($w->mechanic->id))->not->toBeNull();
+    // Los ficheros del garaje borrado tampoco quedan en el disco privado.
+    Storage::disk('local')->assertMissing($w->document->path);
+});
+
+it('al borrar la cuenta conserva los talleres que tienen otro propietario', function () {
+    $w = world();
+    $w->wws->members()->updateExistingPivot($w->manager->id, ['role' => 'owner']);
+    loginAs($w->owner);
+
+    $this->deleteJson('/api/v1/me', ['password' => 'password'])->assertNoContent();
+
+    expect(\App\Models\Workspace::find($w->pws->id))->toBeNull()
+        ->and(\App\Models\Workspace::find($w->wws->id))->not->toBeNull()
+        ->and(\App\Models\WorkOrder::find($w->order->id))->not->toBeNull()
+        ->and($w->manager->fresh()->roleIn($w->wws)?->value)->toBe('owner')
+        ->and($w->mechanic->fresh()->roleIn($w->wws)?->value)->toBe('mechanic')
+        ->and($w->wws->members()->count())->toBe(2);
 });

@@ -1,6 +1,16 @@
 <?php
 
+use App\Models\Document;
+use App\Models\Expense;
+use App\Models\MaintenanceItem;
+use App\Models\MaintenanceRecord;
+use App\Models\MileageLog;
+use App\Models\Reminder;
 use App\Models\Vehicle;
+use App\Services\ExpenseService;
+use App\Services\MaintenanceService;
+use App\Services\ReminderService;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     $this->user = makeUser('Ana Dueña');
@@ -71,6 +81,25 @@ it('permite repetir matrícula si el otro vehículo está archivado', function (
         ->assertCreated();
 });
 
+it('el VIN es único por espacio y la matrícula no choca consigo misma al editar', function () {
+    $mine = makeVehicle($this->ws, ['plate' => '1234ABC', 'vin' => 'VSSZZZKJZKR000001']);
+
+    $this->postJson("/api/v1/workspaces/{$this->ws->id}/vehicles", ['make' => 'Seat', 'model' => 'León', 'vin' => 'vsszzzkjzkr000001'])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.vin.0', 'Ya hay un vehículo con ese número de bastidor en este espacio.');
+
+    // Editar el propio vehículo con su misma matrícula y VIN no es un duplicado.
+    $this->patchJson("/api/v1/vehicles/{$mine->id}", ['plate' => '1234-abc', 'vin' => 'VSSZZZKJZKR000001', 'nickname' => 'Mío'])
+        ->assertOk()->assertJsonPath('data.plate', '1234ABC');
+
+    // Otro espacio puede tener la misma matrícula y el mismo VIN.
+    $other = makeUser('Otra Dueña');
+    loginAs($other);
+    $this->postJson("/api/v1/workspaces/{$other->personalWorkspace()->id}/vehicles", [
+        'make' => 'Seat', 'model' => 'Ibiza', 'plate' => '1234ABC', 'vin' => 'VSSZZZKJZKR000001',
+    ])->assertCreated();
+});
+
 it('archiva, restaura y solo borra vehículos archivados', function () {
     $vehicle = makeVehicle($this->ws);
 
@@ -111,4 +140,34 @@ it('recorta per_page al máximo de 100', function () {
     makeVehicle($this->ws);
 
     $this->getJson("/api/v1/workspaces/{$this->ws->id}/vehicles?per_page=500")->assertJsonPath('meta.per_page', 100);
+});
+
+it('al borrar un vehículo archivado elimina en cascada su historial y sus ficheros, y no toca los de otro', function () {
+    Storage::fake('local');
+    $vehicle = makeVehicle($this->ws, ['plate' => '1111AAA']);
+    addReading($vehicle, 1000, day(-10));
+    $record = app(MaintenanceService::class)->create($vehicle, [
+        'type' => 'repair', 'zone' => 'engine', 'title' => 'Bujías', 'service_date' => day(-5), 'mileage' => 1100,
+        'items' => [['kind' => 'part', 'name' => 'Bujía', 'quantity' => '4', 'unit_price' => '20.00']],
+    ]);
+    app(ExpenseService::class)->create($vehicle, ['category' => 'parking', 'amount' => '3.50', 'expense_date' => day(-1)]);
+    app(ReminderService::class)->create($vehicle, ['title' => 'ITV', 'kind' => 'itv', 'due_date' => day(60)]);
+    $document = makeDocument($vehicle);
+    $other = makeVehicle($this->ws, ['plate' => '2222BBB']);
+    $kept = makeDocument($other);
+
+    $this->postJson("/api/v1/vehicles/{$vehicle->id}/archive")->assertOk();
+    $this->deleteJson("/api/v1/vehicles/{$vehicle->id}")->assertNoContent();
+
+    expect(MileageLog::where('vehicle_id', $vehicle->id)->count())->toBe(0)
+        ->and(MaintenanceRecord::where('vehicle_id', $vehicle->id)->count())->toBe(0)
+        ->and(MaintenanceItem::where('maintenance_record_id', $record->id)->count())->toBe(0)
+        ->and(Expense::where('vehicle_id', $vehicle->id)->count())->toBe(0)
+        ->and(Reminder::where('vehicle_id', $vehicle->id)->count())->toBe(0)
+        ->and(Document::where('vehicle_id', $vehicle->id)->count())->toBe(0)
+        ->and(Document::find($kept->id))->not->toBeNull();
+    Storage::disk('local')->assertMissing($document->path);
+    Storage::disk('local')->assertExists($kept->path);
+    // La auditoría se conserva (sin vínculo al vehículo borrado).
+    $this->assertDatabaseHas('activities', ['action' => 'vehicle.deleted', 'entity_id' => $vehicle->id, 'vehicle_id' => null]);
 });

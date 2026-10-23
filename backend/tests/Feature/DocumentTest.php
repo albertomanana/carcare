@@ -81,6 +81,20 @@ it('rechaza archivos de más de 10 MB y vínculos a intervenciones de otro vehí
         ->assertJsonPath('errors.maintenance_record_id.0', 'La intervención no pertenece a este vehículo.');
 });
 
+it('filtra por intervención vinculada y la intervención cuenta sus documentos', function () {
+    $record = $this->vehicle->maintenanceRecords()->create(['type' => 'repair', 'zone' => 'brakes', 'title' => 'Frenos', 'service_date' => day(-1)]);
+    $linked = $this->post($this->base, [
+        'file' => pdf(), 'title' => 'Factura frenos', 'document_type' => 'invoice', 'maintenance_record_id' => $record->id,
+    ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.maintenance_record_id', $record->id)->json('data.id');
+    $this->post($this->base, ['file' => pdf(), 'title' => 'Permiso de circulación', 'document_type' => 'registration'], ['Accept' => 'application/json'])
+        ->assertCreated()->assertJsonPath('data.maintenance_record_id', null);
+
+    $this->getJson($this->base)->assertJsonCount(2, 'data');
+    $this->getJson("{$this->base}?maintenance_record_id={$record->id}")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $linked);
+    $this->getJson("{$this->base}?maintenance_record_id=x")->assertUnprocessable()->assertJsonValidationErrors('maintenance_record_id');
+    $this->getJson("/api/v1/maintenance/{$record->id}")->assertJsonPath('data.documents_count', 1);
+});
+
 it('borra el documento y su fichero', function () {
     $id = $this->post($this->base, ['file' => pdf(), 'title' => 'Factura', 'document_type' => 'invoice'], ['Accept' => 'application/json'])->json('data.id');
     $path = Document::findOrFail($id)->path;

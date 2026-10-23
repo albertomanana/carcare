@@ -90,6 +90,44 @@ it('un elevador solo admite una orden abierta (409)', function () {
         ->assertJsonPath('data.0.work_order', null);
 });
 
+it('al pasar a listo puede quedarse en el elevador indicado; un estado final nunca ocupa elevador', function () {
+    $id = $this->postJson($this->base, order($this->vehicle->id, ['bay' => 3]))->assertCreated()->json('data.id');
+
+    // «Listo» con elevador indicado: sigue ocupándolo (la orden sigue abierta).
+    $this->postJson("/api/v1/work-orders/{$id}/status", ['status' => 'ready', 'bay' => 3])
+        ->assertOk()->assertJsonPath('data.bay', 3)->assertJsonPath('data.completed_at', fn ($v) => $v !== null);
+    $this->getJson("/api/v1/workspaces/{$this->ws->id}/bays")->assertJsonPath('data.2.work_order.id', $id);
+
+    // Mover de elevador sin cambiar de estado.
+    $this->postJson("/api/v1/work-orders/{$id}/status", ['status' => 'ready', 'bay' => 4])->assertOk()->assertJsonPath('data.bay', 4);
+    $this->assertDatabaseHas('activities', ['action' => 'work_order.updated', 'entity_id' => $id]);
+
+    // Cancelar libera el elevador aunque se indique uno.
+    $this->postJson("/api/v1/work-orders/{$id}/status", ['status' => 'cancelled', 'bay' => 4])->assertOk()->assertJsonPath('data.bay', null);
+    $this->getJson("/api/v1/workspaces/{$this->ws->id}/bays")->assertJsonPath('data', fn ($bays) => collect($bays)->every(fn ($b) => $b['work_order'] === null));
+});
+
+it('mileage_in menor que el km actual se acepta en el taller y la orden mantiene una sola lectura', function () {
+    addReading($this->vehicle, 150000, day(-3));
+
+    // Sin confirm_mileage_drop: en talleres se acepta y se registra igualmente (contrato §3.11).
+    $id = $this->postJson($this->base, order($this->vehicle->id, ['mileage_in' => 149000]))->assertCreated()->json('data.id');
+    $logs = fn () => $this->vehicle->mileageLogs()->where('source', 'work_order')->where('source_id', $id);
+    expect($logs()->sole()->mileage)->toBe(149000)
+        ->and($logs()->sole()->recorded_at->toDateString())->toBe(day())
+        ->and($this->vehicle->fresh()->current_mileage)->toBe(149000); // lectura más reciente por fecha
+
+    // Editar mileage_in actualiza la misma lectura (no crea otra).
+    $this->patchJson("/api/v1/work-orders/{$id}", ['mileage_in' => 150500])->assertOk()->assertJsonPath('data.mileage_in', 150500);
+    expect($logs()->count())->toBe(1)
+        ->and($this->vehicle->fresh()->current_mileage)->toBe(150500);
+
+    // Borrar la orden (recibida) elimina su lectura y recalcula el km actual.
+    $this->deleteJson("/api/v1/work-orders/{$id}")->assertNoContent();
+    expect($logs()->count())->toBe(0)
+        ->and($this->vehicle->fresh()->current_mileage)->toBe(150000);
+});
+
 it('valida el elevador, el vehículo y la persona asignada', function () {
     $foreign = makeVehicle(makeUser()->personalWorkspace());
     $stranger = makeUser('Desconocido');

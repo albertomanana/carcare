@@ -122,6 +122,16 @@ it('filtra el historial por tipo, zona, año y texto', function () {
     $this->getJson("{$this->base}/maintenance?zone=volante")->assertUnprocessable();
 });
 
+it('ordena el historial por fecha descendente y, a igual fecha, por km descendente', function () {
+    $this->postJson("{$this->base}/maintenance", record(['title' => 'Primera del día', 'service_date' => day(-1), 'mileage' => 30000, 'items' => []]))->assertCreated();
+    $this->postJson("{$this->base}/maintenance", record(['title' => 'Segunda del día', 'service_date' => day(-1), 'mileage' => 30100, 'items' => []]))->assertCreated();
+    $this->postJson("{$this->base}/maintenance", record(['title' => 'Más antigua', 'service_date' => day(-10), 'mileage' => 29000, 'items' => []]))->assertCreated();
+
+    $this->getJson("{$this->base}/maintenance")
+        ->assertOk()
+        ->assertJsonPath('data', fn ($records) => array_column($records, 'title') === ['Segunda del día', 'Primera del día', 'Más antigua']);
+});
+
 it('valida las intervenciones', function () {
     $items = array_fill(0, 51, ['kind' => 'part', 'name' => 'X', 'quantity' => '1']);
 
