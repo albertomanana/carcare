@@ -1,0 +1,27 @@
+import { Button } from './Button'
+
+export interface LoadMoreProps {
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => unknown
+  shown: number
+  total: number | null
+  what?: string
+}
+
+/** "Cargar más" para listados paginados del contrato (meta.current_page / last_page). */
+export function LoadMore({ hasNextPage, isFetchingNextPage, fetchNextPage, shown, total, what = 'elementos' }: LoadMoreProps) {
+  if (!total) return null
+  return (
+    <div className="mt-6 flex flex-col items-center gap-2">
+      <p className="text-xs text-fg-subtle tabular" aria-live="polite">
+        Mostrando {new Intl.NumberFormat('es-ES').format(shown)} de {new Intl.NumberFormat('es-ES').format(total)} {what}
+      </p>
+      {hasNextPage && (
+        <Button onClick={() => void fetchNextPage()} loading={isFetchingNextPage}>
+          Cargar más
+        </Button>
+      )}
+    </div>
+  )
+}
