@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * La API solo habla JSON: aunque el cliente olvide la cabecera Accept,
+ * los errores de validación y autenticación se devuelven como JSON.
+ */
+class ForceJsonResponse
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $request->headers->set('Accept', 'application/json');
+
+        return $next($request);
+    }
+}
