@@ -1,0 +1,27 @@
+# Herramientas locales (composer.phar)
+.tools/composer.phar
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Entornos
+.env
+.env.*
+!.env.example
+
+# Node / PHP (cada app tiene además su propio .gitignore)
+node_modules/
+vendor/
+
+# Resultados de pruebas
+frontend/test-results/
+frontend/playwright-report/
+
+# Piloto automatico: registros y estado local
+scripts/autopiloto/logs/
+scripts/autopiloto/PAUSA
+scripts/autopiloto/autopiloto.lock
+.tools/gh/
