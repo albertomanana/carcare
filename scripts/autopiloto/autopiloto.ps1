@@ -106,7 +106,9 @@ function Invoke-AutopilotRun {
     # Instruccion corta en ASCII: el encargo completo esta en prompt.md (evita problemas de comillas y acentos).
     $instruction = 'Lee el archivo scripts/autopiloto/prompt.md y sigue sus instrucciones al pie de la letra.'
     # Modo auto: aprueba lo seguro y deniega lo arriesgado sin preguntar (nadie mira). Respeta las reglas deny de settings.
-    & claude -p $instruction --permission-mode auto --permission-prompts none 2>&1 | Tee-Object -FilePath $runLog
+    # Out-Host: la salida va a la ventana y al registro, pero no se convierte en valor de retorno de la funcion
+    # (sin el, $reset recibia el texto de Claude y el bucle relanzaba sin esperar).
+    & claude -p $instruction --permission-mode auto --permission-prompts none 2>&1 | Tee-Object -FilePath $runLog | Out-Host
     $exit = $LASTEXITCODE
     Pop-Location
 
@@ -136,7 +138,8 @@ Open-Project
 Start-Sleep -Seconds $StartupDelaySeconds
 
 while ($true) {
-  $reset = Invoke-AutopilotRun
+  # Solo cuenta una fecha de reseteo: cualquier otra salida que se cuele de la funcion se ignora.
+  $reset = Invoke-AutopilotRun | Where-Object { $_ -is [datetime] } | Select-Object -Last 1
   $next = if ($reset) { $reset.AddMinutes(2) } else { (Get-Date).AddMinutes($IntervalMinutes) }
   Write-Log "Proxima comprobacion: $($next.ToString('yyyy-MM-dd HH:mm'))."
   $wait = [Math]::Max(60, [int]($next - (Get-Date)).TotalSeconds)
