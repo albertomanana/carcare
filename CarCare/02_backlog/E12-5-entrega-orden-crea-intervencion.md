@@ -4,7 +4,7 @@
 |-------|-------|
 | Épica | E12 · Órdenes de trabajo y elevadores |
 | Prioridad | Must |
-| Estado | En curso (oleada 1: backend, transacción en el cambio de estado) |
+| Estado | Construido (23/10/2026: `frontend/src/features/workshop/OrderDetailPage.tsx` muestra "Ver en el historial"; la API lo prueba en `WorkOrderTest.php`). Falta verificar la definición de terminado (E2E): tareas 5 y 6 |
 | Para | Taller |
 | Depende de | E12‑3 (líneas y totales), E3 (intervenciones), contrato §3.11. Base del puente taller ↔ particular (D13) |
 

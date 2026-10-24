@@ -4,7 +4,7 @@
 |-------|-------|
 | Épica | E8 · Recordatorios y mapa de zonas 3D |
 | Prioridad | Must |
-| Estado | En curso (oleada 1: backend `GET /zones`, experto‑3d marcadores, frontend panel) |
+| Estado | Construido (23/10/2026: `frontend/src/components/vehicles/ZoneMap.tsx` con vista 3D/2D y rayos X "Ilustrativo", `frontend/src/three/index.tsx` (`CarViewer` y `ZoneMap2D`); API `GET /vehicles/{v}/zones`). Falta verificar la definición de terminado (teclado, lector de pantalla, 360 px): tareas 6 y 8 |
 | Para | Particular y taller |
 | Depende de | E8‑2 (estado de recordatorios), E3‑8 (zona de cada intervención), E14‑2 (coche 3D), E14‑6 (alternativa accesible), ADR‑0004, contrato §3.8 |
 

@@ -4,7 +4,7 @@
 |-------|-------|
 | Épica | E12 · Órdenes de trabajo y elevadores |
 | Prioridad | Must |
-| Estado | En curso (oleada 1: backend `work-orders` y `status`, frontend tablero) |
+| Estado | Construido (23/10/2026: `frontend/src/features/workshop/OrdersPage.tsx` + `components/KanbanBoard.tsx`, `MoveToMenu.tsx`; API con `WorkOrderTest.php`). Falta verificar la definición de terminado (E2E, axe, 360 px): tareas 5 y 6 |
 | Para | Taller (owner, manager, mechanic) |
 | Depende de | E12‑1 (crear orden), E12‑4 (elevadores), E13‑4 (permisos), contrato §3.11 |
 
