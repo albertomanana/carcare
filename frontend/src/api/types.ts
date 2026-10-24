@@ -104,6 +104,26 @@ export interface LoginInput {
   remember?: boolean
 }
 
+/**
+ * POST /auth/forgot-password (contrato §3.1.1). Respuesta 204 SIEMPRE, exista o no la cuenta:
+ * la API nunca revela si un email está registrado.
+ */
+export interface ForgotPasswordInput {
+  email: string
+}
+
+/**
+ * POST /auth/reset-password (contrato §3.1.1). `token` y `email` llegan en el enlace del correo
+ * (`/restablecer?token=…&email=…`). Respuesta 204: cambia la contraseña, invalida el enlace
+ * (un solo uso) y cierra todas las sesiones abiertas de la cuenta. No inicia sesión.
+ */
+export interface ResetPasswordInput {
+  token: string
+  email: string
+  password: string
+  password_confirmation: string
+}
+
 // ───────────────────────── Vehículos ─────────────────────────
 
 export type FuelType =
@@ -228,6 +248,13 @@ export interface MileageLog {
   recorded_at: ISODate
   mileage: number
   source: MileageSource
+  /**
+   * Id del registro que generó la lectura. Siempre es del MISMO vehículo (contrato §3.4.1):
+   *  maintenance → MaintenanceRecord.id (puede estar archivada) · expense → Expense.id ·
+   *  work_order → WorkOrder.id · reminder → Reminder.id (completado) · vehicle_created → el propio vehicle_id.
+   * null en las lecturas manuales y cuando el usuario no puede ver ese origen (gastos para el rol mechanic).
+   */
+  source_id: ID | null
   note: string | null
   created_at: ISODateTime
 }
@@ -604,6 +631,11 @@ export interface Customer {
   notes: string | null
   vehicles_count: number
   open_orders_count: number
+  /**
+   * Cuándo se anonimizó (RGPD, contrato §3.10.1). Si no es null: name = 'Cliente anonimizado',
+   * email/phone/tax_id/notes = null y el cliente ya no se puede editar (409). Es irreversible.
+   */
+  anonymized_at: ISODateTime | null
   created_at: ISODateTime
   updated_at: ISODateTime
 }
@@ -614,6 +646,21 @@ export interface CustomerInput {
   phone?: string | null
   tax_id?: string | null
   notes?: string | null
+}
+
+/**
+ * POST /customers/{c}/export (manage, contrato §3.10.1): copia de los datos del cliente para
+ * entregársela (derecho de acceso y portabilidad). El frontend la guarda como archivo .json.
+ */
+export interface CustomerExport {
+  generated_at: ISODateTime
+  /** Taller que guarda los datos. */
+  workspace: Pick<Workspace, 'id' | 'name'>
+  customer: Customer
+  /** Todos sus vehículos, archivados incluidos. */
+  vehicles: Vehicle[]
+  /** Todas sus órdenes, en cualquier estado y con sus líneas, de la más reciente a la más antigua. */
+  work_orders: WorkOrder[]
 }
 
 export type WorkOrderStatus =

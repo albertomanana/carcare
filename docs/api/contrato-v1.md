@@ -52,8 +52,68 @@ Un usuario puede pertenecer a varios espacios. Las tablas hijas **no** duplican 
 | PATCH | `/api/v1/me` | `{ name?, email? }` | `Resource<Me>` |
 | PUT | `/api/v1/me/password` | `{ current_password, password, password_confirmation }` | 204 |
 | DELETE | `/api/v1/me` | `{ password }` | 204. Borra el espacio personal y sus datos; en talleres donde es `owner` único, borra el taller. |
+| POST | `/api/v1/auth/forgot-password` | `ForgotPasswordInput` | **204 siempre, exista o no la cuenta** · 422 solo si el email falta o no tiene formato · 429 a partir de la 6.ª petición en un minuto desde la misma IP. Ver §3.1.1 |
+| POST | `/api/v1/auth/reset-password` | `ResetPasswordInput` | 204 (cierra todas las sesiones de la cuenta; no inicia sesión) · 422 `errors.token` / `errors.password` / `errors.email` · 429 igual que el anterior. Ver §3.1.1 |
 
 Validación de registro: `name` 2–100; `email` válido, único (case-insensitive, se guarda en minúsculas); `password` ≥ 8 con confirmación; `account_type` personal|workshop; `workshop_name` obligatorio si workshop (2–100).
+
+### 3.1.1 Recuperar la contraseña
+
+E1‑6 · D17 = A (decidida por Alberto el 24/10/2026) · [ADR‑0006](../arquitectura/ADR-0006-recuperar-contrasena.md).
+
+**Flujo**
+1. En la pantalla `/recuperar`, la SPA pide `GET /sanctum/csrf-cookie` y envía `POST /auth/forgot-password { email }`.
+2. La API normaliza el email (minúsculas y sin espacios, como en el login).
+   - **Si existe una cuenta**, el broker de contraseñas de Laravel (`Password::sendResetLink`) crea un token y envía el correo.
+   - **Si no existe, no hace nada.**
+   - En los dos casos responde **204**, sin cuerpo.
+   - La SPA muestra siempre el mismo texto: "Si hay una cuenta con ese email, te hemos enviado un enlace para crear una contraseña nueva. Caduca en 60 minutos."
+3. El correo, con asunto y texto en español:
+   - lleva el enlace `{FRONTEND_URL}/restablecer?token={token}&email={email codificado para URL}`;
+   - dice que caduca en 60 minutos y que, si no lo has pedido tú, puedes ignorarlo.
+
+   `FRONTEND_URL` sale de `config('app.frontend_url')`, con valor por defecto `http://localhost:5173`. El enlace apunta a la SPA, nunca a la API (`ResetPassword::createUrlUsing`).
+4. La pantalla `/restablecer` lee `token` y `email` de la URL, pide la contraseña nueva dos veces y envía `POST /auth/reset-password`. Con 204, navega a `/entrar` con el aviso: "Contraseña cambiada. Entra con la nueva; hemos cerrado las sesiones abiertas."
+
+**Token**
+- Lo crea el broker de Laravel y lo guarda **hasheado** en `password_reset_tokens`. La tabla ya existe en la migración de usuarios; en la BD el token nunca está en claro.
+- **Caduca a los 60 minutos** (`config/auth.php`: `passwords.users.expire = 60`).
+- **Es de un solo uso**: un restablecimiento correcto lo borra. Si se pide otro enlace, sustituye al anterior: solo vale el último.
+- El broker no envía más de un correo por minuto a la misma cuenta (`passwords.users.throttle = 60`). Si se pide antes, la API no envía nada y **responde igualmente 204**: el estado `RESET_THROTTLED` del broker no se distingue de un envío correcto, ni tampoco `INVALID_USER`.
+
+**Al restablecer con éxito** (en una transacción):
+- se guarda el hash de la contraseña nueva y se rota `remember_token`, así que las cookies "Recordarme" dejan de valer;
+- se borra el token;
+- **se cierran todas las sesiones abiertas de la cuenta**: se borran las filas de `sessions` con ese `user_id` (el driver de sesión es `database`), incluida la del navegador actual si tuviera una;
+- **no se inicia sesión**: el usuario entra con la contraseña nueva desde `/entrar`.
+
+**Errores**
+
+| Caso | Respuesta |
+|------|-----------|
+| `email` vacío o sin formato de email (en los dos endpoints) | 422 `errors.email`, mensaje en español |
+| `password` con menos de 8 o más de 255 caracteres, o con una confirmación distinta (mismas reglas que el registro) | 422 `errors.password` |
+| `token` vacío | 422 `errors.token` |
+| Token incorrecto, caducado o ya usado, **o** email sin cuenta | 422 `errors.token = ["El enlace para cambiar la contraseña no es válido o ha caducado. Pide uno nuevo."]`: **el mismo mensaje en todos estos casos** |
+| Más de 5 peticiones por minuto desde la misma IP, con un contador por endpoint (`throttle:5,1`) | 429 con cabecera `Retry-After` y `message` en español. Cuenta todas las peticiones, exista o no la cuenta, así que tampoco revela nada |
+
+Para que el tiempo de respuesta no delate si la cuenta existe (el broker hashea el token con bcrypt), se recomienda calcular un hash de relleno cuando la cuenta no existe. Ver ADR‑0006.
+
+**Sanctum y CSRF**
+- Las dos rutas son públicas, fuera de `auth:sanctum`, como `login`: no necesitan sesión iniciada ni la crean.
+- Como llegan desde el dominio de la SPA, pasan por el middleware *stateful* de Sanctum y **exigen CSRF**. La SPA llama antes a `GET /sanctum/csrf-cookie` (`ensureCsrfCookie()`, igual que en el login) y envía `X-XSRF-TOKEN`.
+- Sin ese token la API responde 419, y el cliente HTTP ya lo renueva y reintenta una vez.
+
+**Rutas de la SPA**
+- `/recuperar` (formulario del email) y `/restablecer?token=…&email=…` (contraseña nueva) son rutas de invitado, como `/entrar` (`GuestOnly`). Con una sesión abierta redirigen a la app, donde la contraseña se cambia desde Ajustes (`PUT /me/password`).
+- Si a `/restablecer` le falta `token` o `email`, no muestra el formulario: explica que el enlace está incompleto y ofrece "Pedir un enlace nuevo", que lleva a `/recuperar`.
+- Ante un 422 en `errors.token`, la SPA muestra el mensaje con el mismo enlace a `/recuperar`.
+- `LoginPage` muestra el enlace "¿Has olvidado tu contraseña?", que lleva a `/recuperar`.
+- La SPA no carga recursos de terceros, así que el token de la URL no se filtra por la cabecera `Referer`. El token no se guarda en `localStorage` ni se escribe en la consola.
+
+**Correo solo en local (D17 = A)**
+- `MAIL_MAILER=log` es el valor por defecto de `config/mail.php`. Laravel escribe el correo completo en `storage/logs/laravel.log`, sin servicio externo.
+- Para pasar a un servicio real basta con cambiar la configuración del mailer: el código no cambia.
 
 ### 3.2 Espacios, miembros, dashboard, actividad
 
@@ -88,7 +148,7 @@ Validación de registro: `name` 2–100; `email` válido, único (case-insensiti
 | GET | `/api/v1/vehicles/{v}/journal` | view | `{ data: JournalDay[] }`, `?from&to` (def. últimos 30 días), días sin eventos omitidos, desc |
 | GET | `/api/v1/vehicles/{v}/report` | view | `Resource<VehicleReport>` |
 
-Validación: `make` 1–60, `model` 1–80, `year` 1900…(año actual + 1), `color_hex` `^#[0-9A-Fa-f]{6}$`, `plate` se normaliza (mayúsculas, sin espacios ni guiones) y es única por espacio entre no archivados, `vin` 17 caracteres `[A-HJ-NPR-Z0-9]` única por espacio, `purchase_mileage`/`current_mileage` enteros 0–2.000.000, `customer_id` debe ser del mismo espacio y **solo en talleres** (422 en personal).
+Validación: `make` 1–60, `model` 1–80, `year` 1900…(año actual + 1), `color_hex` `^#[0-9A-Fa-f]{6}$`, `plate` se normaliza (mayúsculas, sin espacios ni guiones) y es única por espacio entre no archivados, `vin` 17 caracteres `[A-HJ-NPR-Z0-9]` única por espacio, `purchase_mileage`/`current_mileage` enteros 0–2.000.000, `customer_id` debe ser del mismo espacio y **solo en talleres** (422 en personal); si ese cliente está anonimizado, 422 `errors.customer_id = ["Este cliente está anonimizado: crea uno nuevo."]` (§3.10.1).
 
 ### 3.4 Kilometraje
 
@@ -103,6 +163,26 @@ Validación: `make` 1–60, `model` 1–80, `year` 1900…(año actual + 1), `co
 2. `vehicles.current_mileage` = km de la lectura **más reciente por fecha** (desempate: mayor km); `mileage_updated_at` = esa fecha.
 3. Si el nuevo km es **menor** que el de alguna lectura con fecha **anterior o igual**, o **mayor** que el de una lectura con fecha **posterior**, la API responde 422 `errors.mileage = ["El kilometraje no cuadra con lecturas anteriores (último: 84.200 km el 12/03/2026). Confírmalo si es correcto."]` salvo que llegue `confirm_mileage_drop: true`.
 4. `recorded_at` no puede ser futura.
+
+### 3.4.1 Origen de cada lectura
+
+E7‑1. `MileageLog.source_id` es el id del registro que generó la lectura. Se guarda en la columna `mileage_logs.source_id`, que ya existía y ya rellenaban los servicios; hasta ahora no se devolvía.
+
+| `source` | `source_id` apunta a | Ciclo de vida de la lectura |
+|----------|----------------------|-----------------------------|
+| `manual` | `null` | Se crea con `POST /mileage`. Son las únicas que se borran con `DELETE /mileage/{log}` |
+| `vehicle_created` | El propio vehículo (`= vehicle_id`) | Se crea al dar de alta el vehículo con `current_mileage` |
+| `maintenance` | `MaintenanceRecord.id` | Se crea o actualiza al guardar una intervención con km. Archivar la intervención **no** borra la lectura (sigue siendo un dato real), así que el origen puede ser una intervención archivada |
+| `expense` | `Expense.id` | Se crea o actualiza al guardar un gasto con km, y se borra con el gasto. El gasto vinculado a una intervención (D3‑A) **no** tiene lectura propia: la única es la de la intervención |
+| `work_order` | `WorkOrder.id` | Se crea con `mileage_in` y se borra con la orden. Si la orden cambia de vehículo, la lectura pasa al nuevo. La intervención que se crea al entregar la orden **no** genera otra lectura |
+| `reminder` | `Reminder.id` (completado) | Se crea al completar el recordatorio indicando km. **Nuevo:** borrar el recordatorio (`DELETE /reminders/{r}`) borra su lectura y recalcula `current_mileage`, igual que con gastos y órdenes |
+
+Reglas:
+1. **Mismo vehículo, siempre.** `source_id` es de un registro del mismo vehículo y, por tanto, del mismo espacio: nunca apunta a otro espacio. Lo garantizan los servicios, que solo crean lecturas a partir de registros de ese vehículo.
+2. **Nunca huérfano.** Borrar el origen borra su lectura (tabla anterior). Puede que ya haya lecturas huérfanas: las de recordatorios borrados antes de este cambio. Una migración de datos las pasa a `source = manual`, `source_id = null` y `note = "Recordatorio eliminado"`. Así siguen contando y se pueden borrar.
+3. **Depende del rol, como `revenue`.** Si el usuario no puede ver gastos (rol `mechanic` en un taller), las lecturas `expense` llegan con `source_id = null`; el `source` sí llega. Vale para `GET /vehicles/{v}/mileage` y para `VehicleReport.mileage_logs`.
+4. **El enlace no da acceso a nada.** Al seguirlo, el endpoint de destino aplica su propia autorización: 404 si es de otro espacio, 403 si el rol no alcanza.
+5. **Cuándo enlaza la SPA.** Enlaza cuando `source_id` no es null y `source` es `maintenance`, `expense`, `work_order` o `reminder`. Con `manual`, con `vehicle_created` o con `source_id = null`, el origen se muestra como texto.
 
 ### 3.5 Intervenciones
 
@@ -136,7 +216,7 @@ Validación: `amount` > 0; `expense_date` no futura; `fuel_quantity`, `fuel_unit
 | GET | `/api/v1/vehicles/{v}/reminders` | view | `{ data: Reminder[] }`, `?status=pending|done|dismissed|all` (def. pending). Orden: overdue, soon, ok, unknown; luego por fecha |
 | POST | `/api/v1/vehicles/{v}/reminders` | operate | `ReminderInput` → 201. Al menos `due_date` o `due_mileage` (422 si ninguno) |
 | PATCH | `/api/v1/reminders/{r}` | operate | |
-| DELETE | `/api/v1/reminders/{r}` | operate | 204 |
+| DELETE | `/api/v1/reminders/{r}` | operate | 204. Si se completó con km, borra también su lectura (`source = reminder`) y recalcula `current_mileage` (§3.4.1) |
 | POST | `/api/v1/reminders/{r}/complete` | operate | `CompleteReminderInput` → `{ data: { completed: Reminder, next: Reminder | null } }` |
 | POST | `/api/v1/reminders/{r}/dismiss` | operate | `Resource<Reminder>` |
 
@@ -174,9 +254,72 @@ Solo en espacios `workshop` (en `personal` → 404 en estas rutas).
 |--------|------|---------|
 | GET | `/api/v1/workspaces/{ws}/customers` | view · `Paginated<Customer>`, `?search=` (nombre, email, teléfono, NIF) |
 | POST | `/api/v1/workspaces/{ws}/customers` | operate · `CustomerInput` → 201 |
-| GET/PATCH | `/api/v1/customers/{c}` | view / operate |
-| DELETE | `/api/v1/customers/{c}` | manage · 409 si tiene órdenes abiertas; sus vehículos quedan con `customer = null` |
+| GET/PATCH | `/api/v1/customers/{c}` | view / operate · PATCH ⇒ 409 si está anonimizado ("Este cliente está anonimizado: sus datos ya no se pueden editar.") |
+| DELETE | `/api/v1/customers/{c}` | manage · 409 si tiene órdenes abiertas; sus vehículos quedan con `customer = null`; las frases de actividad que lo nombran se reescriben sin su nombre (§3.10.1) |
 | GET | `/api/v1/customers/{c}/vehicles` | view · `{ data: Vehicle[] }` |
+| POST | `/api/v1/customers/{c}/export` | manage · 200 `Resource<CustomerExport>` (§3.10.1) |
+| POST | `/api/v1/customers/{c}/anonymize` | manage · sin cuerpo · 200 `Resource<Customer>` · 409 si ya está anonimizado o tiene órdenes abiertas (§3.10.1) |
+
+### 3.10.1 Derechos RGPD del cliente
+
+E11‑6 · [ADR‑0005](../arquitectura/ADR-0005-rgpd-cliente-taller.md).
+
+**Permisos.** Solo owner y manager (`manage`):
+- mechanic ⇒ 403;
+- un cliente de otro espacio ⇒ 404;
+- en los espacios personales no hay clientes ⇒ 404.
+
+**Exportar: `POST /api/v1/customers/{c}/export`**
+- **Por qué POST y no GET:** deja rastro en la actividad, y no debe repetirse por cachés, recargas ni reintentos automáticos. En la SPA es una mutación, no una consulta.
+- Responde 200 `Resource<CustomerExport>`, con la cabecera `Cache-Control: no-store`. Sin paginar. Contiene:
+  - `generated_at`;
+  - `workspace` (`id`, `name`): el taller que guarda los datos;
+  - `customer`, con todos sus campos;
+  - `vehicles`: todos los que tienen `customer_id = c`, archivados incluidos, con la forma `Vehicle`;
+  - `work_orders`: todas las que tienen `customer_id = c`, en cualquier estado, con sus `items` y ordenadas por `received_at` descendente.
+- No incluye las intervenciones, los gastos ni los documentos de los vehículos: son datos técnicos del coche, no datos de contacto del cliente (ADR‑0005).
+- La SPA guarda `data` como archivo `cliente-{id}-{AAAA-MM-DD}.json` (Blob y descarga), sin una segunda petición.
+- También funciona con un cliente anonimizado: exporta lo que queda.
+- Registra la actividad `customer.exported`, **sin el nombre** en la frase: "Ana exportó los datos de un cliente".
+
+**Anonimizar: `POST /api/v1/customers/{c}/anonymize`** (sin cuerpo)
+- Hace todo en una transacción:
+  - `name = "Cliente anonimizado"`;
+  - `email`, `phone`, `tax_id` y `notes` pasan a null;
+  - `anonymized_at` = ahora.
+
+  Los valores antiguos se sobrescriben y no se copian a ninguna otra tabla.
+- Además, en la misma transacción:
+  - reescribe sin el nombre las frases de actividad de ese cliente (`entity_type = customer`, `entity_id = c`; hoy solo `customer.created`), p. ej. "Ana dio de alta a un cliente (anonimizado)";
+  - registra `customer.anonymized`: "Ana anonimizó los datos de un cliente".
+- Responde 200 `Resource<Customer>`, ya anonimizado.
+- **Se conserva:**
+  - el cliente, con el mismo `id`;
+  - su relación con sus vehículos y sus órdenes;
+  - todo el historial técnico: vehículos (con matrícula y VIN), lecturas de km, intervenciones, órdenes con líneas e importes, y documentos.
+
+  Las órdenes y los vehículos muestran `customer: { name: "Cliente anonimizado", phone: null }`. La analítica sigue sumando sus órdenes; en `by_customer` aparece con ese nombre.
+- **Es irreversible**: no hay ningún endpoint para deshacerlo. Antes de llamar a la API, la SPA pide una confirmación explícita en un diálogo de peligro, que dice:
+  - qué se borra y qué se conserva;
+  - que no se puede deshacer;
+  - que conviene exportar antes.
+- **Errores:**
+  - 409 "Este cliente ya está anonimizado." si `anonymized_at` no es null;
+  - 409 "No se puede anonimizar un cliente con órdenes de trabajo abiertas. Entrégalas o cancélalas antes." Es la misma regla que para eliminar.
+- **Un cliente ya anonimizado:**
+  - `PATCH` ⇒ 409;
+  - no se puede asignar a ningún vehículo: `customer_id` ⇒ 422 (§3.3);
+  - `DELETE` sigue permitido, con permiso manage;
+  - se pueden abrir órdenes nuevas para sus vehículos, y el cliente de esas órdenes será el anonimizado;
+  - se sigue mostrando en `GET /customers` y en las búsquedas, con su nombre nuevo;
+  - la SPA lo marca con "Anonimizado" (`anonymized_at`) y oculta "Editar" y "Anonimizar".
+- **Lo que no cubre** (la SPA lo advierte en la confirmación):
+  - los textos libres que el taller haya escrito en órdenes o vehículos (título, síntoma, diagnóstico, apodo);
+  - los archivos adjuntos, como una factura en PDF con su nombre.
+
+  Esos datos se revisan y se editan o se borran a mano.
+
+**Eliminar (`DELETE /customers/{c}`, cambio):** además de lo que ya hacía, reescribe sin el nombre las frases de actividad del cliente, igual que al anonimizar. Así, borrar a un cliente no deja su nombre en el registro de actividad.
 
 ### 3.11 Taller: órdenes de trabajo y elevadores
 
@@ -200,7 +343,12 @@ Reglas:
 
 ### 3.12 Actividad (auditoría ligera)
 
-Cada acción de escritura relevante registra un `Activity` (sin secretos ni datos personales sensibles en `metadata`): `vehicle.created|updated|archived|restored|deleted`, `mileage.recorded`, `maintenance.created|updated|archived`, `expense.created|updated|deleted`, `reminder.created|completed|dismissed`, `document.uploaded|deleted`, `customer.created`, `work_order.created|updated|status_changed`, `member.added|removed|role_changed`. `summary` en español listo para mostrar.
+Cada acción de escritura relevante registra un `Activity` (sin secretos ni datos personales sensibles en `metadata`): `vehicle.created|updated|archived|restored|deleted`, `mileage.recorded`, `maintenance.created|updated|archived`, `expense.created|updated|deleted`, `reminder.created|completed|dismissed`, `document.uploaded|deleted`, `customer.created|exported|anonymized`, `work_order.created|updated|status_changed`, `member.added|removed|role_changed`. `summary` en español listo para mostrar.
+
+Datos del cliente en la actividad (§3.10.1):
+- Las frases nunca llevan el email, el teléfono, el NIF ni las notas del cliente.
+- El nombre solo aparece en `customer.created`, y se reescribe sin él al anonimizar o eliminar al cliente.
+- `customer.exported` y `customer.anonymized` no lo llevan nunca.
 
 ## 4. Analítica: definiciones
 
@@ -225,3 +373,8 @@ Cada acción de escritura relevante registra un `Activity` (sin secretos ni dato
 | Fecha | Cambio | Aprobado por |
 |-------|--------|--------------|
 | 2026-10-21 | Versión inicial: espacios personal/taller, zonas 3D, diario, órdenes de trabajo | Arquitecto (sesión de arranque) |
+| 2026-10-24 | **Tarea 27 (E7‑1), origen de cada lectura** (§3.4.1). Nuevo `MileageLog.source_id`: id del registro de origen, siempre del mismo vehículo. Es null en las manuales y, para el rol mechanic, en las lecturas de gastos. Borrar un recordatorio borra su lectura (§3.7). Migración de datos para las lecturas huérfanas. Aditivo | Arquitecto |
+| 2026-10-24 | **Tarea 28 (E1‑6), recuperar la contraseña** (§3.1.1). Nuevos `POST /auth/forgot-password` y `POST /auth/reset-password`, y tipos `ForgotPasswordInput` y `ResetPasswordInput`. Detalles: 204 exista o no la cuenta; token hasheado, de un solo uso y que caduca a los 60 min; 429 a partir de la 6.ª petición en un minuto por IP; cierra todas las sesiones y no inicia sesión; CSRF como en el login; correo solo en el log. Rutas de la SPA: `/recuperar` y `/restablecer`. [ADR‑0006](../arquitectura/ADR-0006-recuperar-contrasena.md). Aditivo | Arquitecto (D17 = A, decidida por Alberto el 24/10) |
+| 2026-10-24 | **Tarea 29 (E11‑6), derechos RGPD del cliente** (§3.10.1). Nuevos `Customer.anonymized_at`, tipo `CustomerExport` y `POST /customers/{c}/export` y `/anonymize` (manage). Cambios de reglas: PATCH de un cliente anonimizado ⇒ 409; asignar a un vehículo un cliente anonimizado ⇒ 422; anonimizar o eliminar reescribe la actividad sin el nombre. Nuevas actividades `customer.exported` y `customer.anonymized`. [ADR‑0005](../arquitectura/ADR-0005-rgpd-cliente-taller.md). Aditivo | Arquitecto |
+
+> **Efecto en los tests del backend (24/10).** `ContractShapeTest` compara las claves de cada interfaz de `types.ts` con `tests/Support/Contract.php`. Hasta que el paso 2 de las tareas 27 y 29 añada `source_id` a `mileageLog()` y `anonymized_at` a `customer()`, fallan los casos `MileageLog` y `Customer` del test "las especificaciones tienen las mismas claves que las interfaces de types.ts". Es el aviso previsto del *contract-first*, no una regresión de otra tarea.
