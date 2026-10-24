@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boceto · Inicio simplificado</title>
+<style>
+@font-face {
+  font-family: 'Inter Variable';
+  src: url('file:///C:/Users/Alberto/Desktop/CarCare/frontend/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
+}
+/* ───── Dirección A · Claro sobrio ───── */
+:root, [data-dir='A'] {
+  --bg: #F7F7F5; --surface: #FFFFFF; --line: #E3E2DD; --line-strong: #8A8984;
+  --fg: #1B1D1F; --muted: #575C61; --subtle: #64696F;
+  --accent: #24613A; --on-accent: #FFFFFF; --accent-soft: #E6EFE8;
+  --danger: #B42318; --warning: #8A5300; --ok: #1E6B43;
+  --bar: #8F8E88;
+  --r-control: 6px; --r-box: 10px;
+  --font-ui: 'Inter Variable', system-ui, sans-serif;
+  --font-head: 'Inter Variable', system-ui, sans-serif;
+  --h1: 24px; --h1-weight: 600; --h2: 15px; --h2-weight: 600;
+  --boxed: 1;
+}
+[data-dir='B'] {
+  --bg: #151617; --surface: #1C1E1F; --line: #2D3032; --line-strong: #6E7377;
+  --fg: #ECECEA; --muted: #A3A6A8; --subtle: #8B8F92;
+  --accent: #BFE07A; --on-accent: #151617; --accent-soft: #23281B;
+  --danger: #F2766B; --warning: #E2AA4F; --ok: #6CC79B;
+  --bar: #666B6F;
+  --r-control: 6px; --r-box: 8px;
+  --h1: 22px; --h1-weight: 600; --h2: 14px; --h2-weight: 600;
+}
+[data-dir='C'] {
+  --bg: #F3F0E8; --surface: #FBF9F4; --line: #DAD3C5; --line-strong: #857E70;
+  --fg: #24211C; --muted: #5B554B; --subtle: #6A6458;
+  --accent: #1F4D3A; --on-accent: #FBF9F4; --accent-soft: #E3E8DF;
+  --danger: #A3271B; --warning: #855000; --ok: #2B6A44;
+  --bar: #8F8676;
+  --r-control: 4px; --r-box: 4px;
+  --font-head: Georgia, 'Source Serif 4', serif;
+  --h1: 30px; --h1-weight: 400; --h2: 20px; --h2-weight: 400;
+}
+/* ───── Modo alternativo de cada dirección (#A-alt, #B-alt, #C-alt) ───── */
+[data-dir='A'][data-mode='alt'] {
+  --bg: #161718; --surface: #1E1F21; --line: #2E3033; --line-strong: #71767A;
+  --fg: #EDEDEB; --muted: #A6A9AC; --subtle: #8E9296;
+  --accent: #7CC495; --on-accent: #111312; --accent-soft: #1F2A23;
+  --danger: #F07A6E; --warning: #E0A854; --ok: #6CC79B;
+  --bar: #6B7074;
+}
+[data-dir='B'][data-mode='alt'] {
+  --bg: #F6F6F5; --surface: #FFFFFF; --line: #E2E2DF; --line-strong: #878783;
+  --fg: #18191A; --muted: #55585B; --subtle: #62666A;
+  --accent: #BFE07A; --on-accent: #18191A; --accent-soft: #EEF5DC;
+  --danger: #B42318; --warning: #8A5300; --ok: #1E6B43;
+  --bar: #8D8E8A; --bar-cur: #3D6B00;
+}
+[data-dir='C'][data-mode='alt'] {
+  --bg: #1A1814; --surface: #221F1A; --line: #3A352D; --line-strong: #7E7667;
+  --fg: #EDE8DD; --muted: #B3AB9C; --subtle: #9C9485;
+  --accent: #8DBFA3; --on-accent: #1A1814; --accent-soft: #26302A;
+  --danger: #E8806F; --warning: #D9A55A; --ok: #8CC79F;
+  --bar: #756D5F;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; }
+a { color: inherit; }
+/* Barra superior */
+.top { border-bottom: 1px solid var(--line); background: var(--bg); }
+.top-in { max-width: 1000px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 28px; padding: 0 20px; }
+.brand { font-weight: 650; letter-spacing: -0.01em; font-size: 16px; }
+[data-dir='C'] .brand { font-family: var(--font-head); font-weight: 400; font-size: 19px; }
+.nav { display: flex; gap: 4px; }
+.nav a { text-decoration: none; color: var(--muted); padding: 8px 10px; border-radius: var(--r-control); }
+.nav a.on { color: var(--fg); background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.spacer { flex: 1; }
+.search { color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-control); padding: 6px 10px; min-width: 200px; background: var(--surface); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--fg) 10%, transparent); font-size: 12px; font-weight: 600; }
+/* Contenido */
+main { max-width: 1000px; margin: 0 auto; padding: 28px 20px 64px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+h1 { font-family: var(--font-head); font-size: var(--h1); font-weight: var(--h1-weight); margin: 0; letter-spacing: -0.01em; }
+.lead { color: var(--muted); margin: 4px 0 0; }
+.btn { font: inherit; font-weight: 550; border-radius: var(--r-control); padding: 0 14px; height: 38px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.link { color: var(--accent); text-decoration: none; font-weight: 550; }
+[data-dir='B'] .link { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+.textbtn { font: inherit; background: none; border: 0; color: var(--muted); padding: 8px 6px; border-radius: var(--r-control); }
+section { margin-top: 32px; }
+.sh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+h2 { font-family: var(--font-head); font-size: var(--h2); font-weight: var(--h2-weight); margin: 0; }
+.note { color: var(--subtle); font-size: 13px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-box); }
+[data-dir='B'] .box { background: transparent; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+[data-dir='C'] .box { background: transparent; border: 0; border-top: 2px solid var(--fg); border-radius: 0; }
+.row { display: grid; align-items: center; gap: 16px; padding: 11px 16px; border-top: 1px solid var(--line); }
+.box > .row:first-child { border-top: 0; }
+[data-dir='B'] .row, [data-dir='C'] .row { padding-left: 2px; padding-right: 2px; }
+[data-dir='B'] .box > .row:first-child, [data-dir='C'] .box > .row:first-child { border-top: 0; }
+.pend { grid-template-columns: 104px minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1.3fr) auto; }
+.veh { grid-template-columns: 64px minmax(0, 1.6fr) minmax(0, 1.4fr) auto; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-weight: 550; font-size: 13px; }
+.status svg { width: 14px; height: 14px; flex: none; }
+.danger { color: var(--danger); } .warning { color: var(--warning); } .ok { color: var(--ok); }
+.t { font-weight: 550; }
+.m { color: var(--muted); }
+.more { padding: 10px 16px 12px; border-top: 1px solid var(--line); }
+[data-dir='B'] .more, [data-dir='C'] .more { padding-left: 2px; }
+.spend { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 16px; }
+[data-dir='B'] .spend, [data-dir='C'] .spend { padding: 16px 2px; }
+.figs { display: flex; gap: 32px; }
+.fig .l { color: var(--muted); font-size: 13px; }
+.fig .v { white-space: nowrap; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+[data-dir='C'] .fig .v { font-weight: 500; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 64px; }
+.bars span { width: 14px; background: var(--bar); border-radius: 2px 2px 0 0; }
+.bars span.cur { background: var(--bar-cur, var(--accent)); }
+.bars-l { display: flex; gap: 6px; font-size: 10px; color: var(--subtle); margin-top: 4px; }
+.bars-l span { width: 14px; text-align: center; }
+.act li { list-style: none; }
+.act { margin: 0; padding: 0; }
+.act .row { grid-template-columns: minmax(0, 1fr) auto; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+.car { width: 64px; height: 26px; }
+.tabbar { display: none; }
+.dirlabel { position: fixed; right: 12px; bottom: 10px; font-size: 11px; color: var(--subtle); }
+/* Móvil */
+@media (max-width: 640px) {
+  .nav, .search { display: none; }
+  .top-in { gap: 12px; padding: 0 16px; }
+  main { padding: 20px 16px 96px; }
+  .head .btn.primary { display: none; }
+  .pend { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+  .pend .status { grid-column: 1; }
+  .pend .t { grid-column: 1; }
+  .pend .veh-n, .pend .when { grid-column: 1; color: var(--muted); font-size: 13px; }
+  .pend .act-b { grid-column: 2; grid-row: 1 / span 3; }
+  .veh { grid-template-columns: 56px minmax(0, 1fr); gap: 0 12px; }
+  .veh .car { grid-row: 1 / span 2; width: 56px; }
+  .veh .model { display: none; }
+  .veh > span:first-of-type { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .veh > span:last-child { grid-column: 2; color: var(--muted); }
+  .veh .textbtn { padding: 0 0 0 8px; min-height: 32px; color: var(--accent); }
+  .dirlabel { display: none; }
+  .cols { grid-template-columns: 1fr; gap: 0; }
+  .spend { flex-direction: column; align-items: flex-start; }
+  .tabbar { display: flex; position: fixed; inset: auto 0 0 0; height: 60px; border-top: 1px solid var(--line); background: var(--bg); align-items: center; justify-content: space-around; font-size: 11px; color: var(--muted); }
+  .tabbar .on { color: var(--fg); font-weight: 600; }
+  .tabbar .btn.primary { height: 40px; }
+  .dirlabel { bottom: 66px; }
+  .textbtn { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <span class="brand">CarCare</span>
+  <nav class="nav"><a class="on" href="#">Inicio</a><a href="#">Garaje</a><a href="#">Agenda</a></nav>
+  <span class="spacer"></span>
+  <span class="search">Buscar…</span>
+  <span class="avatar">LD</span>
+</div></header>
+
+<main>
+  <div class="head">
+    <div>
+      <h1>Inicio</h1>
+      <p class="lead">1 aviso vencido y 2 próximos.</p>
+    </div>
+    <button class="btn primary">+ Registrar ▾</button>
+  </div>
+
+  <section>
+    <div class="sh"><h2>Pendiente</h2><span class="note">Según tus intervalos, no medido</span></div>
+    <div class="box">
+      <div class="row pend">
+        <span class="status danger"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><rect x="7.1" y="3.6" width="1.8" height="5.6" rx=".9" fill="var(--surface)"/><circle cx="8" cy="11.6" r="1.1" fill="var(--surface)"/></svg>Vencido</span>
+        <span class="t">Cambio de aceite</span>
+        <span class="veh-n m">El rojo</span>
+        <span class="when num">pasado en 443 km</span>
+        <button class="textbtn act-b">Marcar hecho</button>
+      </div>
+      <div class="row pend">
+        <span class="status warning"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 4.5V8l2.3 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Próximo</span>
+        <span class="t">Renovar el seguro</span>
+        <span class="veh-n m">El rojo</span>
+        <span class="when num">9 nov · en 17 días</span>
+        <button class="textbtn act-b">Marcar hecho</button>
+      </div>
+      <div class="row pend">
+        <span class="status warning"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 4.5V8l2.3 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Próximo</span>
+        <span class="t">Cambio de aceite y filtros</span>
+        <span class="veh-n m">Kia Sportage</span>
+        <span class="when num">dentro de 641 km</span>
+        <button class="textbtn act-b">Marcar hecho</button>
+      </div>
+      <div class="more"><a class="link" href="#">Ver la agenda completa (11)</a></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sh"><h2>Vehículos</h2><a class="link" href="#">Añadir vehículo</a></div>
+    <div class="box">
+      <div class="row veh">
+        <svg class="car" viewBox="0 0 120 48" aria-hidden="true"><path d="M6 36 Q5 27 14 25 L33 22 L46 12 Q50 10 56 10 L82 10 Q89 10 94 15 L103 23 Q114 25 114 33 L114 37 L6 37 Z" fill="#C8312B"/><path d="M48 14 L56 13 L70 13 L70 22 L40 22 Z M74 13 L84 13 Q88 13 91 17 L95 22 L74 22 Z" fill="rgba(255,255,255,.55)"/><circle cx="30" cy="37" r="8" fill="#222"/><circle cx="92" cy="37" r="8" fill="#222"/><circle cx="30" cy="37" r="3.5" fill="#999"/><circle cx="92" cy="37" r="3.5" fill="#999"/></svg>
+        <span><span class="t">El rojo</span> <span class="m">· 4821 KTB</span></span>
+        <span class="model m">Seat Ibiza 1.0 TSI · 2019</span>
+        <span class="num">81.570 km <span class="m">· ayer</span> <button class="textbtn">Anotar km</button></span>
+      </div>
+      <div class="row veh">
+        <svg class="car" viewBox="0 0 120 48" aria-hidden="true"><path d="M6 36 Q5 25 14 23 L30 20 L40 9 Q43 7 48 7 L92 7 Q98 7 101 12 L106 21 Q114 23 114 31 L114 37 L6 37 Z" fill="#6B7280"/><path d="M43 11 L60 10 L60 20 L34 20 Z M64 10 L90 10 Q95 10 97 14 L100 20 L64 20 Z" fill="rgba(255,255,255,.55)"/><circle cx="30" cy="37" r="8.5" fill="#222"/><circle cx="92" cy="37" r="8.5" fill="#222"/><circle cx="30" cy="37" r="3.8" fill="#999"/><circle cx="92" cy="37" r="3.8" fill="#999"/></svg>
+        <span><span class="t">Kia Sportage</span> <span class="m">· 7310 LFW</span></span>
+        <span class="model m">Kia Sportage 1.6 CRDi · 2021</span>
+        <span class="num">54.000 km <span class="m">· hoy</span> <button class="textbtn">Anotar km</button></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section>
+      <div class="sh"><h2>Gasto</h2><a class="link" href="#">Ver gastos</a></div>
+      <div class="box">
+        <div class="spend">
+          <div class="figs">
+            <div class="fig"><div class="l">Este mes</div><div class="v num">470,26 €</div></div>
+            <div class="fig"><div class="l">Este año</div><div class="v num">5.274,31 €</div></div>
+          </div>
+          <div>
+            <div class="bars" aria-label="Gasto de los últimos 12 meses">
+              <span style="height:54px"></span><span style="height:39px"></span><span style="height:27px"></span><span style="height:32px"></span><span style="height:64px"></span><span style="height:56px"></span><span style="height:38px"></span><span style="height:39px"></span><span style="height:33px"></span><span style="height:45px"></span><span style="height:38px"></span><span class="cur" style="height:37px"></span>
+            </div>
+            <div class="bars-l"><span>n</span><span>d</span><span>e</span><span>f</span><span>m</span><span>a</span><span>m</span><span>j</span><span>j</span><span>a</span><span>s</span><span>o</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="sh"><h2>Último registrado</h2><a class="link" href="#">Ver diario</a></div>
+      <ul class="box act">
+        <li class="row"><span>54.000 km en Kia Sportage</span><span class="m">hace 26 min</span></li>
+        <li class="row"><span>Aparcamiento, 2,90 € · Kia Sportage</span><span class="m">ayer</span></li>
+        <li class="row"><span>81.570 km en El rojo</span><span class="m">ayer</span></li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<nav class="tabbar"><span class="on">Inicio</span><span>Garaje</span><button class="btn primary">+ Registrar</button><span>Agenda</span><span>Más</span></nav>
+<span class="dirlabel" id="dl"></span>
+<script>
+  // #A, #B, #C (modo por defecto de cada dirección) o #A-alt, #B-alt, #C-alt (el otro modo)
+  const [d, m] = (location.hash || '#A').slice(1).split('-')
+  document.documentElement.dataset.dir = d
+  if (m === 'alt') document.documentElement.dataset.mode = 'alt'
+  const modo = { A: ['claro', 'oscuro'], B: ['oscuro', 'claro'], C: ['papel', 'tinta'] }[d] || ['', '']
+  document.getElementById('dl').textContent = 'Boceto · dirección ' + d + ' · modo ' + (m === 'alt' ? modo[1] : modo[0]) + ' · datos de la cuenta demo'
+</script>
+</body>
+</html>

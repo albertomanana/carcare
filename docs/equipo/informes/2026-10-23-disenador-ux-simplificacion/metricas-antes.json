@@ -1,0 +1,4817 @@
+{
+ "medido": "2026-10-23 22:55-23:45, Vite dev + Chromium headless SwiftShader, carga en frio por pantalla",
+ "pantallas": [
+  {
+   "cuenta": "invitado",
+   "name": "portada",
+   "url": "/",
+   "width": 1280,
+   "readyMs": 524,
+   "firstCanvasMs": 747,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [
+    "@react-three_drei.js",
+    "@react-three_fiber.js",
+    "three.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 12,
+   "nestedCards": 0,
+   "pills": 5,
+   "pillTexts": [
+    "Para particulares y para tal",
+    "Vencido",
+    "Próximo",
+    "En plazo",
+    "Sin datos"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "DOS MODOS, UNA MISMA BASE",
+    "EL MAPA 3D DE ZONAS",
+    "CÓMO FUNCIONA",
+    "PRINCIPIOS"
+   ],
+   "iconsInMain": 25,
+   "interactive": 4,
+   "primaryButtons": [
+    "Crear cuenta",
+    "Crear cuenta"
+   ],
+   "headings": [
+    "H1:Tu coche, al día.\nTu taller, bajo control.",
+    "H2:Del garaje de casa a la nave del taller.",
+    "H3:Particular",
+    "H3:Taller y flota",
+    "H2:Tu coche, por zonas. Según tus intervalos, no medi",
+    "H2:Tres pasos y ya está en marcha.",
+    "H3:Añade tu vehículo",
+    "H3:Registra lo que pasa",
+    "H3:Deja que te avise",
+    "H2:Honestos con tus datos.",
+    "H3:Ninguna cifra inventada",
+    "H3:Sin «puntuación de salud»",
+    "H3:Sin doble conteo",
+    "H3:Tus documentos, privados",
+    "H2:Empieza por tu coche. O por todo tu taller."
+   ],
+   "bigNumbers": [
+    "01",
+    "02",
+    "03"
+   ],
+   "gradients": 3,
+   "blurs": 2,
+   "words": 527,
+   "domNodes": 295,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 4540,
+   "viewportH": 860,
+   "file": "guest-portada-1280.png"
+  },
+  {
+   "cuenta": "invitado",
+   "name": "portada",
+   "url": "/",
+   "width": 360,
+   "readyMs": 978,
+   "firstCanvasMs": 3138,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [
+    "@react-three_drei.js",
+    "@react-three_fiber.js",
+    "three.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 12,
+   "nestedCards": 0,
+   "pills": 5,
+   "pillTexts": [
+    "Para particulares y para tal",
+    "Vencido",
+    "Próximo",
+    "En plazo",
+    "Sin datos"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "DOS MODOS, UNA MISMA BASE",
+    "EL MAPA 3D DE ZONAS",
+    "CÓMO FUNCIONA",
+    "PRINCIPIOS"
+   ],
+   "iconsInMain": 25,
+   "interactive": 4,
+   "primaryButtons": [
+    "Crear cuenta",
+    "Crear cuenta"
+   ],
+   "headings": [
+    "H1:Tu coche, al día.\nTu taller, bajo control.",
+    "H2:Del garaje de casa a la nave del taller.",
+    "H3:Particular",
+    "H3:Taller y flota",
+    "H2:Tu coche, por zonas. Según tus intervalos, no medi",
+    "H2:Tres pasos y ya está en marcha.",
+    "H3:Añade tu vehículo",
+    "H3:Registra lo que pasa",
+    "H3:Deja que te avise",
+    "H2:Honestos con tus datos.",
+    "H3:Ninguna cifra inventada",
+    "H3:Sin «puntuación de salud»",
+    "H3:Sin doble conteo",
+    "H3:Tus documentos, privados",
+    "H2:Empieza por tu coche. O por todo tu taller."
+   ],
+   "bigNumbers": [
+    "01",
+    "02",
+    "03"
+   ],
+   "gradients": 2,
+   "blurs": 3,
+   "words": 526,
+   "domNodes": 295,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 6902,
+   "viewportH": 780,
+   "file": "guest-portada-360.png"
+  },
+  {
+   "cuenta": "invitado",
+   "name": "login",
+   "url": "/entrar",
+   "width": 1280,
+   "readyMs": 944,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 6,
+   "interactive": 7,
+   "primaryButtons": [
+    "Entrar"
+   ],
+   "headings": [
+    "H1:Entra en CarCare",
+    "H2:Cuentas de demostración"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 67,
+   "domNodes": 76,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 887,
+   "viewportH": 860,
+   "file": "guest-login-1280.png"
+  },
+  {
+   "cuenta": "invitado",
+   "name": "login",
+   "url": "/entrar",
+   "width": 360,
+   "readyMs": 939,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 6,
+   "interactive": 7,
+   "primaryButtons": [
+    "Entrar"
+   ],
+   "headings": [
+    "H1:Entra en CarCare",
+    "H2:Cuentas de demostración"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 67,
+   "domNodes": 76,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1019,
+   "viewportH": 780,
+   "file": "guest-login-360.png"
+  },
+  {
+   "cuenta": "invitado",
+   "name": "registro",
+   "url": "/registro",
+   "width": 1280,
+   "readyMs": 865,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 2,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 4,
+   "interactive": 3,
+   "primaryButtons": [
+    "Crear cuenta"
+   ],
+   "headings": [
+    "H1:Crea tu cuenta"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 65,
+   "domNodes": 66,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 907,
+   "viewportH": 860,
+   "file": "guest-registro-1280.png"
+  },
+  {
+   "cuenta": "invitado",
+   "name": "registro",
+   "url": "/registro",
+   "width": 360,
+   "readyMs": 860,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 2,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 4,
+   "interactive": 3,
+   "primaryButtons": [
+    "Crear cuenta"
+   ],
+   "headings": [
+    "H1:Crea tu cuenta"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 65,
+   "domNodes": 66,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1159,
+   "viewportH": 780,
+   "file": "guest-registro-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "cabina",
+   "url": "/app/1",
+   "width": 1280,
+   "readyMs": 3504,
+   "firstCanvasMs": 3504,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/dashboard",
+    "GET /api/v1/vehicles/1/summary"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/dashboard",
+    "GET /api/v1/vehicles/1/summary"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 16,
+   "nestedCards": 1,
+   "pills": 6,
+   "pillTexts": [
+    "Vencido",
+    "Vencido",
+    "Próximo",
+    "Próximo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 11,
+   "upperTexts": [
+    "VIERNES, 23 DE OCTUBRE",
+    "MATRÍCULA\n4821KTB",
+    "MATRÍCULA",
+    "CUENTAKILÓMETROS",
+    "LO PRÓXIMO",
+    "KM ESTE MES",
+    "GASTO DEL AÑO",
+    "COSTE POR KM",
+    "CONSUMO MEDIO",
+    "ESTE MES",
+    "ESTE AÑO"
+   ],
+   "iconsInMain": 46,
+   "interactive": 29,
+   "primaryButtons": [
+    "Anotar km"
+   ],
+   "headings": [
+    "H1:Hola, Lucía",
+    "H2:El rojo",
+    "H2:Gasto mensual",
+    "H2:Próximos vencimientos",
+    "H3:Cambio de aceite",
+    "H3:Renovar el seguro",
+    "H3:Cambio de aceite y filtros",
+    "H3:Renovar el seguro",
+    "H3:Impuesto de circulación",
+    "H2:Desde el último… · El rojo",
+    "H2:Actividad reciente"
+   ],
+   "bigNumbers": [
+    "81.570km",
+    "1.471",
+    "2.506,76 €",
+    "0,18 €",
+    "6,1",
+    "470,26 €",
+    "5.274,31 €"
+   ],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 494,
+   "domNodes": 714,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 2462,
+   "viewportH": 860,
+   "file": "personal-cabina-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "cabina",
+   "url": "/app/1",
+   "width": 360,
+   "readyMs": 4027,
+   "firstCanvasMs": 4027,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/dashboard",
+    "GET /api/v1/vehicles/1/summary"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/dashboard",
+    "GET /api/v1/vehicles/1/summary"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 16,
+   "nestedCards": 1,
+   "pills": 6,
+   "pillTexts": [
+    "Vencido",
+    "Vencido",
+    "Próximo",
+    "Próximo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 11,
+   "upperTexts": [
+    "VIERNES, 23 DE OCTUBRE",
+    "MATRÍCULA\n4821KTB",
+    "MATRÍCULA",
+    "CUENTAKILÓMETROS",
+    "LO PRÓXIMO",
+    "KM ESTE MES",
+    "GASTO DEL AÑO",
+    "COSTE POR KM",
+    "CONSUMO MEDIO",
+    "ESTE MES",
+    "ESTE AÑO"
+   ],
+   "iconsInMain": 46,
+   "interactive": 29,
+   "primaryButtons": [
+    "Anotar km"
+   ],
+   "headings": [
+    "H1:Hola, Lucía",
+    "H2:El rojo",
+    "H2:Gasto mensual",
+    "H2:Próximos vencimientos",
+    "H3:Cambio de aceite",
+    "H3:Renovar el seguro",
+    "H3:Cambio de aceite y filtros",
+    "H3:Renovar el seguro",
+    "H3:Impuesto de circulación",
+    "H2:Desde el último… · El rojo",
+    "H2:Actividad reciente"
+   ],
+   "bigNumbers": [
+    "81.570km",
+    "1.471",
+    "2.506,76 €",
+    "0,18 €",
+    "6,1",
+    "470,26 €",
+    "5.274,31 €"
+   ],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 488,
+   "domNodes": 690,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 3835,
+   "viewportH": 780,
+   "file": "personal-cabina-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "garaje",
+   "url": "/app/1/garaje",
+   "width": 1280,
+   "readyMs": 1892,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 2,
+   "nestedCards": 0,
+   "pills": 3,
+   "pillTexts": [
+    "1 próximo",
+    "1 vencido",
+    "1 próximo"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "MATRÍCULA\n4821KTB",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 10,
+   "interactive": 3,
+   "primaryButtons": [
+    "Añadir vehículo"
+   ],
+   "headings": [
+    "H1:Garaje",
+    "H3:Kia Sportage",
+    "H3:El rojo"
+   ],
+   "bigNumbers": [],
+   "gradients": 2,
+   "blurs": 0,
+   "words": 63,
+   "domNodes": 104,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 860,
+   "viewportH": 860,
+   "file": "personal-garaje-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "garaje",
+   "url": "/app/1/garaje",
+   "width": 360,
+   "readyMs": 1890,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 2,
+   "nestedCards": 0,
+   "pills": 3,
+   "pillTexts": [
+    "1 próximo",
+    "1 vencido",
+    "1 próximo"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "MATRÍCULA\n4821KTB",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 10,
+   "interactive": 3,
+   "primaryButtons": [
+    "Añadir vehículo"
+   ],
+   "headings": [
+    "H1:Garaje",
+    "H3:Kia Sportage",
+    "H3:El rojo"
+   ],
+   "bigNumbers": [],
+   "gradients": 2,
+   "blurs": 0,
+   "words": 63,
+   "domNodes": 104,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 1244,
+   "viewportH": 780,
+   "file": "personal-garaje-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-resumen",
+   "url": "/app/1/vehiculos/2",
+   "width": 1280,
+   "readyMs": 6518,
+   "firstCanvasMs": 7722,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/zones",
+    "GET /api/v1/vehicles/2/summary"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/zones",
+    "GET /api/v1/vehicles/2/summary"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "@react-three_fiber.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 14,
+   "nestedCards": 0,
+   "pills": 14,
+   "pillTexts": [
+    "Próximo",
+    "Con historial, sin intervalo",
+    "Sin datos",
+    "Sin datos",
+    "Con historial, sin intervalo",
+    "Con historial, sin intervalo",
+    "Sin datos",
+    "Sin datos",
+    "Con historial, sin intervalo",
+    "En plazo",
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 7,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "ZONAS (10)",
+    "KILOMETRAJE",
+    "KM ESTE MES",
+    "GASTO ESTE AÑO",
+    "COSTE POR KM"
+   ],
+   "iconsInMain": 75,
+   "interactive": 47,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Mapa de zonas",
+    "H3:ZONAS (10)",
+    "H2:Próximos recordatorios",
+    "H3:Cambio de aceite y filtros",
+    "H3:Renovar el seguro",
+    "H3:ITV",
+    "H3:Correa de distribución",
+    "H2:Desde el último…",
+    "H2:Últimas intervenciones",
+    "H2:Kilometraje",
+    "H2:Gasto mensual"
+   ],
+   "bigNumbers": [
+    "54.000",
+    "1.114",
+    "2.767,55 €",
+    "0,22 €"
+   ],
+   "gradients": 2,
+   "blurs": 11,
+   "words": 1017,
+   "domNodes": 1263,
+   "canvases": 1,
+   "imgs": 1,
+   "pageHeight": 3763,
+   "viewportH": 860,
+   "file": "personal-ficha-resumen-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-resumen",
+   "url": "/app/1/vehiculos/2",
+   "width": 360,
+   "readyMs": 6387,
+   "firstCanvasMs": 7495,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/zones",
+    "GET /api/v1/vehicles/2/summary"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/zones",
+    "GET /api/v1/vehicles/2/summary"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "@react-three_fiber.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 14,
+   "nestedCards": 0,
+   "pills": 14,
+   "pillTexts": [
+    "Próximo",
+    "Con historial, sin intervalo",
+    "Sin datos",
+    "Sin datos",
+    "Con historial, sin intervalo",
+    "Con historial, sin intervalo",
+    "Sin datos",
+    "Sin datos",
+    "Con historial, sin intervalo",
+    "En plazo",
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 7,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "ZONAS (10)",
+    "KILOMETRAJE",
+    "KM ESTE MES",
+    "GASTO ESTE AÑO",
+    "COSTE POR KM"
+   ],
+   "iconsInMain": 74,
+   "interactive": 46,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Mapa de zonas",
+    "H3:ZONAS (10)",
+    "H2:Próximos recordatorios",
+    "H3:Cambio de aceite y filtros",
+    "H3:Renovar el seguro",
+    "H3:ITV",
+    "H3:Correa de distribución",
+    "H2:Desde el último…",
+    "H2:Últimas intervenciones",
+    "H2:Kilometraje",
+    "H2:Gasto mensual"
+   ],
+   "bigNumbers": [
+    "54.000",
+    "1.114",
+    "2.767,55 €",
+    "0,22 €"
+   ],
+   "gradients": 2,
+   "blurs": 11,
+   "words": 1004,
+   "domNodes": 1227,
+   "canvases": 1,
+   "imgs": 1,
+   "pageHeight": 5409,
+   "viewportH": 780,
+   "file": "personal-ficha-resumen-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-diario",
+   "url": "/app/1/vehiculos/2/diario",
+   "width": 1280,
+   "readyMs": 1649,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/journal?from=2026-09-24&to=2026-10-23"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/journal?from=2026-09-24&to=2026-10-23"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 16,
+   "nestedCards": 0,
+   "pills": 13,
+   "pillTexts": [
+    "38 km recorridos",
+    "133 km recorridos",
+    "2,90 €",
+    "508 km recorridos",
+    "71,98 €",
+    "15,21 €",
+    "171 km recorridos",
+    "16,73 €",
+    "39 km recorridos",
+    "70,61 €",
+    "225 km recorridos",
+    "433 km recorridos",
+    "28,53 €"
+   ],
+   "upperLabels": 5,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "DÍAS CON ACTIVIDAD",
+    "KM RECORRIDOS",
+    "GASTADO"
+   ],
+   "iconsInMain": 29,
+   "interactive": 20,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Viernes, 23 De Octubre",
+    "H3:Jueves, 22 De Octubre",
+    "H3:Domingo, 18 De Octubre",
+    "H3:Viernes, 16 De Octubre",
+    "H3:Jueves, 15 De Octubre",
+    "H3:Domingo, 11 De Octubre",
+    "H3:Martes, 6 De Octubre",
+    "H3:Lunes, 5 De Octubre",
+    "H3:Domingo, 4 De Octubre",
+    "H3:Domingo, 27 De Septiembre",
+    "H3:Jueves, 24 De Septiembre"
+   ],
+   "bigNumbers": [
+    "11",
+    "1.547",
+    "205,96 €"
+   ],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 260,
+   "domNodes": 392,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2234,
+   "viewportH": 860,
+   "file": "personal-ficha-diario-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-diario",
+   "url": "/app/1/vehiculos/2/diario",
+   "width": 360,
+   "readyMs": 1772,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/journal?from=2026-09-24&to=2026-10-23"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/journal?from=2026-09-24&to=2026-10-23"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 16,
+   "nestedCards": 0,
+   "pills": 13,
+   "pillTexts": [
+    "38 km recorridos",
+    "133 km recorridos",
+    "2,90 €",
+    "508 km recorridos",
+    "71,98 €",
+    "15,21 €",
+    "171 km recorridos",
+    "16,73 €",
+    "39 km recorridos",
+    "70,61 €",
+    "225 km recorridos",
+    "433 km recorridos",
+    "28,53 €"
+   ],
+   "upperLabels": 5,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "DÍAS CON ACTIVIDAD",
+    "KM RECORRIDOS",
+    "GASTADO"
+   ],
+   "iconsInMain": 28,
+   "interactive": 19,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Viernes, 23 De Octubre",
+    "H3:Jueves, 22 De Octubre",
+    "H3:Domingo, 18 De Octubre",
+    "H3:Viernes, 16 De Octubre",
+    "H3:Jueves, 15 De Octubre",
+    "H3:Domingo, 11 De Octubre",
+    "H3:Martes, 6 De Octubre",
+    "H3:Lunes, 5 De Octubre",
+    "H3:Domingo, 4 De Octubre",
+    "H3:Domingo, 27 De Septiembre",
+    "H3:Jueves, 24 De Septiembre"
+   ],
+   "bigNumbers": [
+    "11",
+    "1.547",
+    "205,96 €"
+   ],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 259,
+   "domNodes": 392,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2897,
+   "viewportH": 780,
+   "file": "personal-ficha-diario-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-historial",
+   "url": "/app/1/vehiculos/2/historial",
+   "width": 1280,
+   "readyMs": 1552,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?archived=0&per_page=20&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?archived=0&per_page=20&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 8,
+   "nestedCards": 0,
+   "pills": 17,
+   "pillTexts": [
+    "Mantenimiento",
+    "Transmisión",
+    "Mantenimiento",
+    "Suspensión y dirección",
+    "Avería",
+    "Eléctrico y batería",
+    "Mantenimiento",
+    "Motor",
+    "Cambio de aceite",
+    "Reparación",
+    "Escape",
+    "Inspección / ITV",
+    "General",
+    "ITV",
+    "Mantenimiento",
+    "Motor",
+    "Revisión"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 39,
+   "interactive": 33,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Cambio de aceite del cambio automático",
+    "H3:Alineación de la dirección",
+    "H3:Avería: sensor de aparcamiento trasero",
+    "H3:Cambio de aceite y filtros",
+    "H3:Abrazadera del escape suelta",
+    "H3:Primera ITV (favorable)",
+    "H3:Revisión oficial 30.000 km"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 262,
+   "domNodes": 348,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1667,
+   "viewportH": 860,
+   "file": "personal-ficha-historial-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-historial",
+   "url": "/app/1/vehiculos/2/historial",
+   "width": 360,
+   "readyMs": 2036,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?archived=0&per_page=20&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?archived=0&per_page=20&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 8,
+   "nestedCards": 0,
+   "pills": 17,
+   "pillTexts": [
+    "Mantenimiento",
+    "Transmisión",
+    "Mantenimiento",
+    "Suspensión y dirección",
+    "Avería",
+    "Eléctrico y batería",
+    "Mantenimiento",
+    "Motor",
+    "Cambio de aceite",
+    "Reparación",
+    "Escape",
+    "Inspección / ITV",
+    "General",
+    "ITV",
+    "Mantenimiento",
+    "Motor",
+    "Revisión"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 38,
+   "interactive": 32,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Cambio de aceite del cambio automático",
+    "H3:Alineación de la dirección",
+    "H3:Avería: sensor de aparcamiento trasero",
+    "H3:Cambio de aceite y filtros",
+    "H3:Abrazadera del escape suelta",
+    "H3:Primera ITV (favorable)",
+    "H3:Revisión oficial 30.000 km"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 261,
+   "domNodes": 348,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 3338,
+   "viewportH": 780,
+   "file": "personal-ficha-historial-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-gastos",
+   "url": "/app/1/vehiculos/2/gastos",
+   "width": 1280,
+   "readyMs": 5842,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/summary?from=2026-01-01&to=2026-10-23",
+    "GET /api/v1/vehicles/2/expenses?from=2026-01-01&to=2026-10-23&per_page=…"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/summary?from=2026-01-01&to=2026-10-23",
+    "GET /api/v1/vehicles/2/expenses?from=2026-01-01&to=2026-10-23&per_page=…"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 6,
+   "nestedCards": 0,
+   "pills": 13,
+   "pillTexts": [
+    "Depósito lleno",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Desde su intervención",
+    "Desde su intervención",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Desde su intervención",
+    "Desde su intervención",
+    "Depósito lleno",
+    "Depósito lleno"
+   ],
+   "upperLabels": 6,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "TOTAL · ESTE AÑO",
+    "COSTE POR KM",
+    "CONSUMO MEDIO",
+    "TOTAL"
+   ],
+   "iconsInMain": 64,
+   "interactive": 38,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Por categoría",
+    "H2:Movimientos"
+   ],
+   "bigNumbers": [
+    "2.767,55 €",
+    "0,22 €",
+    "6,6"
+   ],
+   "gradients": 2,
+   "blurs": 1,
+   "words": 495,
+   "domNodes": 654,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2850,
+   "viewportH": 860,
+   "file": "personal-ficha-gastos-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-gastos",
+   "url": "/app/1/vehiculos/2/gastos",
+   "width": 360,
+   "readyMs": 6275,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/summary?from=2026-01-01&to=2026-10-23",
+    "GET /api/v1/vehicles/2/expenses?from=2026-01-01&to=2026-10-23&per_page=…"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/summary?from=2026-01-01&to=2026-10-23",
+    "GET /api/v1/vehicles/2/expenses?from=2026-01-01&to=2026-10-23&per_page=…"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 6,
+   "nestedCards": 0,
+   "pills": 13,
+   "pillTexts": [
+    "Depósito lleno",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Desde su intervención",
+    "Desde su intervención",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Depósito lleno",
+    "Desde su intervención",
+    "Desde su intervención",
+    "Depósito lleno",
+    "Depósito lleno"
+   ],
+   "upperLabels": 6,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "TOTAL · ESTE AÑO",
+    "COSTE POR KM",
+    "CONSUMO MEDIO",
+    "TOTAL"
+   ],
+   "iconsInMain": 63,
+   "interactive": 37,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Por categoría",
+    "H2:Movimientos"
+   ],
+   "bigNumbers": [
+    "2.767,55 €",
+    "0,22 €",
+    "6,6"
+   ],
+   "gradients": 2,
+   "blurs": 1,
+   "words": 494,
+   "domNodes": 654,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 3705,
+   "viewportH": 780,
+   "file": "personal-ficha-gastos-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-recordatorios",
+   "url": "/app/1/vehiculos/2/recordatorios",
+   "width": 1280,
+   "readyMs": 2085,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/reminders?status=pending"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/reminders?status=pending"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 5,
+   "nestedCards": 0,
+   "pills": 4,
+   "pillTexts": [
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 30,
+   "interactive": 20,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Cambio de aceite y filtros",
+    "H3:Renovar el seguro",
+    "H3:ITV",
+    "H3:Correa de distribución"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 185,
+   "domNodes": 291,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1100,
+   "viewportH": 860,
+   "file": "personal-ficha-recordatorios-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-recordatorios",
+   "url": "/app/1/vehiculos/2/recordatorios",
+   "width": 360,
+   "readyMs": 1744,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/reminders?status=pending"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/reminders?status=pending"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 5,
+   "nestedCards": 0,
+   "pills": 4,
+   "pillTexts": [
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 29,
+   "interactive": 19,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Cambio de aceite y filtros",
+    "H3:Renovar el seguro",
+    "H3:ITV",
+    "H3:Correa de distribución"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 184,
+   "domNodes": 291,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1880,
+   "viewportH": 780,
+   "file": "personal-ficha-recordatorios-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-documentos",
+   "url": "/app/1/vehiculos/2/documentos",
+   "width": 1280,
+   "readyMs": 2367,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/documents",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/documents",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 2,
+   "pillTexts": [
+    "Ver",
+    "Ver"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 18,
+   "interactive": 20,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Manual de mantenimiento",
+    "H3:Permiso de circulación (copia)"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 78,
+   "domNodes": 146,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 860,
+   "viewportH": 860,
+   "file": "personal-ficha-documentos-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-documentos",
+   "url": "/app/1/vehiculos/2/documentos",
+   "width": 360,
+   "readyMs": 2231,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/documents",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/documents",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 2,
+   "pillTexts": [
+    "Ver",
+    "Ver"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 17,
+   "interactive": 19,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H3:Manual de mantenimiento",
+    "H3:Permiso de circulación (copia)"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 77,
+   "domNodes": 146,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1351,
+   "viewportH": 780,
+   "file": "personal-ficha-documentos-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-datos",
+   "url": "/app/1/vehiculos/2/datos",
+   "width": 1280,
+   "readyMs": 1927,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 5,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 6,
+   "interactive": 13,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Identificación",
+    "H2:Mecánica y aspecto",
+    "H2:Compra y kilometraje",
+    "H2:Registro"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 151,
+   "domNodes": 162,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1165,
+   "viewportH": 860,
+   "file": "personal-ficha-datos-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ficha-datos",
+   "url": "/app/1/vehiculos/2/datos",
+   "width": 360,
+   "readyMs": 1978,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 5,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 5,
+   "interactive": 12,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Identificación",
+    "H2:Mecánica y aspecto",
+    "H2:Compra y kilometraje",
+    "H2:Registro"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 150,
+   "domNodes": 162,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2235,
+   "viewportH": 780,
+   "file": "personal-ficha-datos-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "form-vehiculo",
+   "url": "/app/1/vehiculos/nuevo",
+   "width": 1280,
+   "readyMs": 2149,
+   "firstCanvasMs": 2149,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "@react-three_drei.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 2,
+   "interactive": 17,
+   "primaryButtons": [
+    "Siguiente"
+   ],
+   "headings": [
+    "H1:Añadir vehículo"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 0,
+   "words": 88,
+   "domNodes": 90,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 870,
+   "viewportH": 860,
+   "file": "personal-form-vehiculo-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "form-vehiculo",
+   "url": "/app/1/vehiculos/nuevo",
+   "width": 360,
+   "readyMs": 2374,
+   "firstCanvasMs": 2374,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.js",
+    "@react-three_drei.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 2,
+   "interactive": 17,
+   "primaryButtons": [
+    "Siguiente"
+   ],
+   "headings": [
+    "H1:Añadir vehículo"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 0,
+   "words": 88,
+   "domNodes": 90,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 1483,
+   "viewportH": 780,
+   "file": "personal-form-vehiculo-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "form-intervencion",
+   "url": "/app/1/vehiculos/2/intervenciones/nueva",
+   "width": 1280,
+   "readyMs": 1878,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 6,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 3,
+   "upperTexts": [
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "TOTAL QUE SE GUARDARÁ"
+   ],
+   "iconsInMain": 20,
+   "interactive": 18,
+   "primaryButtons": [
+    "Guardar intervención"
+   ],
+   "headings": [
+    "H1:Nueva intervención"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 257,
+   "domNodes": 278,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1857,
+   "viewportH": 860,
+   "file": "personal-form-intervencion-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "form-intervencion",
+   "url": "/app/1/vehiculos/2/intervenciones/nueva",
+   "width": 360,
+   "readyMs": 1857,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2",
+    "GET /api/v1/vehicles/2/maintenance?per_page=50&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 5,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 20,
+   "interactive": 18,
+   "primaryButtons": [
+    "Guardar intervención"
+   ],
+   "headings": [
+    "H1:Nueva intervención"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 221,
+   "domNodes": 333,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 2790,
+   "viewportH": 780,
+   "file": "personal-form-intervencion-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "agenda",
+   "url": "/app/1/agenda",
+   "width": 1280,
+   "readyMs": 2178,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/reminders?per_page=100&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/reminders?per_page=100&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 11,
+   "nestedCards": 0,
+   "pills": 12,
+   "pillTexts": [
+    "11",
+    "Vencido",
+    "Próximo",
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 87,
+   "interactive": 34,
+   "primaryButtons": [
+    "Nuevo recordatorio"
+   ],
+   "headings": [
+    "H1:Agenda",
+    "H2:Vencidos\n(1)",
+    "H3:Cambio de aceite",
+    "H2:Próximos\n(2)",
+    "H3:Renovar el seguro",
+    "H3:Cambio de aceite y filtros",
+    "H2:En plazo\n(8)",
+    "H3:Renovar el seguro",
+    "H3:Impuesto de circulación",
+    "H3:ITV",
+    "H3:ITV",
+    "H3:Pastillas de freno",
+    "H3:Revisar la batería",
+    "H3:Revisar neumáticos",
+    "H3:Correa de distribución"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 492,
+   "domNodes": 791,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 2563,
+   "viewportH": 860,
+   "file": "personal-agenda-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "agenda",
+   "url": "/app/1/agenda",
+   "width": 360,
+   "readyMs": 1862,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/reminders?per_page=100&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/1/reminders?per_page=100&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 11,
+   "nestedCards": 0,
+   "pills": 12,
+   "pillTexts": [
+    "11",
+    "Vencido",
+    "Próximo",
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "En plazo"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 87,
+   "interactive": 34,
+   "primaryButtons": [
+    "Nuevo recordatorio"
+   ],
+   "headings": [
+    "H1:Agenda",
+    "H2:Vencidos\n(1)",
+    "H3:Cambio de aceite",
+    "H2:Próximos\n(2)",
+    "H3:Renovar el seguro",
+    "H3:Cambio de aceite y filtros",
+    "H2:En plazo\n(8)",
+    "H3:Renovar el seguro",
+    "H3:Impuesto de circulación",
+    "H3:ITV",
+    "H3:ITV",
+    "H3:Pastillas de freno",
+    "H3:Revisar la batería",
+    "H3:Revisar neumáticos",
+    "H3:Correa de distribución"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 492,
+   "domNodes": 791,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 4095,
+   "viewportH": 780,
+   "file": "personal-agenda-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ajustes",
+   "url": "/app/ajustes",
+   "width": 1280,
+   "readyMs": 1470,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 7,
+   "nestedCards": 2,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 12,
+   "interactive": 11,
+   "primaryButtons": [
+    "Guardar perfil"
+   ],
+   "headings": [
+    "H1:Ajustes",
+    "H2:Perfil",
+    "H2:Contraseña",
+    "H2:Apariencia",
+    "H2:Espacios",
+    "H3:Crear un taller",
+    "H2:Eliminar cuenta"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 170,
+   "domNodes": 179,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1695,
+   "viewportH": 860,
+   "file": "personal-ajustes-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "ajustes",
+   "url": "/app/ajustes",
+   "width": 360,
+   "readyMs": 1644,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 7,
+   "nestedCards": 2,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 12,
+   "interactive": 6,
+   "primaryButtons": [
+    "Guardar perfil"
+   ],
+   "headings": [
+    "H1:Ajustes",
+    "H2:Perfil",
+    "H2:Contraseña",
+    "H2:Apariencia",
+    "H2:Espacios",
+    "H3:Crear un taller",
+    "H2:Eliminar cuenta"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 164,
+   "domNodes": 179,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 2279,
+   "viewportH": 780,
+   "file": "personal-ajustes-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "informe",
+   "url": "/app/1/vehiculos/2/informe",
+   "width": 1280,
+   "readyMs": 1844,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2/report"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2/report"
+   ],
+   "threeChunks": [],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 26,
+   "upperTexts": [
+    "KILOMETRAJE ACTUAL",
+    "RECORRIDOS DESDE LA COMPRA",
+    "INTERVENCIONES",
+    "RECORDATORIOS PENDIENTES",
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "FECHA",
+    "KM",
+    "INTERVENCIÓN",
+    "IMPORTE",
+    "CATEGORÍA",
+    "Nº",
+    "IMPORTE",
+    "AÑO",
+    "IMPORTE",
+    "FECHA",
+    "KILÓMETROS",
+    "ORIGEN",
+    "NOTA",
+    "RECORDATORIO",
+    "VENCE",
+    "ESTADO",
+    "DOCUMENTO",
+    "TIPO",
+    "SUBIDO",
+    "CADUCA"
+   ],
+   "iconsInMain": 5,
+   "interactive": 0,
+   "primaryButtons": [],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Datos del vehículo",
+    "H2:Historial de intervenciones(7)",
+    "H2:Gastos",
+    "H2:Kilometraje(126 lecturas)",
+    "H2:Recordatorios pendientes(4)",
+    "H2:Documentos(2)"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 774,
+   "domNodes": 460,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 3350,
+   "viewportH": 860,
+   "file": "personal-informe-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "informe",
+   "url": "/app/1/vehiculos/2/informe",
+   "width": 360,
+   "readyMs": 1710,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2/report"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/2/report"
+   ],
+   "threeChunks": [],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 26,
+   "upperTexts": [
+    "KILOMETRAJE ACTUAL",
+    "RECORRIDOS DESDE LA COMPRA",
+    "INTERVENCIONES",
+    "RECORDATORIOS PENDIENTES",
+    "MATRÍCULA\n7310LFW",
+    "MATRÍCULA",
+    "FECHA",
+    "KM",
+    "INTERVENCIÓN",
+    "IMPORTE",
+    "CATEGORÍA",
+    "Nº",
+    "IMPORTE",
+    "AÑO",
+    "IMPORTE",
+    "FECHA",
+    "KILÓMETROS",
+    "ORIGEN",
+    "NOTA",
+    "RECORDATORIO",
+    "VENCE",
+    "ESTADO",
+    "DOCUMENTO",
+    "TIPO",
+    "SUBIDO",
+    "CADUCA"
+   ],
+   "iconsInMain": 6,
+   "interactive": 0,
+   "primaryButtons": [],
+   "headings": [
+    "H1:Kia Sportage",
+    "H2:Datos del vehículo",
+    "H2:Historial de intervenciones(7)",
+    "H2:Gastos",
+    "H2:Kilometraje(126 lecturas)",
+    "H2:Recordatorios pendientes(4)",
+    "H2:Documentos(2)"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 780,
+   "domNodes": 460,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 5532,
+   "viewportH": 780,
+   "file": "personal-informe-360.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "analitica",
+   "url": "/app/1/analitica",
+   "width": 1280,
+   "readyMs": null,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 0,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 0,
+   "interactive": 0,
+   "primaryButtons": [],
+   "headings": [
+    "H1:Analítica"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 4,
+   "domNodes": 5,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 860,
+   "viewportH": 860,
+   "file": "personal-analitica-1280.png"
+  },
+  {
+   "cuenta": "particular",
+   "name": "analitica",
+   "url": "/app/1/analitica",
+   "width": 360,
+   "readyMs": null,
+   "firstCanvasMs": null,
+   "apiCount": 1,
+   "api": [
+    "GET /api/v1/me"
+   ],
+   "aborted": [
+    "GET /api/v1/me"
+   ],
+   "threeChunks": [],
+   "cards": 0,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 0,
+   "interactive": 0,
+   "primaryButtons": [],
+   "headings": [
+    "H1:Analítica"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 4,
+   "domNodes": 5,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 780,
+   "viewportH": 780,
+   "file": "personal-analitica-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "centro",
+   "url": "/app/3",
+   "width": 1280,
+   "readyMs": 5273,
+   "firstCanvasMs": 5273,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 31,
+   "nestedCards": 4,
+   "pills": 39,
+   "pillTexts": [
+    "0016",
+    "0027",
+    "0024",
+    "0014",
+    "0022",
+    "0026",
+    "0021",
+    "0020",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "En reparación",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "En diagnóstico",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "En reparación",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Recibido",
+    "Tarde",
+    "Vencido",
+    "Próximo"
+   ],
+   "upperLabels": 13,
+   "upperTexts": [
+    "VIERNES, 23 DE OCTUBRE",
+    "ÓRDENES ABIERTAS",
+    "TARDE",
+    "PARA HOY",
+    "ELEVADORES LIBRES",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "EN ESPERA (11)",
+    "(11)",
+    "ESTE MES",
+    "ESTE AÑO"
+   ],
+   "iconsInMain": 88,
+   "interactive": 53,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Centro de control",
+    "H2:El taller ahora",
+    "H2:Elevadores y espera",
+    "H3:EN ESPERA (11)",
+    "H2:Tarde",
+    "H2:Para hoy",
+    "H2:Importe de órdenes entregadas",
+    "H2:Alertas de flota",
+    "H3:ITV de la furgoneta",
+    "H3:ITV",
+    "H2:Actividad del equipo"
+   ],
+   "bigNumbers": [
+    "14",
+    "7",
+    "2",
+    "1",
+    "331,20 €",
+    "3.326,10 €"
+   ],
+   "gradients": 0,
+   "blurs": 12,
+   "words": 697,
+   "domNodes": 1713,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 2969,
+   "viewportH": 860,
+   "file": "workshop-centro-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "centro",
+   "url": "/app/3",
+   "width": 360,
+   "readyMs": 5794,
+   "firstCanvasMs": 5794,
+   "apiCount": 5,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 31,
+   "nestedCards": 4,
+   "pills": 39,
+   "pillTexts": [
+    "0016",
+    "0027",
+    "0024",
+    "0014",
+    "0022",
+    "0026",
+    "0021",
+    "0020",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "En reparación",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "En diagnóstico",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "En reparación",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Recibido",
+    "Tarde",
+    "Vencido",
+    "Próximo"
+   ],
+   "upperLabels": 13,
+   "upperTexts": [
+    "VIERNES, 23 DE OCTUBRE",
+    "ÓRDENES ABIERTAS",
+    "TARDE",
+    "PARA HOY",
+    "ELEVADORES LIBRES",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "EN ESPERA (11)",
+    "(11)",
+    "ESTE MES",
+    "ESTE AÑO"
+   ],
+   "iconsInMain": 88,
+   "interactive": 53,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Centro de control",
+    "H2:El taller ahora",
+    "H2:Elevadores y espera",
+    "H3:EN ESPERA (11)",
+    "H2:Tarde",
+    "H2:Para hoy",
+    "H2:Importe de órdenes entregadas",
+    "H2:Alertas de flota",
+    "H3:ITV de la furgoneta",
+    "H3:ITV",
+    "H2:Actividad del equipo"
+   ],
+   "bigNumbers": [
+    "14",
+    "7",
+    "2",
+    "1",
+    "331,20 €",
+    "3.326,10 €"
+   ],
+   "gradients": 0,
+   "blurs": 12,
+   "words": 691,
+   "domNodes": 1689,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 5037,
+   "viewportH": 780,
+   "file": "workshop-centro-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "ordenes",
+   "url": "/app/3/ordenes",
+   "width": 1280,
+   "readyMs": 3139,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 19,
+   "nestedCards": 14,
+   "pills": 17,
+   "pillTexts": [
+    "Prioridad Baja",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "Prioridad Baja",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 28,
+   "upperTexts": [
+    "MATRÍCULA\n5106KHG",
+    "MATRÍCULA",
+    "MATRÍCULA\n6701MCH",
+    "MATRÍCULA",
+    "MATRÍCULA\n2650KVY",
+    "MATRÍCULA",
+    "MATRÍCULA\n9930KZF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8823KJP",
+    "MATRÍCULA",
+    "MATRÍCULA\n5512MDK",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n2207LBC",
+    "MATRÍCULA",
+    "MATRÍCULA\n6629KSM",
+    "MATRÍCULA",
+    "MATRÍCULA\n3902LGZ",
+    "MATRÍCULA",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA",
+    "MATRÍCULA\n7764LWS",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 68,
+   "interactive": 30,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Órdenes de trabajo",
+    "H2:Recibido\n, 3 órdenes",
+    "H3:Revisión oficial",
+    "H3:Cambio de aceite y filtros",
+    "H3:Amortiguadores traseros",
+    "H2:En diagnóstico\n, 2 órdenes",
+    "H3:Diagnóstico de testigo de motor",
+    "H3:Diagnóstico de testigo de motor",
+    "H2:Esperando piezas\n, 3 órdenes",
+    "H3:Reparación del alternador",
+    "H3:Correa de distribución y bomba de agua",
+    "H3:Fuga en el escape",
+    "H2:En reparación\n, 3 órdenes",
+    "H3:Carga de aire acondicionado",
+    "H3:Discos y pastillas delanteros",
+    "H3:Sustitución del embrague",
+    "H2:Listo\n, 3 órdenes",
+    "H3:Cambio de batería",
+    "H3:Revisión pre-ITV",
+    "H3:Cuatro neumáticos nuevos"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 376,
+   "domNodes": 1485,
+   "canvases": 0,
+   "imgs": 3,
+   "pageHeight": 1298,
+   "viewportH": 860,
+   "file": "workshop-ordenes-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "ordenes",
+   "url": "/app/3/ordenes",
+   "width": 360,
+   "readyMs": 5283,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 19,
+   "nestedCards": 14,
+   "pills": 17,
+   "pillTexts": [
+    "Prioridad Baja",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "Prioridad Baja",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 28,
+   "upperTexts": [
+    "MATRÍCULA\n5106KHG",
+    "MATRÍCULA",
+    "MATRÍCULA\n6701MCH",
+    "MATRÍCULA",
+    "MATRÍCULA\n2650KVY",
+    "MATRÍCULA",
+    "MATRÍCULA\n9930KZF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8823KJP",
+    "MATRÍCULA",
+    "MATRÍCULA\n5512MDK",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n2207LBC",
+    "MATRÍCULA",
+    "MATRÍCULA\n6629KSM",
+    "MATRÍCULA",
+    "MATRÍCULA\n3902LGZ",
+    "MATRÍCULA",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA",
+    "MATRÍCULA\n7764LWS",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 68,
+   "interactive": 30,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Órdenes de trabajo",
+    "H2:Recibido\n, 3 órdenes",
+    "H3:Revisión oficial",
+    "H3:Cambio de aceite y filtros",
+    "H3:Amortiguadores traseros",
+    "H2:En diagnóstico\n, 2 órdenes",
+    "H3:Diagnóstico de testigo de motor",
+    "H3:Diagnóstico de testigo de motor",
+    "H2:Esperando piezas\n, 3 órdenes",
+    "H3:Reparación del alternador",
+    "H3:Correa de distribución y bomba de agua",
+    "H3:Fuga en el escape",
+    "H2:En reparación\n, 3 órdenes",
+    "H3:Carga de aire acondicionado",
+    "H3:Discos y pastillas delanteros",
+    "H3:Sustitución del embrague",
+    "H2:Listo\n, 3 órdenes",
+    "H3:Cambio de batería",
+    "H3:Revisión pre-ITV",
+    "H3:Cuatro neumáticos nuevos"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 376,
+   "domNodes": 1536,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 1367,
+   "viewportH": 780,
+   "file": "workshop-ordenes-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "orden-detalle",
+   "url": "/app/3/ordenes/27",
+   "width": 1280,
+   "readyMs": 15292,
+   "firstCanvasMs": null,
+   "apiCount": 5,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 15,
+   "nestedCards": 7,
+   "pills": 3,
+   "pillTexts": [
+    "En reparación",
+    "Tarde",
+    "En espera"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 41,
+   "interactive": 31,
+   "primaryButtons": [
+    "Marcar como lista"
+   ],
+   "headings": [
+    "H1:Carga de aire acondicionado",
+    "H2:Resumen de la orden (no es una factura)",
+    "H2:Fechas"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 0,
+   "words": 390,
+   "domNodes": 466,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2327,
+   "viewportH": 860,
+   "file": "workshop-orden-detalle-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "orden-detalle",
+   "url": "/app/3/ordenes/27",
+   "width": 360,
+   "readyMs": 4980,
+   "firstCanvasMs": null,
+   "apiCount": 5,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9"
+   ],
+   "threeChunks": [],
+   "cards": 15,
+   "nestedCards": 7,
+   "pills": 3,
+   "pillTexts": [
+    "En reparación",
+    "Tarde",
+    "En espera"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 41,
+   "interactive": 31,
+   "primaryButtons": [
+    "Marcar como lista"
+   ],
+   "headings": [
+    "H1:Carga de aire acondicionado",
+    "H2:Resumen de la orden (no es una factura)",
+    "H2:Fechas"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 0,
+   "words": 382,
+   "domNodes": 528,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 3927,
+   "viewportH": 780,
+   "file": "workshop-orden-detalle-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "orden-nueva",
+   "url": "/app/3/ordenes/nueva",
+   "width": 1280,
+   "readyMs": 6731,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/vehicles?per_page=6&sort=recent",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/vehicles?per_page=6&sort=recent",
+    "GET /api/v1/workspaces/3/members"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 12,
+   "nestedCards": 6,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 12,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA",
+    "MATRÍCULA\n2584MNX",
+    "MATRÍCULA",
+    "MATRÍCULA\n4731JZB",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n1477KTN",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 19,
+   "interactive": 22,
+   "primaryButtons": [
+    "Abrir orden"
+   ],
+   "headings": [
+    "H1:Nueva orden de trabajo",
+    "H2:Resumen de la orden (no es una factura)"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 382,
+   "domNodes": 624,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 2251,
+   "viewportH": 860,
+   "file": "workshop-orden-nueva-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "orden-nueva",
+   "url": "/app/3/ordenes/nueva",
+   "width": 360,
+   "readyMs": 7553,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/vehicles?per_page=6&sort=recent",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/vehicles?per_page=6&sort=recent",
+    "GET /api/v1/workspaces/3/members"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 11,
+   "nestedCards": 6,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 12,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA",
+    "MATRÍCULA\n2584MNX",
+    "MATRÍCULA",
+    "MATRÍCULA\n4731JZB",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n1477KTN",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 19,
+   "interactive": 22,
+   "primaryButtons": [
+    "Abrir orden"
+   ],
+   "headings": [
+    "H1:Nueva orden de trabajo",
+    "H2:Resumen de la orden (no es una factura)"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 347,
+   "domNodes": 622,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 3145,
+   "viewportH": 780,
+   "file": "workshop-orden-nueva-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "clientes",
+   "url": "/app/3/clientes",
+   "width": 1280,
+   "readyMs": 1559,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/customers?per_page=25&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/customers?per_page=25&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 1,
+   "nestedCards": 0,
+   "pills": 22,
+   "pillTexts": [
+    "2 vehículos",
+    "2 órdenes abiertas",
+    "2 vehículos",
+    "2 órdenes abiertas",
+    "1 vehículo",
+    "1 vehículo",
+    "1 orden abierta",
+    "2 vehículos",
+    "1 orden abierta",
+    "1 vehículo",
+    "1 vehículo",
+    "1 orden abierta",
+    "2 vehículos",
+    "1 orden abierta",
+    "2 vehículos",
+    "1 orden abierta",
+    "1 vehículo",
+    "1 orden abierta",
+    "1 vehículo",
+    "1 orden abierta",
+    "4 vehículos",
+    "3 órdenes abiertas"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 46,
+   "interactive": 35,
+   "primaryButtons": [
+    "Nuevo cliente"
+   ],
+   "headings": [
+    "H1:Clientes"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 226,
+   "domNodes": 758,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1189,
+   "viewportH": 860,
+   "file": "workshop-clientes-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "clientes",
+   "url": "/app/3/clientes",
+   "width": 360,
+   "readyMs": 2784,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/customers?per_page=25&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/customers?per_page=25&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 12,
+   "nestedCards": 0,
+   "pills": 22,
+   "pillTexts": [
+    "2 vehículos",
+    "2 órdenes abiertas",
+    "2 vehículos",
+    "2 órdenes abiertas",
+    "1 vehículo",
+    "1 vehículo",
+    "1 orden abierta",
+    "2 vehículos",
+    "1 orden abierta",
+    "1 vehículo",
+    "1 vehículo",
+    "1 orden abierta",
+    "2 vehículos",
+    "1 orden abierta",
+    "2 vehículos",
+    "1 orden abierta",
+    "1 vehículo",
+    "1 orden abierta",
+    "1 vehículo",
+    "1 orden abierta",
+    "4 vehículos",
+    "3 órdenes abiertas"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 36,
+   "interactive": 25,
+   "primaryButtons": [
+    "Nuevo cliente"
+   ],
+   "headings": [
+    "H1:Clientes"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 169,
+   "domNodes": 758,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1815,
+   "viewportH": 780,
+   "file": "workshop-clientes-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "cliente-detalle",
+   "url": "/app/3/clientes/2",
+   "width": 1280,
+   "readyMs": 6683,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/customers/2",
+    "GET /api/v1/customers/2/vehicles",
+    "GET /api/v1/workspaces/3/work-orders?customer_id=2&per_page=10&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/customers/2",
+    "GET /api/v1/customers/2/vehicles",
+    "GET /api/v1/workspaces/3/work-orders?customer_id=2&per_page=10&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 7,
+   "nestedCards": 0,
+   "pills": 12,
+   "pillTexts": [
+    "OT-2026-0022 · Listo",
+    "OT-2026-0022 · Listo",
+    "OT-2026-0027 · Recibido",
+    "OT-2026-0027 · Recibido",
+    "Recibido",
+    "Tarde",
+    "Listo",
+    "Prioridad Alta",
+    "Entregado",
+    "Prioridad Alta",
+    "Entregado",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 5,
+   "upperTexts": [
+    "CLIENTE",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA",
+    "MATRÍCULA\n6701MCH",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 24,
+   "interactive": 15,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:AM\nAutoescuela Muestra",
+    "H2:Vehículos",
+    "H2:Órdenes",
+    "H2:Contacto"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 160,
+   "domNodes": 247,
+   "canvases": 0,
+   "imgs": 6,
+   "pageHeight": 987,
+   "viewportH": 860,
+   "file": "workshop-cliente-detalle-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "cliente-detalle",
+   "url": "/app/3/clientes/2",
+   "width": 360,
+   "readyMs": 7498,
+   "firstCanvasMs": null,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/customers/2",
+    "GET /api/v1/customers/2/vehicles",
+    "GET /api/v1/workspaces/3/work-orders?customer_id=2&per_page=10&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/customers/2",
+    "GET /api/v1/customers/2/vehicles",
+    "GET /api/v1/workspaces/3/work-orders?customer_id=2&per_page=10&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 7,
+   "nestedCards": 0,
+   "pills": 12,
+   "pillTexts": [
+    "OT-2026-0022 · Listo",
+    "OT-2026-0022 · Listo",
+    "OT-2026-0027 · Recibido",
+    "OT-2026-0027 · Recibido",
+    "Recibido",
+    "Tarde",
+    "Listo",
+    "Prioridad Alta",
+    "Entregado",
+    "Prioridad Alta",
+    "Entregado",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 5,
+   "upperTexts": [
+    "CLIENTE",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA",
+    "MATRÍCULA\n6701MCH",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 24,
+   "interactive": 15,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Autoescuela Muestra",
+    "H2:Vehículos",
+    "H2:Órdenes",
+    "H2:Contacto"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 151,
+   "domNodes": 351,
+   "canvases": 0,
+   "imgs": 4,
+   "pageHeight": 1817,
+   "viewportH": 780,
+   "file": "workshop-cliente-detalle-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "equipo",
+   "url": "/app/3/equipo",
+   "width": 1280,
+   "readyMs": 3767,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/activity?per_page=10&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/activity?per_page=10&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 1,
+   "pillTexts": [
+    "Propietario"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 12,
+   "interactive": 15,
+   "primaryButtons": [
+    "Añadir persona"
+   ],
+   "headings": [
+    "H1:Equipo",
+    "H2:Miembros",
+    "H2:Actividad reciente",
+    "H2:Qué puede hacer cada rol"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 222,
+   "domNodes": 176,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1188,
+   "viewportH": 860,
+   "file": "workshop-equipo-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "equipo",
+   "url": "/app/3/equipo",
+   "width": 360,
+   "readyMs": 2031,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/activity?per_page=10&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/activity?per_page=10&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 1,
+   "pillTexts": [
+    "Propietario"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 12,
+   "interactive": 15,
+   "primaryButtons": [
+    "Añadir persona"
+   ],
+   "headings": [
+    "H1:Equipo",
+    "H2:Miembros",
+    "H2:Actividad reciente",
+    "H2:Qué puede hacer cada rol"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 222,
+   "domNodes": 176,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 2051,
+   "viewportH": 780,
+   "file": "workshop-equipo-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "taller3d",
+   "url": "/app/3/taller",
+   "width": 1280,
+   "readyMs": 6701,
+   "firstCanvasMs": 6701,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 10,
+   "nestedCards": 4,
+   "pills": 14,
+   "pillTexts": [
+    "0016",
+    "0027",
+    "0024",
+    "0014",
+    "0022",
+    "0026",
+    "0021",
+    "0020",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 6,
+   "upperTexts": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "EN ESPERA (11)",
+    "(11)"
+   ],
+   "iconsInMain": 31,
+   "interactive": 25,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Taller 3D",
+    "H2:Elevadores y espera",
+    "H3:EN ESPERA (11)"
+   ],
+   "bigNumbers": [
+    "Taller 3D"
+   ],
+   "gradients": 0,
+   "blurs": 12,
+   "words": 168,
+   "domNodes": 383,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 861,
+   "viewportH": 860,
+   "file": "workshop-taller3d-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "taller3d",
+   "url": "/app/3/taller",
+   "width": 360,
+   "readyMs": 9154,
+   "firstCanvasMs": 9154,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 10,
+   "nestedCards": 4,
+   "pills": 14,
+   "pillTexts": [
+    "0016",
+    "0027",
+    "0024",
+    "0014",
+    "0022",
+    "0026",
+    "0021",
+    "0020",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 6,
+   "upperTexts": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "EN ESPERA (11)",
+    "(11)"
+   ],
+   "iconsInMain": 31,
+   "interactive": 25,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Taller 3D",
+    "H2:Elevadores y espera",
+    "H3:EN ESPERA (11)"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 12,
+   "words": 163,
+   "domNodes": 383,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 1522,
+   "viewportH": 780,
+   "file": "workshop-taller3d-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "vehiculos",
+   "url": "/app/3/garaje",
+   "width": 1280,
+   "readyMs": 4220,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 20,
+   "nestedCards": 0,
+   "pills": 22,
+   "pillTexts": [
+    "Sin orden abierta",
+    "Sin orden abierta",
+    "Sin orden abierta",
+    "OT-2026-0014 · Esperando pie",
+    "OT-2026-0021 · En diagnóstic",
+    "Sin orden abierta",
+    "OT-2026-0025 · Listo",
+    "OT-2026-0018 · En reparación",
+    "OT-2026-0028 · Recibido",
+    "OT-2026-0026 · Recibido",
+    "OT-2026-0020 · Listo",
+    "Sin orden abierta",
+    "OT-2026-0017 · Esperando pie",
+    "OT-2026-0024 · En reparación",
+    "OT-2026-0022 · Listo",
+    "OT-2026-0027 · Recibido",
+    "Sin orden abierta",
+    "OT-2026-0016 · Esperando pie",
+    "OT-2026-0023 · En diagnóstic",
+    "1 próximo",
+    "OT-2026-0019 · En reparación",
+    "1 vencido"
+   ],
+   "upperLabels": 40,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA",
+    "MATRÍCULA\n2584MNX",
+    "MATRÍCULA",
+    "MATRÍCULA\n4731JZB",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n1477KTN",
+    "MATRÍCULA",
+    "MATRÍCULA\n3902LGZ",
+    "MATRÍCULA",
+    "MATRÍCULA\n6629KSM",
+    "MATRÍCULA",
+    "MATRÍCULA\n5106KHG",
+    "MATRÍCULA",
+    "MATRÍCULA\n2650KVY",
+    "MATRÍCULA",
+    "MATRÍCULA\n7764LWS",
+    "MATRÍCULA",
+    "MATRÍCULA\n0391KBN",
+    "MATRÍCULA",
+    "MATRÍCULA\n8823KJP",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 67,
+   "interactive": 21,
+   "primaryButtons": [
+    "Añadir vehículo"
+   ],
+   "headings": [
+    "H1:Vehículos",
+    "H3:Kia Ceed",
+    "H3:Ford Ranger",
+    "H3:Audi A4 Avant",
+    "H3:Opel Zafira",
+    "H3:Hyundai Kona Eléctrico",
+    "H3:Dacia Duster",
+    "H3:Seat León",
+    "H3:Taxi 24h",
+    "H3:Mazda MX-5",
+    "H3:BMW Serie 4 Coupé",
+    "H3:Peugeot 3008",
+    "H3:Fiat Doblò",
+    "H3:Skoda Octavia Combi",
+    "H3:Toyota Corolla",
+    "H3:Prácticas 2",
+    "H3:Prácticas 1",
+    "H3:Toyota Hilux",
+    "H3:Reparto 3",
+    "H3:Reparto 2",
+    "H3:Reparto 1"
+   ],
+   "bigNumbers": [],
+   "gradients": 20,
+   "blurs": 0,
+   "words": 513,
+   "domNodes": 1773,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2889,
+   "viewportH": 860,
+   "file": "workshop-vehiculos-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "vehiculos",
+   "url": "/app/3/garaje",
+   "width": 360,
+   "readyMs": 3871,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/vehicles?archived=0&sort=recent&per_page=24&page…"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 20,
+   "nestedCards": 0,
+   "pills": 22,
+   "pillTexts": [
+    "Sin orden abierta",
+    "Sin orden abierta",
+    "Sin orden abierta",
+    "OT-2026-0014 · Esperando pie",
+    "OT-2026-0021 · En diagnóstic",
+    "Sin orden abierta",
+    "OT-2026-0025 · Listo",
+    "OT-2026-0018 · En reparación",
+    "OT-2026-0028 · Recibido",
+    "OT-2026-0026 · Recibido",
+    "OT-2026-0020 · Listo",
+    "Sin orden abierta",
+    "OT-2026-0017 · Esperando pie",
+    "OT-2026-0024 · En reparación",
+    "OT-2026-0022 · Listo",
+    "OT-2026-0027 · Recibido",
+    "Sin orden abierta",
+    "OT-2026-0016 · Esperando pie",
+    "OT-2026-0023 · En diagnóstic",
+    "1 próximo",
+    "OT-2026-0019 · En reparación",
+    "1 vencido"
+   ],
+   "upperLabels": 40,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA",
+    "MATRÍCULA\n2584MNX",
+    "MATRÍCULA",
+    "MATRÍCULA\n4731JZB",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n1477KTN",
+    "MATRÍCULA",
+    "MATRÍCULA\n3902LGZ",
+    "MATRÍCULA",
+    "MATRÍCULA\n6629KSM",
+    "MATRÍCULA",
+    "MATRÍCULA\n5106KHG",
+    "MATRÍCULA",
+    "MATRÍCULA\n2650KVY",
+    "MATRÍCULA",
+    "MATRÍCULA\n7764LWS",
+    "MATRÍCULA",
+    "MATRÍCULA\n0391KBN",
+    "MATRÍCULA",
+    "MATRÍCULA\n8823KJP",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 67,
+   "interactive": 21,
+   "primaryButtons": [
+    "Añadir vehículo"
+   ],
+   "headings": [
+    "H1:Vehículos",
+    "H3:Kia Ceed",
+    "H3:Ford Ranger",
+    "H3:Audi A4 Avant",
+    "H3:Opel Zafira",
+    "H3:Hyundai Kona Eléctrico",
+    "H3:Dacia Duster",
+    "H3:Seat León",
+    "H3:Taxi 24h",
+    "H3:Mazda MX-5",
+    "H3:BMW Serie 4 Coupé",
+    "H3:Peugeot 3008",
+    "H3:Fiat Doblò",
+    "H3:Skoda Octavia Combi",
+    "H3:Toyota Corolla",
+    "H3:Prácticas 2",
+    "H3:Prácticas 1",
+    "H3:Toyota Hilux",
+    "H3:Reparto 3",
+    "H3:Reparto 2",
+    "H3:Reparto 1"
+   ],
+   "bigNumbers": [],
+   "gradients": 20,
+   "blurs": 0,
+   "words": 513,
+   "domNodes": 1711,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 7905,
+   "viewportH": 780,
+   "file": "workshop-vehiculos-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "ficha-taller",
+   "url": "/app/3/vehiculos/22",
+   "width": 1280,
+   "readyMs": 10108,
+   "firstCanvasMs": 12768,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/vehicles/22/zones",
+    "GET /api/v1/vehicles/22/summary"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/vehicles/22/zones",
+    "GET /api/v1/vehicles/22/summary"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "@react-three_fiber.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 11,
+   "nestedCards": 0,
+   "pills": 10,
+   "pillTexts": [
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Con historial, sin intervalo"
+   ],
+   "upperLabels": 7,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA",
+    "ZONAS (10)",
+    "KILOMETRAJE",
+    "KM ESTE MES",
+    "GASTO ESTE AÑO",
+    "COSTE POR KM"
+   ],
+   "iconsInMain": 47,
+   "interactive": 42,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Ceed",
+    "H2:Mapa de zonas",
+    "H3:ZONAS (10)",
+    "H2:Próximos recordatorios",
+    "H3:Sin recordatorios pendientes",
+    "H2:Desde el último…",
+    "H2:Últimas intervenciones",
+    "H2:Kilometraje",
+    "H2:Gasto mensual"
+   ],
+   "bigNumbers": [
+    "148.589",
+    "0,00 €",
+    "0,00 €"
+   ],
+   "gradients": 2,
+   "blurs": 11,
+   "words": 364,
+   "domNodes": 794,
+   "canvases": 1,
+   "imgs": 1,
+   "pageHeight": 2499,
+   "viewportH": 860,
+   "file": "workshop-ficha-taller-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "ficha-taller",
+   "url": "/app/3/vehiculos/22",
+   "width": 360,
+   "readyMs": 19791,
+   "firstCanvasMs": 22778,
+   "apiCount": 4,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/vehicles/22/zones",
+    "GET /api/v1/vehicles/22/summary"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/vehicles/22/zones",
+    "GET /api/v1/vehicles/22/summary"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "@react-three_fiber.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 11,
+   "nestedCards": 0,
+   "pills": 10,
+   "pillTexts": [
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Sin datos",
+    "Con historial, sin intervalo"
+   ],
+   "upperLabels": 7,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA",
+    "ZONAS (10)",
+    "KILOMETRAJE",
+    "KM ESTE MES",
+    "GASTO ESTE AÑO",
+    "COSTE POR KM"
+   ],
+   "iconsInMain": 46,
+   "interactive": 41,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Ceed",
+    "H2:Mapa de zonas",
+    "H3:ZONAS (10)",
+    "H2:Próximos recordatorios",
+    "H3:Sin recordatorios pendientes",
+    "H2:Desde el último…",
+    "H2:Últimas intervenciones",
+    "H2:Kilometraje",
+    "H2:Gasto mensual"
+   ],
+   "bigNumbers": [
+    "148.589",
+    "0,00 €",
+    "0,00 €"
+   ],
+   "gradients": 2,
+   "blurs": 11,
+   "words": 357,
+   "domNodes": 770,
+   "canvases": 1,
+   "imgs": 1,
+   "pageHeight": 3738,
+   "viewportH": 780,
+   "file": "workshop-ficha-taller-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "ficha-ordenes",
+   "url": "/app/3/vehiculos/22/ordenes",
+   "width": 1280,
+   "readyMs": 2640,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/workspaces/3/work-orders?vehicle_id=22&per_page=20&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/workspaces/3/work-orders?vehicle_id=22&per_page=20&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 1,
+   "pillTexts": [
+    "Entregado"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 10,
+   "interactive": 16,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Ceed",
+    "H2:Abiertas",
+    "H2:Entregadas y canceladas"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 81,
+   "domNodes": 107,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 860,
+   "viewportH": 860,
+   "file": "workshop-ficha-ordenes-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "ficha-ordenes",
+   "url": "/app/3/vehiculos/22/ordenes",
+   "width": 360,
+   "readyMs": 2461,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/workspaces/3/work-orders?vehicle_id=22&per_page=20&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/vehicles/22",
+    "GET /api/v1/workspaces/3/work-orders?vehicle_id=22&per_page=20&page=1"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 1,
+   "pillTexts": [
+    "Entregado"
+   ],
+   "upperLabels": 2,
+   "upperTexts": [
+    "MATRÍCULA\n6340KMW",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 9,
+   "interactive": 15,
+   "primaryButtons": [
+    "Registrar"
+   ],
+   "headings": [
+    "H1:Kia Ceed",
+    "H2:Abiertas",
+    "H2:Entregadas y canceladas"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 1,
+   "words": 78,
+   "domNodes": 107,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 1115,
+   "viewportH": 780,
+   "file": "workshop-ficha-ordenes-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "agenda-flota",
+   "url": "/app/3/agenda",
+   "width": 1280,
+   "readyMs": 4493,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/reminders?per_page=100&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/reminders?per_page=100&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 6,
+   "nestedCards": 0,
+   "pills": 6,
+   "pillTexts": [
+    "Vencido",
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "Sin datos suficientes"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 53,
+   "interactive": 19,
+   "primaryButtons": [
+    "Nuevo recordatorio"
+   ],
+   "headings": [
+    "H1:Agenda de flota",
+    "H2:Vencidos\n(1)",
+    "H3:ITV de la furgoneta",
+    "H2:Próximos\n(1)",
+    "H3:ITV",
+    "H2:En plazo\n(3)",
+    "H3:Revisión de taxi",
+    "H3:Pastillas de freno",
+    "H3:Cambio de aceite",
+    "H2:Sin datos para calcular\n(1)",
+    "H3:Revisión de la capota"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 338,
+   "domNodes": 478,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1740,
+   "viewportH": 860,
+   "file": "workshop-agenda-flota-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "agenda-flota",
+   "url": "/app/3/agenda",
+   "width": 360,
+   "readyMs": 2640,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/reminders?per_page=100&page=1"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/reminders?per_page=100&page=1"
+   ],
+   "threeChunks": [],
+   "cards": 6,
+   "nestedCards": 0,
+   "pills": 6,
+   "pillTexts": [
+    "Vencido",
+    "Próximo",
+    "En plazo",
+    "En plazo",
+    "En plazo",
+    "Sin datos suficientes"
+   ],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 53,
+   "interactive": 19,
+   "primaryButtons": [
+    "Nuevo recordatorio"
+   ],
+   "headings": [
+    "H1:Agenda de flota",
+    "H2:Vencidos\n(1)",
+    "H3:ITV de la furgoneta",
+    "H2:Próximos\n(1)",
+    "H3:ITV",
+    "H2:En plazo\n(3)",
+    "H3:Revisión de taxi",
+    "H3:Pastillas de freno",
+    "H3:Cambio de aceite",
+    "H2:Sin datos para calcular\n(1)",
+    "H3:Revisión de la capota"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 338,
+   "domNodes": 478,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 2685,
+   "viewportH": 780,
+   "file": "workshop-agenda-flota-360.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "facturacion",
+   "url": "/app/3/analitica",
+   "width": 1280,
+   "readyMs": 2651,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/analytics?from=2025-11-01&to=2026-10-23"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/analytics?from=2025-11-01&to=2026-10-23"
+   ],
+   "threeChunks": [],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 2,
+   "interactive": 14,
+   "primaryButtons": [],
+   "headings": [
+    "H1:Analítica",
+    "H2:Por mes",
+    "H2:Por cliente",
+    "H2:Por vehículo"
+   ],
+   "bigNumbers": [
+    "4.284,78 €",
+    "15",
+    "285,65 €",
+    "1 día"
+   ],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 169,
+   "domNodes": 341,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1658,
+   "viewportH": 860,
+   "file": "workshop-facturacion-1280.png"
+  },
+  {
+   "cuenta": "taller-owner",
+   "name": "facturacion",
+   "url": "/app/3/analitica",
+   "width": 360,
+   "readyMs": 2374,
+   "firstCanvasMs": null,
+   "apiCount": 2,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/analytics?from=2025-11-01&to=2026-10-23"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/analytics?from=2025-11-01&to=2026-10-23"
+   ],
+   "threeChunks": [],
+   "cards": 3,
+   "nestedCards": 0,
+   "pills": 0,
+   "pillTexts": [],
+   "upperLabels": 0,
+   "upperTexts": [],
+   "iconsInMain": 2,
+   "interactive": 14,
+   "primaryButtons": [],
+   "headings": [
+    "H1:Analítica",
+    "H2:Por mes",
+    "H2:Por cliente",
+    "H2:Por vehículo"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 163,
+   "domNodes": 317,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 1888,
+   "viewportH": 780,
+   "file": "workshop-facturacion-360.png"
+  },
+  {
+   "cuenta": "taller-mechanic",
+   "name": "centro",
+   "url": "/app/3",
+   "width": 1280,
+   "readyMs": 40798,
+   "firstCanvasMs": 40798,
+   "apiCount": 5,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 30,
+   "nestedCards": 4,
+   "pills": 39,
+   "pillTexts": [
+    "0016",
+    "0027",
+    "0024",
+    "0014",
+    "0022",
+    "0026",
+    "0021",
+    "0020",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "En reparación",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "En diagnóstico",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "En reparación",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Recibido",
+    "Tarde",
+    "Vencido",
+    "Próximo"
+   ],
+   "upperLabels": 11,
+   "upperTexts": [
+    "VIERNES, 23 DE OCTUBRE",
+    "ÓRDENES ABIERTAS",
+    "TARDE",
+    "PARA HOY",
+    "ELEVADORES LIBRES",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "EN ESPERA (11)",
+    "(11)"
+   ],
+   "iconsInMain": 88,
+   "interactive": 52,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Centro de control",
+    "H2:El taller ahora",
+    "H2:Elevadores y espera",
+    "H3:EN ESPERA (11)",
+    "H2:Tarde",
+    "H2:Para hoy",
+    "H2:Alertas de flota",
+    "H3:ITV de la furgoneta",
+    "H3:ITV",
+    "H2:Actividad del equipo"
+   ],
+   "bigNumbers": [
+    "14",
+    "7",
+    "2",
+    "1"
+   ],
+   "gradients": 0,
+   "blurs": 12,
+   "words": 577,
+   "domNodes": 1509,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 2589,
+   "viewportH": 860,
+   "file": "mechanic-centro-1280.png"
+  },
+  {
+   "cuenta": "taller-mechanic",
+   "name": "centro",
+   "url": "/app/3",
+   "width": 360,
+   "readyMs": 3782,
+   "firstCanvasMs": 3782,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/dashboard",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "@react-three_fiber.js",
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "react-three-fiber.esm-CcqX1aPv.js",
+    "three.module-dSlfew9g.js",
+    "@react-three_drei.js"
+   ],
+   "cards": 30,
+   "nestedCards": 4,
+   "pills": 39,
+   "pillTexts": [
+    "0016",
+    "0027",
+    "0024",
+    "0014",
+    "0022",
+    "0026",
+    "0021",
+    "0020",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "Prioridad Alta",
+    "Esperando piezas",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "En reparación",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "En diagnóstico",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "En reparación",
+    "Tarde",
+    "En reparación",
+    "Tarde",
+    "Recibido",
+    "Tarde",
+    "Vencido",
+    "Próximo"
+   ],
+   "upperLabels": 11,
+   "upperTexts": [
+    "VIERNES, 23 DE OCTUBRE",
+    "ÓRDENES ABIERTAS",
+    "TARDE",
+    "PARA HOY",
+    "ELEVADORES LIBRES",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "EN ESPERA (11)",
+    "(11)"
+   ],
+   "iconsInMain": 88,
+   "interactive": 52,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Centro de control",
+    "H2:El taller ahora",
+    "H2:Elevadores y espera",
+    "H3:EN ESPERA (11)",
+    "H2:Tarde",
+    "H2:Para hoy",
+    "H2:Alertas de flota",
+    "H3:ITV de la furgoneta",
+    "H3:ITV",
+    "H2:Actividad del equipo"
+   ],
+   "bigNumbers": [
+    "14",
+    "7",
+    "2",
+    "1"
+   ],
+   "gradients": 0,
+   "blurs": 12,
+   "words": 577,
+   "domNodes": 1509,
+   "canvases": 1,
+   "imgs": 0,
+   "pageHeight": 4577,
+   "viewportH": 780,
+   "file": "mechanic-centro-360.png"
+  },
+  {
+   "cuenta": "taller-mechanic",
+   "name": "ordenes",
+   "url": "/app/3/ordenes",
+   "width": 1280,
+   "readyMs": 2768,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 19,
+   "nestedCards": 14,
+   "pills": 17,
+   "pillTexts": [
+    "Prioridad Baja",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "Prioridad Baja",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 28,
+   "upperTexts": [
+    "MATRÍCULA\n5106KHG",
+    "MATRÍCULA",
+    "MATRÍCULA\n6701MCH",
+    "MATRÍCULA",
+    "MATRÍCULA\n2650KVY",
+    "MATRÍCULA",
+    "MATRÍCULA\n9930KZF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8823KJP",
+    "MATRÍCULA",
+    "MATRÍCULA\n5512MDK",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n2207LBC",
+    "MATRÍCULA",
+    "MATRÍCULA\n6629KSM",
+    "MATRÍCULA",
+    "MATRÍCULA\n3902LGZ",
+    "MATRÍCULA",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA",
+    "MATRÍCULA\n7764LWS",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 68,
+   "interactive": 30,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Órdenes de trabajo",
+    "H2:Recibido\n, 3 órdenes",
+    "H3:Revisión oficial",
+    "H3:Cambio de aceite y filtros",
+    "H3:Amortiguadores traseros",
+    "H2:En diagnóstico\n, 2 órdenes",
+    "H3:Diagnóstico de testigo de motor",
+    "H3:Diagnóstico de testigo de motor",
+    "H2:Esperando piezas\n, 3 órdenes",
+    "H3:Reparación del alternador",
+    "H3:Correa de distribución y bomba de agua",
+    "H3:Fuga en el escape",
+    "H2:En reparación\n, 3 órdenes",
+    "H3:Carga de aire acondicionado",
+    "H3:Discos y pastillas delanteros",
+    "H3:Sustitución del embrague",
+    "H2:Listo\n, 3 órdenes",
+    "H3:Cambio de batería",
+    "H3:Revisión pre-ITV",
+    "H3:Cuatro neumáticos nuevos"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 376,
+   "domNodes": 1539,
+   "canvases": 0,
+   "imgs": 2,
+   "pageHeight": 1298,
+   "viewportH": 860,
+   "file": "mechanic-ordenes-1280.png"
+  },
+  {
+   "cuenta": "taller-mechanic",
+   "name": "ordenes",
+   "url": "/app/3/ordenes",
+   "width": 360,
+   "readyMs": 2310,
+   "firstCanvasMs": null,
+   "apiCount": 3,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/workspaces/3/work-orders?status=open&per_page=200"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js",
+    "three.module-dSlfew9g.js"
+   ],
+   "cards": 19,
+   "nestedCards": 14,
+   "pills": 17,
+   "pillTexts": [
+    "Prioridad Baja",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 3",
+    "Tarde",
+    "Prioridad Alta",
+    "Tarde",
+    "Tarde",
+    "Tarde",
+    "Prioridad Alta",
+    "Elevador 1",
+    "Tarde",
+    "Prioridad Urgente",
+    "Elevador 2",
+    "Prioridad Baja",
+    "Prioridad Alta"
+   ],
+   "upperLabels": 28,
+   "upperTexts": [
+    "MATRÍCULA\n5106KHG",
+    "MATRÍCULA",
+    "MATRÍCULA\n6701MCH",
+    "MATRÍCULA",
+    "MATRÍCULA\n2650KVY",
+    "MATRÍCULA",
+    "MATRÍCULA\n9930KZF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8215MBF",
+    "MATRÍCULA",
+    "MATRÍCULA\n8823KJP",
+    "MATRÍCULA",
+    "MATRÍCULA\n5512MDK",
+    "MATRÍCULA",
+    "MATRÍCULA\n9058JRW",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n2207LBC",
+    "MATRÍCULA",
+    "MATRÍCULA\n6629KSM",
+    "MATRÍCULA",
+    "MATRÍCULA\n3902LGZ",
+    "MATRÍCULA",
+    "MATRÍCULA\n1185LXR",
+    "MATRÍCULA",
+    "MATRÍCULA\n7764LWS",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 68,
+   "interactive": 30,
+   "primaryButtons": [
+    "Nueva orden"
+   ],
+   "headings": [
+    "H1:Órdenes de trabajo",
+    "H2:Recibido\n, 3 órdenes",
+    "H3:Revisión oficial",
+    "H3:Cambio de aceite y filtros",
+    "H3:Amortiguadores traseros",
+    "H2:En diagnóstico\n, 2 órdenes",
+    "H3:Diagnóstico de testigo de motor",
+    "H3:Diagnóstico de testigo de motor",
+    "H2:Esperando piezas\n, 3 órdenes",
+    "H3:Reparación del alternador",
+    "H3:Correa de distribución y bomba de agua",
+    "H3:Fuga en el escape",
+    "H2:En reparación\n, 3 órdenes",
+    "H3:Carga de aire acondicionado",
+    "H3:Discos y pastillas delanteros",
+    "H3:Sustitución del embrague",
+    "H2:Listo\n, 3 órdenes",
+    "H3:Cambio de batería",
+    "H3:Revisión pre-ITV",
+    "H3:Cuatro neumáticos nuevos"
+   ],
+   "bigNumbers": [],
+   "gradients": 0,
+   "blurs": 0,
+   "words": 376,
+   "domNodes": 1424,
+   "canvases": 0,
+   "imgs": 4,
+   "pageHeight": 1367,
+   "viewportH": 780,
+   "file": "mechanic-ordenes-360.png"
+  },
+  {
+   "cuenta": "taller-mechanic",
+   "name": "orden-detalle",
+   "url": "/app/3/ordenes/27",
+   "width": 1280,
+   "readyMs": 6683,
+   "firstCanvasMs": null,
+   "apiCount": 5,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9"
+   ],
+   "threeChunks": [
+    "three.js",
+    "three.module-dSlfew9g.js",
+    "three_examples_jsm_geometries_RoundedBoxGeometry__js.js"
+   ],
+   "cards": 15,
+   "nestedCards": 7,
+   "pills": 3,
+   "pillTexts": [
+    "En reparación",
+    "Tarde",
+    "En espera"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 43,
+   "interactive": 32,
+   "primaryButtons": [
+    "Marcar como lista"
+   ],
+   "headings": [
+    "H1:Carga de aire acondicionado",
+    "H2:Resumen de la orden (no es una factura)",
+    "H2:Fechas"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 0,
+   "words": 366,
+   "domNodes": 445,
+   "canvases": 0,
+   "imgs": 1,
+   "pageHeight": 2191,
+   "viewportH": 860,
+   "file": "mechanic-orden-detalle-1280.png"
+  },
+  {
+   "cuenta": "taller-mechanic",
+   "name": "orden-detalle",
+   "url": "/app/3/ordenes/27",
+   "width": 360,
+   "readyMs": 2343,
+   "firstCanvasMs": null,
+   "apiCount": 5,
+   "api": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9",
+    "GET /api/v1/workspaces/3/bays"
+   ],
+   "aborted": [
+    "GET /api/v1/me",
+    "GET /api/v1/work-orders/27",
+    "GET /api/v1/workspaces/3/bays",
+    "GET /api/v1/workspaces/3/members",
+    "GET /api/v1/vehicles/9"
+   ],
+   "threeChunks": [],
+   "cards": 15,
+   "nestedCards": 7,
+   "pills": 3,
+   "pillTexts": [
+    "En reparación",
+    "Tarde",
+    "En espera"
+   ],
+   "upperLabels": 4,
+   "upperTexts": [
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA",
+    "MATRÍCULA\n4470LJD",
+    "MATRÍCULA"
+   ],
+   "iconsInMain": 43,
+   "interactive": 32,
+   "primaryButtons": [
+    "Marcar como lista"
+   ],
+   "headings": [
+    "H1:Carga de aire acondicionado",
+    "H2:Resumen de la orden (no es una factura)",
+    "H2:Fechas"
+   ],
+   "bigNumbers": [],
+   "gradients": 1,
+   "blurs": 0,
+   "words": 358,
+   "domNodes": 507,
+   "canvases": 0,
+   "imgs": 0,
+   "pageHeight": 3654,
+   "viewportH": 780,
+   "file": "mechanic-orden-detalle-360.png"
+  }
+ ]
+}
