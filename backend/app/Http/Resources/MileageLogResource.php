@@ -15,6 +15,7 @@ class MileageLogResource extends ApiResource
             'recorded_at' => self::date($this->recorded_at),
             'mileage' => $this->mileage,
             'source' => $this->source->value,
+            'source_id' => $this->source_id,
             'note' => $this->note,
             'created_at' => self::iso($this->created_at),
         ];

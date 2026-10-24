@@ -20,27 +20,43 @@ use App\Models\Workspace;
 use App\Services\AccountService;
 use App\Services\MaintenanceService;
 use App\Services\MileageService;
+use App\Services\WorkOrderService;
+use App\Services\WorkspaceService;
 use App\Support\Km;
 use App\Support\LineItems;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Datos de demostración (contrato §5). Todo es FICTICIO: personas, empresas, teléfonos
  * (600 000 0xx), emails (@ejemplo.test), NIF y matrículas están inventados.
  *
- *  - demo@carcare.test      → particular con 2 vehículos y ~18 meses de historial.
- *  - taller@carcare.test    → "Taller Demo" (owner) con 4 elevadores, ~12 clientes, ~20 vehículos y ~30 órdenes.
- *  - gerente@carcare.test   → manager del taller.
- *  - mecanico@carcare.test  → mechanic del taller.
- * Contraseña de todas: "password". Se puede ejecutar varias veces: borra antes la demo anterior.
- * Determinista (semilla fija) respecto a la fecha de hoy.
+ *  - demo@carcare.test      → particular (Lucía) con 2 vehículos y ~18 meses de historial.
+ *  - taller@carcare.test    → "Taller Demo" (Marcos, owner) con 4 elevadores, 12 clientes, 20 vehículos y ~36 órdenes.
+ *  - gerente@carcare.test   → manager del taller (Elena).
+ *  - mecanico@carcare.test  → mechanic del taller (Andrés).
+ * Contraseña de todas: "password".
+ *
+ * ADITIVO E IDEMPOTENTE (se puede ejecutar sobre una base con datos reales):
+ *  - Nunca borra nada que no sea un resto de pruebas (ver TEST_RESIDUE_PATTERNS) dentro de un espacio demo.
+ *  - Identifica lo suyo por claves estables: email de la cuenta, propietario del taller, nombre del cliente
+ *    dentro del taller y matrícula dentro del espacio. Lo que falta se crea con su historial; lo que ya
+ *    existe no se modifica.
+ *  - Pone al día lo que ya existía: lecturas de km, repostajes y gastos menores desde la última lectura
+ *    hasta hoy (continuando desde el km más alto, así que respeta las lecturas que haya metido una persona)
+ *    y, en el taller, el movimiento del día (las órdenes avanzan un paso y entran las de hoy) con las mismas
+ *    reglas de la API. Ejecutarlo dos veces el mismo día no cambia nada la segunda vez.
+ *  - Simulación: DEMO_DRY_RUN=1 lista los cambios y lo deshace todo (no escribe ficheros).
+ *  - Los ficheros de documentos se escriben después de confirmar la transacción; nunca se borran carpetas.
+ * Aborta en producción.
  */
 class DemoSeeder extends Seeder
 {
@@ -48,7 +64,17 @@ class DemoSeeder extends Seeder
 
     public const EMAILS = ['demo@carcare.test', 'taller@carcare.test', 'gerente@carcare.test', 'mecanico@carcare.test'];
 
+    /** Textos que delatan restos de pruebas manuales o automáticas dentro de los espacios demo. */
+    public const TEST_RESIDUE_PATTERNS = ['Prueba QA', 'QA frontend'];
+
+    private const TABLES = [
+        'users', 'workspaces', 'customers', 'vehicles', 'mileage_logs', 'maintenance_records',
+        'expenses', 'reminders', 'documents', 'work_orders', 'activities',
+    ];
+
     private CarbonImmutable $today;
+
+    private bool $dryRun = false;
 
     /** @var array<string, array<string, int>> km al final de cada día, por clave de vehículo */
     private array $odometers = [];
@@ -56,10 +82,18 @@ class DemoSeeder extends Seeder
     /** @var list<array<string, mixed>> actividad pendiente de insertar (se ordena al final) */
     private array $activities = [];
 
+    /** @var array<string, string> ficheros pendientes de escribir tras confirmar (ruta → contenido) */
+    private array $files = [];
+
+    /** @var list<string> qué ha hecho (o haría) esta ejecución */
+    private array $notes = [];
+
     public function __construct(
         private readonly AccountService $accounts,
         private readonly MileageService $mileage,
         private readonly MaintenanceService $maintenance,
+        private readonly WorkOrderService $workOrders,
+        private readonly WorkspaceService $workspaces,
     ) {}
 
     public function run(): void
@@ -70,29 +104,74 @@ class DemoSeeder extends Seeder
 
         mt_srand(20261022);
         $this->today = CarbonImmutable::today();
+        $this->dryRun = (bool) config('app.demo_dry_run', false);
 
-        $this->removePreviousDemo();
-
-        Model::unguarded(function () {
-            DB::transaction(function () {
+        $before = $this->counts();
+        DB::beginTransaction();
+        try {
+            Model::unguarded(function () {
+                $this->removeTestResidue();
                 $this->seedPersonal();
                 $this->seedWorkshop();
                 $this->flushActivities();
             });
-        });
+            $after = $this->counts();
+            $this->dryRun ? DB::rollBack() : DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        } finally {
+            Auth::guard()->forgetUser();
+        }
 
-        $this->command?->info('Demo lista: demo@carcare.test y taller@carcare.test (también gerente@ y mecanico@), contraseña "password".');
+        if (! $this->dryRun) {
+            foreach ($this->files as $path => $content) {
+                Storage::disk('local')->put($path, $content);
+            }
+        }
+
+        $this->report($before, $after);
     }
 
     // ═══════════════════════════════ Utilidades ═══════════════════════════════
 
-    private function removePreviousDemo(): void
+    /** @return array<string, int> */
+    private function counts(): array
     {
-        User::query()->whereIn('email', self::EMAILS)->get()->each(fn (User $u) => $this->accounts->delete($u));
+        return collect(self::TABLES)->mapWithKeys(fn (string $t) => [$t => DB::table($t)->count()])->all();
     }
 
-    private function createUser(string $name, string $email, string $type, ?string $workshopName = null, int $daysAgo = 560): User
+    private function report(array $before, array $after): void
     {
+        if (! $this->command) {
+            return;
+        }
+
+        $this->command->info($this->dryRun
+            ? 'SIMULACIÓN (DEMO_DRY_RUN=1): esto es lo que haría. No se ha guardado nada.'
+            : 'Demo al día: demo@carcare.test y taller@carcare.test (también gerente@ y mecanico@), contraseña "password".');
+        foreach ($this->notes as $note) {
+            $this->command->line('  · '.$note);
+        }
+        $this->command->table(
+            ['Tabla', 'Antes', 'Después', 'Cambio'],
+            collect(self::TABLES)->map(fn (string $t) => [$t, $before[$t], $after[$t], sprintf('%+d', $after[$t] - $before[$t])])->all(),
+        );
+    }
+
+    private function note(string $text): void
+    {
+        $this->notes[] = $text;
+    }
+
+    /** Cuenta demo: si existe se usa tal cual (no se toca su contraseña ni sus datos); si no, se crea. */
+    private function ensureUser(string $name, string $email, string $type, ?string $workshopName, int $daysAgo): User
+    {
+        $user = User::query()->where('email', $email)->first();
+        if ($user) {
+            return $user;
+        }
+
         $user = $this->accounts->register([
             'name' => $name,
             'email' => $email,
@@ -104,8 +183,20 @@ class DemoSeeder extends Seeder
         $user->forceFill(['created_at' => $created, 'updated_at' => $created, 'email_verified_at' => $created])->save();
         $user->workspaces()->each(fn (Workspace $w) => $w->forceFill(['created_at' => $created, 'updated_at' => $created])->save());
         DB::table('workspace_user')->where('user_id', $user->id)->update(['created_at' => $created, 'updated_at' => $created]);
+        $this->note("Cuenta creada: {$email}");
 
         return $user;
+    }
+
+    /** Ejecuta $callback con $user como autor (la actividad que registran los servicios lleva su nombre). */
+    private function actingAs(User $user, callable $callback): mixed
+    {
+        Auth::guard()->setUser($user);
+        try {
+            return $callback();
+        } finally {
+            Auth::guard()->forgetUser();
+        }
     }
 
     private function rand(float $min, float $max, int $decimals = 2): string
@@ -189,61 +280,251 @@ class DemoSeeder extends Seeder
         }
     }
 
+    // ═══════════════════════════════ Restos de pruebas ═══════════════════════════════
+
+    /**
+     * Espacios demo: el personal de cada cuenta demo y los talleres de los que taller@ es propietario.
+     *
+     * @return list<int>
+     */
+    private function demoWorkspaceIds(): array
+    {
+        $users = User::query()->whereIn('email', self::EMAILS)->pluck('id', 'email');
+        if ($users->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('workspace_user')
+            ->join('workspaces', 'workspaces.id', '=', 'workspace_user.workspace_id')
+            ->where(function ($q) use ($users) {
+                $q->where(fn ($p) => $p->whereIn('workspace_user.user_id', $users->values())->where('workspaces.type', 'personal'))
+                    ->orWhere(fn ($w) => $w->where('workspace_user.user_id', $users['taller@carcare.test'] ?? 0)
+                        ->where('workspaces.type', 'workshop')->where('workspace_user.role', WorkspaceRole::Owner->value));
+            })
+            ->distinct()
+            ->pluck('workspaces.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /** where (col1 LIKE '%patrón%' OR col2 LIKE …) para todos los patrones de restos de pruebas. */
+    private function matchesResidue($query, array $columns)
+    {
+        return $query->where(function ($q) use ($columns) {
+            foreach ($columns as $column) {
+                foreach (self::TEST_RESIDUE_PATTERNS as $pattern) {
+                    $q->orWhere($column, 'like', '%'.$pattern.'%');
+                }
+            }
+        });
+    }
+
+    /**
+     * Borra SOLO lo que contiene "Prueba QA" o "QA frontend" dentro de los espacios demo, con lo que
+     * cuelga de ello (líneas, gasto vinculado, lectura de km, actividad que lo nombra o lo referencia).
+     */
+    private function removeTestResidue(): void
+    {
+        $workspaceIds = $this->demoWorkspaceIds();
+        if ($workspaceIds === []) {
+            return;
+        }
+        $vehicleIds = Vehicle::query()->whereIn('workspace_id', $workspaceIds)->pluck('id');
+        $deleted = []; // [entity_type, id]
+        $touchedVehicles = [];
+
+        $records = $this->matchesResidue(MaintenanceRecord::query()->whereIn('vehicle_id', $vehicleIds), ['title', 'description'])->with('vehicle')->get();
+        foreach ($records as $record) {
+            $items = $record->items()->count();
+            $this->note("Resto de pruebas borrado: intervención #{$record->id} «{$record->title}» de {$record->vehicle->displayName()} (con {$items} línea(s))");
+            MileageLog::query()->where('source', MileageSource::Maintenance->value)->where('source_id', $record->id)->delete();
+            $record->delete(); // líneas y gasto vinculado en cascada; documentos quedan sin vincular
+            $deleted[] = ['maintenance_record', $record->id];
+            $touchedVehicles[$record->vehicle_id] = true;
+        }
+
+        $expenses = $this->matchesResidue(Expense::query()->whereIn('vehicle_id', $vehicleIds), ['description'])->get();
+        foreach ($expenses as $expense) {
+            $this->note("Resto de pruebas borrado: gasto #{$expense->id} «{$expense->description}» ({$expense->amount} €)");
+            MileageLog::query()->where('source', MileageSource::Expense->value)->where('source_id', $expense->id)->delete();
+            $expense->delete();
+            $deleted[] = ['expense', $expense->id];
+            $touchedVehicles[$expense->vehicle_id] = true;
+        }
+
+        $reminders = $this->matchesResidue(Reminder::query()->whereIn('vehicle_id', $vehicleIds), ['title', 'notes'])->get();
+        foreach ($reminders as $reminder) {
+            $this->note("Resto de pruebas borrado: recordatorio #{$reminder->id} «{$reminder->title}»");
+            MileageLog::query()->where('source', MileageSource::Reminder->value)->where('source_id', $reminder->id)->delete();
+            $reminder->delete();
+            $deleted[] = ['reminder', $reminder->id];
+            $touchedVehicles[$reminder->vehicle_id] = true;
+        }
+
+        $documents = $this->matchesResidue(Document::query()->whereIn('vehicle_id', $vehicleIds), ['title'])->get();
+        foreach ($documents as $document) {
+            $this->note("Resto de pruebas borrado: documento #{$document->id} «{$document->title}»");
+            if (! $this->dryRun) {
+                DB::afterCommit(fn () => Storage::disk($document->disk)->delete($document->path));
+            }
+            $document->delete();
+            $deleted[] = ['document', $document->id];
+        }
+
+        $logs = $this->matchesResidue(MileageLog::query()->whereIn('vehicle_id', $vehicleIds)->where('source', MileageSource::Manual->value), ['note'])->get();
+        foreach ($logs as $log) {
+            $this->note("Resto de pruebas borrado: lectura #{$log->id} de ".Km::human($log->mileage)." «{$log->note}»");
+            $log->delete();
+            $deleted[] = ['mileage_log', $log->id];
+            $touchedVehicles[$log->vehicle_id] = true;
+        }
+
+        $orders = $this->matchesResidue(WorkOrder::query()->whereIn('workspace_id', $workspaceIds), ['title', 'complaint'])->get();
+        foreach ($orders as $order) {
+            $this->note("Resto de pruebas borrado: orden {$order->number} «{$order->title}»");
+            MileageLog::query()->where('source', MileageSource::WorkOrder->value)->where('source_id', $order->id)->delete();
+            $order->delete();
+            $deleted[] = ['work_order', $order->id];
+            $touchedVehicles[$order->vehicle_id] = true;
+        }
+
+        $activities = Activity::query()->whereIn('workspace_id', $workspaceIds)->where(function ($q) use ($deleted) {
+            $this->matchesResidue($q, ['summary']);
+            foreach ($deleted as [$type, $id]) {
+                $q->orWhere(fn ($e) => $e->where('entity_type', $type)->where('entity_id', $id));
+            }
+        })->orderBy('id')->get();
+        foreach ($activities as $activity) {
+            $this->note("Resto de pruebas borrado: actividad #{$activity->id} «{$activity->summary}»");
+            $activity->delete();
+        }
+
+        foreach (array_keys($touchedVehicles) as $vehicleId) {
+            if ($vehicle = Vehicle::find($vehicleId)) {
+                $this->mileage->recalculate($vehicle);
+            }
+        }
+    }
+
     // ═══════════════════════════════ Particular ═══════════════════════════════
+
+    private function personalSpecs(): array
+    {
+        return [
+            'ibiza' => [
+                'attributes' => [
+                    'nickname' => 'El rojo', 'make' => 'Seat', 'model' => 'Ibiza', 'version' => '1.0 TSI FR', 'year' => 2019,
+                    'fuel_type' => 'gasoline', 'transmission' => 'manual', 'engine' => '1.0 TSI 110 CV', 'body_type' => 'hatchback',
+                    'color_hex' => '#C62828', 'plate' => '4821KTB', 'vin' => 'VSSZZZKJZKR000001',
+                    'purchase_date' => '2019-06-14', 'purchase_mileage' => 12,
+                ],
+                'created_at' => [18, 30], 'start_km' => 52340, 'weekday' => [18, 52], 'trip' => 38,
+                'fuel' => ['consumption' => 6.1, 'price' => [1.52, 1.71], 'every' => [470, 610], 'station' => ['Repsol', 'Cepsa', 'BP', 'Galp', 'Gasolinera Ejemplo']],
+                'insurance' => '389.40', 'insurance_due_in' => 18, 'tax' => '68.16',
+            ],
+            'sportage' => [
+                'attributes' => [
+                    'nickname' => null, 'make' => 'Kia', 'model' => 'Sportage', 'version' => '1.6 CRDi Drive', 'year' => 2021,
+                    'fuel_type' => 'diesel', 'transmission' => 'automatic', 'engine' => '1.6 CRDi 136 CV', 'body_type' => 'suv',
+                    'color_hex' => '#6B7280', 'plate' => '7310LFW', 'vin' => null,
+                    'purchase_date' => '2021-03-02', 'purchase_mileage' => 0,
+                ],
+                'created_at' => [19, 5], 'start_km' => 30215, 'weekday' => [20, 46], 'trip' => 28,
+                'fuel' => ['consumption' => 6.6, 'price' => [1.43, 1.61], 'every' => [560, 760], 'station' => ['Repsol', 'Shell', 'Gasolinera Ejemplo', 'Ballenoil']],
+                'insurance' => '512.75', 'insurance_due_in' => 140, 'tax' => '115.20',
+            ],
+        ];
+    }
 
     private function seedPersonal(): void
     {
-        $user = $this->createUser('Lucía Demo', 'demo@carcare.test', 'personal', daysAgo: 560);
+        $user = $this->ensureUser('Lucía Demo', 'demo@carcare.test', 'personal', null, 560);
         $ws = $user->personalWorkspace();
-        Storage::disk('local')->deleteDirectory("documents/{$ws->id}");
 
-        $start = $this->today->subMonths(18);
-
-        // ─── Hatchback rojo (gasolina) ───
-        $ibiza = Vehicle::create([
-            'workspace_id' => $ws->id, 'nickname' => 'El rojo', 'make' => 'Seat', 'model' => 'Ibiza',
-            'version' => '1.0 TSI FR', 'year' => 2019, 'fuel_type' => 'gasoline', 'transmission' => 'manual',
-            'engine' => '1.0 TSI 110 CV', 'body_type' => 'hatchback', 'color_hex' => '#C62828', 'plate' => '4821KTB',
-            'vin' => 'VSSZZZKJZKR000001', 'purchase_date' => '2019-06-14', 'purchase_mileage' => 12,
-            'created_at' => $start->setTime(18, 30), 'updated_at' => $start->setTime(18, 30),
-        ]);
-        $this->simulateOdometer('ibiza', $start, 52340, [18, 52], 38);
-
-        // ─── SUV gris (diésel, automático) ───
-        $sportage = Vehicle::create([
-            'workspace_id' => $ws->id, 'nickname' => null, 'make' => 'Kia', 'model' => 'Sportage',
-            'version' => '1.6 CRDi Drive', 'year' => 2021, 'fuel_type' => 'diesel', 'transmission' => 'automatic',
-            'engine' => '1.6 CRDi 136 CV', 'body_type' => 'suv', 'color_hex' => '#6B7280', 'plate' => '7310LFW',
-            'vin' => null, 'purchase_date' => '2021-03-02', 'purchase_mileage' => 0,
-            'created_at' => $start->setTime(19, 5), 'updated_at' => $start->setTime(19, 5),
-        ]);
-        $this->simulateOdometer('sportage', $start, 30215, [20, 46], 28);
-
-        foreach ([['ibiza', $ibiza], ['sportage', $sportage]] as [$key, $vehicle]) {
-            $this->log($vehicle, $start, $this->odo($key, $start), MileageSource::VehicleCreated, $vehicle->id);
-            $this->activity($ws, $user, $vehicle, 'vehicle.created', 'vehicle', $vehicle->id, "Lucía Demo añadió el vehículo {$vehicle->displayName()}", $start->setTime(18, 31));
-            $this->weeklyReadings($ws, $user, $key, $vehicle, $start);
+        foreach ($this->personalSpecs() as $key => $spec) {
+            $vehicle = Vehicle::query()->where('workspace_id', $ws->id)->where('plate', $spec['attributes']['plate'])->first();
+            if ($vehicle === null) {
+                $vehicle = $this->createPersonalVehicle($ws, $user, $key, $spec);
+                $this->note("Vehículo creado con ~18 meses de historial: {$vehicle->displayName()} ({$vehicle->plate})");
+            } else {
+                $this->topUpPersonalVehicle($ws, $user, $key, $vehicle, $spec);
+            }
+            $this->repairDocumentFiles($vehicle);
         }
-
-        $this->fuel($ws, $user, 'ibiza', $ibiza, $start, unit: 'l', consumption: 6.1, price: [1.52, 1.71], every: [470, 610], station: ['Repsol', 'Cepsa', 'BP', 'Galp', 'Gasolinera Ejemplo']);
-        $this->fuel($ws, $user, 'sportage', $sportage, $start, unit: 'l', consumption: 6.6, price: [1.43, 1.61], every: [560, 760], station: ['Repsol', 'Shell', 'Gasolinera Ejemplo', 'Ballenoil']);
-
-        $ibizaRecords = $this->personalRecords($ws, $user, 'ibiza', $ibiza, $this->ibizaRecords());
-        $sportageRecords = $this->personalRecords($ws, $user, 'sportage', $sportage, $this->sportageRecords());
-
-        $this->miscExpenses($ws, $user, $ibiza, $start, insurance: '389.40', insuranceDueIn: 18, tax: '68.16');
-        $this->miscExpenses($ws, $user, $sportage, $start, insurance: '512.75', insuranceDueIn: 140, tax: '115.20');
-
-        $this->ibizaReminders($ws, $user, $ibiza, $ibizaRecords);
-        $this->sportageReminders($ws, $user, $sportage, $sportageRecords);
-
-        $this->personalDocuments($ws, $user, $ibiza, $sportage, $ibizaRecords);
-
-        $this->mileage->recalculate($ibiza);
-        $this->mileage->recalculate($sportage);
     }
 
-    /** Lectura manual cada domingo y otra hoy. */
+    private function createPersonalVehicle(Workspace $ws, User $user, string $key, array $spec): Vehicle
+    {
+        $start = $this->today->subMonths(18);
+        $at = $start->setTime(...$spec['created_at']);
+        $vehicle = Vehicle::create($spec['attributes'] + ['workspace_id' => $ws->id, 'created_at' => $at, 'updated_at' => $at]);
+
+        $this->simulateOdometer($key, $start, $spec['start_km'], $spec['weekday'], $spec['trip']);
+        $this->log($vehicle, $start, $this->odo($key, $start), MileageSource::VehicleCreated, $vehicle->id);
+        $this->activity($ws, $user, $vehicle, 'vehicle.created', 'vehicle', $vehicle->id, "Lucía Demo añadió el vehículo {$vehicle->displayName()}", $at->addMinute());
+        $this->weeklyReadings($ws, $user, $key, $vehicle, $start);
+        $this->fuel($ws, $user, $key, $vehicle, $start, $spec['fuel'], $this->odo($key, $start), 0.0);
+
+        $records = $this->personalRecords($ws, $user, $key, $vehicle, $key === 'ibiza' ? $this->ibizaRecords() : $this->sportageRecords());
+        $this->annualExpenses($ws, $user, $vehicle, $start, $spec);
+        $this->randomExpenses($ws, $user, $vehicle, $start->addDays(3), $this->today);
+
+        $key === 'ibiza' ? $this->ibizaReminders($ws, $user, $vehicle, $records) : $this->sportageReminders($ws, $user, $vehicle, $records);
+        $this->personalDocuments($ws, $user, $key, $vehicle, $records);
+
+        $this->mileage->recalculate($vehicle);
+
+        return $vehicle;
+    }
+
+    /**
+     * Vehículo demo que ya existía: completa el día a día desde su última lectura hasta hoy. Sigue desde el
+     * km más alto registrado (sea de la demo o de una persona), así que nunca crea un retroceso.
+     */
+    private function topUpPersonalVehicle(Workspace $ws, User $user, string $key, Vehicle $vehicle, array $spec): void
+    {
+        $vehicle->refresh();
+        $from = $vehicle->mileage_updated_at;
+        $km = $vehicle->current_mileage;
+        if ($from === null || $km === null || $from >= $this->today) {
+            $this->note("{$vehicle->displayName()}: ya estaba al día (última lectura ".($from?->format('d/m/Y') ?? 'ninguna').')');
+
+            return;
+        }
+
+        $logsBefore = $vehicle->mileageLogs()->count();
+        $expensesBefore = $vehicle->expenses()->count();
+
+        $this->simulateOdometer($key, $from, $km, $spec['weekday'], $spec['trip']);
+        $this->weeklyReadings($ws, $user, $key, $vehicle, $from);
+
+        // Repostajes: el depósito sigue desde el último lleno con km anotado.
+        $lastFill = $vehicle->expenses()->where('category', 'fuel')->where('full_tank', true)->whereNotNull('mileage')
+            ->orderByDesc('expense_date')->orderByDesc('id')->first();
+        $fillKm = ($lastFill && $lastFill->mileage <= $km) ? $lastFill->mileage : $km;
+        $this->fuel($ws, $user, $key, $vehicle, $from, $spec['fuel'], $fillKm, ($km - $fillKm) * $spec['fuel']['consumption'] / 100);
+
+        // Gastos menores: siguen el ritmo de cada 6-16 días desde el último.
+        $lastMisc = $vehicle->expenses()->whereIn('category', ['parking', 'cleaning', 'tolls', 'other'])->max('expense_date');
+        $next = $lastMisc ? CarbonImmutable::parse(substr((string) $lastMisc, 0, 10))->addDays(mt_rand(6, 16)) : $from->addDay();
+        $this->randomExpenses($ws, $user, $vehicle, $next->max($from->addDay()), $this->today);
+
+        // Impuesto de circulación de abril si cae en el tramo y no está ya.
+        for ($year = $from->year; $year <= $this->today->year; $year++) {
+            $date = CarbonImmutable::create($year, 4, 20);
+            if ($date > $from && $date <= $this->today && ! $vehicle->expenses()->where('category', 'tax')->whereYear('expense_date', $year)->exists()) {
+                $this->expense($ws, $user, $vehicle, $date, 'tax', 'Impuesto de circulación '.$year, $spec['tax']);
+            }
+        }
+
+        $this->mileage->recalculate($vehicle);
+        $vehicle->refresh();
+        $this->note(sprintf('%s: puesto al día del %s al %s (+%d lecturas, +%d gastos; km actual %s)',
+            $vehicle->displayName(), $from->format('d/m/Y'), $this->today->format('d/m/Y'),
+            $vehicle->mileageLogs()->count() - $logsBefore, $vehicle->expenses()->count() - $expensesBefore, Km::human($vehicle->current_mileage)));
+    }
+
+    /** Lectura manual cada domingo posterior a $start y otra hoy. */
     private function weeklyReadings(Workspace $ws, User $user, string $key, Vehicle $vehicle, CarbonImmutable $start): void
     {
         $notes = ['Antes del viaje', 'Vuelta de vacaciones', null, null, null, null, null, null];
@@ -261,18 +542,21 @@ class DemoSeeder extends Seeder
             'Lucía Demo registró '.Km::human($km).' en '.$vehicle->displayName(), $this->today->setTime(8, 5), ['mileage' => $km]);
     }
 
-    /** Repostajes con depósito lleno (y alguno parcial) para que el consumo lleno-a-lleno sea calculable. */
-    private function fuel(Workspace $ws, User $user, string $key, Vehicle $vehicle, CarbonImmutable $start, string $unit, float $consumption, array $price, array $every, array $station): void
+    /**
+     * Repostajes con depósito lleno (y alguno parcial) para que el consumo lleno-a-lleno sea calculable.
+     * $fillKm y $consumed describen el depósito al empezar: km del último repostaje y litros gastados desde él.
+     */
+    private function fuel(Workspace $ws, User $user, string $key, Vehicle $vehicle, CarbonImmutable $start, array $fuel, int $fillKm, float $consumed): void
     {
-        $lastFillKm = $this->odo($key, $start);
-        $consumed = 0.0;
+        $lastFillKm = $fillKm;
         $partials = 0.0;
-        $threshold = mt_rand($every[0], $every[1]);
-        $previousKm = $lastFillKm;
+        $threshold = mt_rand($fuel['every'][0], $fuel['every'][1]);
+        $previousKm = $this->odo($key, $start);
+        $station = $fuel['station'];
 
         for ($d = $start->addDay(); $d <= $this->today->subDay(); $d = $d->addDay()) {
             $km = $this->odo($key, $d);
-            $consumed += ($km - $previousKm) * $consumption * (mt_rand(92, 109) / 100) / 100;
+            $consumed += ($km - $previousKm) * $fuel['consumption'] * (mt_rand(92, 109) / 100) / 100;
             $previousKm = $km;
 
             if ($km - $lastFillKm < $threshold) {
@@ -282,14 +566,14 @@ class DemoSeeder extends Seeder
             $full = mt_rand(1, 7) !== 1;
             $liters = $full ? max(8.0, $consumed - $partials) : (float) mt_rand(15, 22);
             $liters = round($liters, 2);
-            $unitPrice = (float) $this->rand($price[0], $price[1], 3);
+            $unitPrice = (float) $this->rand($fuel['price'][0], $fuel['price'][1], 3);
             $amount = Money::format((int) round($liters * $unitPrice * 100));
 
             $expense = Expense::create([
                 'vehicle_id' => $vehicle->id, 'category' => 'fuel',
                 'description' => $station[mt_rand(0, count($station) - 1)].' · '.number_format($unitPrice, 3, ',', '').' €/l',
                 'amount' => $amount, 'currency' => 'EUR', 'expense_date' => $d->toDateString(), 'mileage' => $km,
-                'fuel_quantity' => number_format($liters, 2, '.', ''), 'fuel_unit' => $unit, 'full_tank' => $full,
+                'fuel_quantity' => number_format($liters, 2, '.', ''), 'fuel_unit' => 'l', 'full_tank' => $full,
                 'created_at' => $d->setTime(19, 40), 'updated_at' => $d->setTime(19, 40),
             ]);
             $this->log($vehicle, $d, $km, MileageSource::Expense, $expense->id);
@@ -304,7 +588,7 @@ class DemoSeeder extends Seeder
                 $consumed = 0.0;
                 $partials = 0.0;
                 $lastFillKm = $km;
-                $threshold = mt_rand($every[0], $every[1]);
+                $threshold = mt_rand($fuel['every'][0], $fuel['every'][1]);
             } else {
                 $partials += $liters;
                 $lastFillKm = $km;
@@ -504,52 +788,57 @@ class DemoSeeder extends Seeder
         ];
     }
 
-    /** Seguro, impuesto, aparcamiento, peajes, lavados y alguna multa. */
-    private function miscExpenses(Workspace $ws, User $user, Vehicle $vehicle, CarbonImmutable $start, string $insurance, int $insuranceDueIn, string $tax): void
+    private function expense(Workspace $ws, User $user, Vehicle $vehicle, CarbonImmutable $date, string $category, string $description, string $amount): Expense
     {
-        $rows = [];
+        $expense = Expense::create([
+            'vehicle_id' => $vehicle->id, 'category' => $category, 'description' => $description,
+            'amount' => $amount, 'currency' => 'EUR', 'expense_date' => $date->toDateString(),
+            'created_at' => $date->setTime(13, 20), 'updated_at' => $date->setTime(13, 20),
+        ]);
+        if ($date >= $this->today->subDays(45)) {
+            $this->activity($ws, $user, $vehicle, 'expense.created', 'expense', $expense->id,
+                'Lucía Demo añadió un gasto de '.Money::human($amount).' ('.$expense->category->label().') en '.$vehicle->displayName(),
+                $date->setTime(13, 21), ['category' => $category, 'amount' => $amount]);
+        }
 
+        return $expense;
+    }
+
+    /** Seguro anual, impuesto de circulación de cada abril y alguna multa (solo en el historial inicial). */
+    private function annualExpenses(Workspace $ws, User $user, Vehicle $vehicle, CarbonImmutable $start, array $spec): void
+    {
         // Seguro anual: la última renovación fue hace (12 meses − días hasta el vencimiento).
-        $renewal = $this->today->addDays($insuranceDueIn)->subYear();
+        $renewal = $this->today->addDays($spec['insurance_due_in'])->subYear();
         foreach ([$renewal->subYear(), $renewal] as $date) {
             if ($date >= $start) {
-                $rows[] = [$date, 'insurance', 'Seguro anual (póliza ficticia)', $insurance];
+                $this->expense($ws, $user, $vehicle, $date, 'insurance', 'Seguro anual (póliza ficticia)', $spec['insurance']);
             }
         }
 
-        // Impuesto de circulación cada abril.
         for ($year = $start->year; $year <= $this->today->year; $year++) {
             $date = CarbonImmutable::create($year, 4, 20);
             if ($date >= $start && $date <= $this->today) {
-                $rows[] = [$date, 'tax', 'Impuesto de circulación '.$year, $tax];
+                $this->expense($ws, $user, $vehicle, $date, 'tax', 'Impuesto de circulación '.$year, $spec['tax']);
             }
-        }
-
-        for ($d = $start->addDays(3); $d <= $this->today; $d = $d->addDays(mt_rand(6, 16))) {
-            $roll = mt_rand(1, 100);
-            $rows[] = match (true) {
-                $roll <= 45 => [$d, 'parking', mt_rand(0, 1) ? 'Parking del centro' : 'Zona azul', $this->rand(1.8, 14.5)],
-                $roll <= 70 => [$d, 'cleaning', mt_rand(0, 1) ? 'Lavado exterior' : 'Lavado completo', $this->rand(6.0, 18.0)],
-                $roll <= 92 => [$d, 'tolls', 'Peaje autopista', $this->rand(4.2, 21.6)],
-                default => [$d, 'other', mt_rand(0, 1) ? 'Alfombrillas y ambientador' : 'Líquido limpiaparabrisas', $this->rand(4.5, 29.9)],
-            };
         }
 
         if ($vehicle->make === 'Seat') {
-            $rows[] = [$this->today->subDays(201), 'fines', 'Multa de aparcamiento (ejemplo)', '90.00'];
+            $this->expense($ws, $user, $vehicle, $this->today->subDays(201), 'fines', 'Multa de aparcamiento (ejemplo)', '90.00');
         }
+    }
 
-        foreach ($rows as [$date, $category, $description, $amount]) {
-            $expense = Expense::create([
-                'vehicle_id' => $vehicle->id, 'category' => $category, 'description' => $description,
-                'amount' => $amount, 'currency' => 'EUR', 'expense_date' => $date->toDateString(),
-                'created_at' => $date->setTime(13, 20), 'updated_at' => $date->setTime(13, 20),
-            ]);
-            if ($date >= $this->today->subDays(45)) {
-                $this->activity($ws, $user, $vehicle, 'expense.created', 'expense', $expense->id,
-                    'Lucía Demo añadió un gasto de '.Money::human($amount).' ('.$expense->category->label().') en '.$vehicle->displayName(),
-                    $date->setTime(13, 21), ['category' => $category, 'amount' => $amount]);
-            }
+    /** Aparcamiento, lavados, peajes y pequeños gastos cada 6-16 días entre $from y $to. */
+    private function randomExpenses(Workspace $ws, User $user, Vehicle $vehicle, CarbonImmutable $from, CarbonImmutable $to): void
+    {
+        for ($d = $from; $d <= $to; $d = $d->addDays(mt_rand(6, 16))) {
+            $roll = mt_rand(1, 100);
+            [$category, $description, $amount] = match (true) {
+                $roll <= 45 => ['parking', mt_rand(0, 1) ? 'Parking del centro' : 'Zona azul', $this->rand(1.8, 14.5)],
+                $roll <= 70 => ['cleaning', mt_rand(0, 1) ? 'Lavado exterior' : 'Lavado completo', $this->rand(6.0, 18.0)],
+                $roll <= 92 => ['tolls', 'Peaje autopista', $this->rand(4.2, 21.6)],
+                default => ['other', mt_rand(0, 1) ? 'Alfombrillas y ambientador' : 'Líquido limpiaparabrisas', $this->rand(4.5, 29.9)],
+            };
+            $this->expense($ws, $user, $vehicle, $d, $category, $description, $amount);
         }
     }
 
@@ -667,25 +956,28 @@ class DemoSeeder extends Seeder
         ]);
     }
 
-    /** @param array<string, MaintenanceRecord> $ibizaRecords */
-    private function personalDocuments(Workspace $ws, User $user, Vehicle $ibiza, Vehicle $sportage, array $ibizaRecords): void
+    /** Documentos de ejemplo de cada vehículo personal: [título, tipo, nombre de fichero, intervención, caduca, fecha]. */
+    private function personalDocumentSpecs(string $key, array $records): array
     {
-        $docs = [
-            [$ibiza, 'Póliza del seguro (ejemplo)', 'insurance', 'poliza-seguro-ejemplo.pdf', null, $this->today->addDays(18), $this->today->addDays(18)->subYear()],
-            [$ibiza, 'Factura del cambio de batería', 'invoice', 'factura-bateria.pdf', $ibizaRecords['battery'], null, $ibizaRecords['battery']->service_date],
-            [$ibiza, 'Informe ITV', 'itv', 'informe-itv.pdf', $ibizaRecords['itv'], null, $ibizaRecords['itv']->service_date],
-            [$ibiza, 'Foto del arañazo', 'photo', 'foto-aranazo.png', $ibizaRecords['body'], null, $ibizaRecords['body']->service_date],
-            [$sportage, 'Permiso de circulación (copia)', 'registration', 'permiso-circulacion.pdf', null, null, $this->today->subDays(520)],
-            [$sportage, 'Manual de mantenimiento', 'manual', 'manual-mantenimiento.pdf', null, null, $this->today->subDays(6)],
-        ];
+        return $key === 'ibiza'
+            ? [
+                ['Póliza del seguro (ejemplo)', 'insurance', 'poliza-seguro-ejemplo.pdf', null, $this->today->addDays(18), $this->today->addDays(18)->subYear()],
+                ['Factura del cambio de batería', 'invoice', 'factura-bateria.pdf', $records['battery'] ?? null, null, ($records['battery'] ?? null)?->service_date],
+                ['Informe ITV', 'itv', 'informe-itv.pdf', $records['itv'] ?? null, null, ($records['itv'] ?? null)?->service_date],
+                ['Foto del arañazo', 'photo', 'foto-aranazo.png', $records['body'] ?? null, null, ($records['body'] ?? null)?->service_date],
+            ]
+            : [
+                ['Permiso de circulación (copia)', 'registration', 'permiso-circulacion.pdf', null, null, $this->today->subDays(520)],
+                ['Manual de mantenimiento', 'manual', 'manual-mantenimiento.pdf', null, null, $this->today->subDays(6)],
+            ];
+    }
 
-        foreach ($docs as [$vehicle, $title, $type, $filename, $record, $expires, $date]) {
-            $date = $date instanceof CarbonImmutable ? $date : CarbonImmutable::parse($date);
-            $document = $this->storeDocument($ws, $vehicle, $title, $type, $filename, $record, $expires, $date->setTime(18, 0), [
-                'Documento de demostración generado por CarCare.',
-                'Todos los datos son ficticios.',
-                'Vehículo: '.$vehicle->displayName().' ('.$vehicle->plate.')',
-            ]);
+    /** @param array<string, MaintenanceRecord> $records */
+    private function personalDocuments(Workspace $ws, User $user, string $key, Vehicle $vehicle, array $records): void
+    {
+        foreach ($this->personalDocumentSpecs($key, $records) as [$title, $type, $filename, $record, $expires, $date]) {
+            $date = CarbonImmutable::parse($date);
+            $document = $this->storeDocument($ws, $vehicle, $title, $type, $filename, $record, $expires, $date->setTime(18, 0));
             if ($date >= $this->today->subDays(45)) {
                 $this->activity($ws, $user, $vehicle, 'document.uploaded', 'document', $document->id,
                     "Lucía Demo subió el documento «{$title}» a ".$vehicle->displayName(), $date->setTime(18, 1), ['document_type' => $type]);
@@ -693,12 +985,21 @@ class DemoSeeder extends Seeder
         }
     }
 
-    private function storeDocument(Workspace $ws, Vehicle $vehicle, string $title, string $type, string $filename, ?MaintenanceRecord $record, ?CarbonImmutable $expires, CarbonImmutable $at, array $lines): Document
+    private function documentContent(Vehicle $vehicle, string $title, bool $png): string
+    {
+        return $png ? $this->demoPng() : $this->demoPdf($title, [
+            'Documento de demostración generado por CarCare.',
+            'Todos los datos son ficticios.',
+            'Vehículo: '.$vehicle->displayName().' ('.$vehicle->plate.')',
+        ]);
+    }
+
+    private function storeDocument(Workspace $ws, Vehicle $vehicle, string $title, string $type, string $filename, ?MaintenanceRecord $record, ?CarbonImmutable $expires, CarbonImmutable $at): Document
     {
         $isPng = str_ends_with($filename, '.png');
-        $content = $isPng ? $this->demoPng() : $this->demoPdf($title, $lines);
+        $content = $this->documentContent($vehicle, $title, $isPng);
         $path = "documents/{$ws->id}/".Str::uuid().($isPng ? '.png' : '.pdf');
-        Storage::disk('local')->put($path, $content);
+        $this->files[$path] = $content; // se escribe al confirmar
 
         return Document::create([
             'vehicle_id' => $vehicle->id, 'maintenance_record_id' => $record?->id, 'title' => $title,
@@ -706,6 +1007,32 @@ class DemoSeeder extends Seeder
             'mime_type' => $isPng ? 'image/png' : 'application/pdf', 'size' => strlen($content),
             'expires_at' => $expires?->toDateString(), 'created_at' => $at, 'updated_at' => $at,
         ]);
+    }
+
+    /**
+     * Si falta el fichero de un documento de ejemplo (p. ej. en un equipo nuevo: `storage/` no va a git),
+     * se regenera en la misma ruta. Los documentos que no son de la demo no se pueden regenerar: se avisa.
+     */
+    private function repairDocumentFiles(Vehicle $vehicle): void
+    {
+        $demoTitles = collect(['ibiza', 'sportage'])->flatMap(fn ($k) => array_column($this->personalDocumentSpecs($k, []), 0))->all();
+
+        foreach ($vehicle->documents()->get() as $document) {
+            if (isset($this->files[$document->path]) || Storage::disk($document->disk)->exists($document->path)) {
+                continue;
+            }
+            if (! in_array($document->title, $demoTitles, true) || $document->disk !== 'local') {
+                $this->note("Aviso: falta el fichero del documento #{$document->id} «{$document->title}» y no es de la demo (no se regenera)");
+
+                continue;
+            }
+            $content = $this->documentContent($vehicle, $document->title, $document->mime_type === 'image/png');
+            $this->files[$document->path] = $content;
+            if ($document->size !== strlen($content)) {
+                $document->forceFill(['size' => strlen($content)])->saveQuietly();
+            }
+            $this->note("Fichero regenerado: documento #{$document->id} «{$document->title}» ({$document->path})");
+        }
     }
 
     /** PDF mínimo válido de una página (Helvetica, WinAnsi) sin dependencias. */
@@ -765,26 +1092,40 @@ class DemoSeeder extends Seeder
 
     private function seedWorkshop(): void
     {
-        $owner = $this->createUser('Marcos Demo', 'taller@carcare.test', 'workshop', 'Taller Demo', daysAgo: 420);
-        $manager = $this->createUser('Elena Demo', 'gerente@carcare.test', 'personal', daysAgo: 410);
-        $mechanic = $this->createUser('Andrés Demo', 'mecanico@carcare.test', 'personal', daysAgo: 405);
+        $owner = $this->ensureUser('Marcos Demo', 'taller@carcare.test', 'workshop', 'Taller Demo', 420);
+        $manager = $this->ensureUser('Elena Demo', 'gerente@carcare.test', 'personal', null, 410);
+        $mechanic = $this->ensureUser('Andrés Demo', 'mecanico@carcare.test', 'personal', null, 405);
 
-        /** @var Workspace $ws */
-        $ws = $owner->workspaces()->where('type', 'workshop')->firstOrFail();
-        $ws->forceFill(['settings' => ['bays_count' => 4, 'currency' => 'EUR', 'tax_rate' => '21.00']])->save();
-        $ws->members()->attach($manager->id, ['role' => WorkspaceRole::Manager->value, 'created_at' => $this->today->subDays(410), 'updated_at' => $this->today->subDays(410)]);
-        $ws->members()->attach($mechanic->id, ['role' => WorkspaceRole::Mechanic->value, 'created_at' => $this->today->subDays(405), 'updated_at' => $this->today->subDays(405)]);
-        Storage::disk('local')->deleteDirectory("documents/{$ws->id}");
+        $ws = $owner->workspaces()->where('type', 'workshop')->wherePivot('role', WorkspaceRole::Owner->value)->orderBy('workspaces.id')->first();
+        $isNew = $ws === null || ! WorkOrder::query()->where('workspace_id', $ws->id)->exists() && ! $ws->customers()->exists();
+        if ($ws === null) {
+            $ws = $this->workspaces->createWorkshop($owner, 'Taller Demo');
+            $this->note('Taller creado: Taller Demo');
+        }
+        if ($isNew) {
+            $ws->forceFill(['settings' => ['bays_count' => 4, 'currency' => 'EUR', 'tax_rate' => '21.00']])->save();
+        }
+        foreach ([[$manager, WorkspaceRole::Manager, 410], [$mechanic, WorkspaceRole::Mechanic, 405]] as [$member, $role, $daysAgo]) {
+            if (! $ws->members()->whereKey($member->id)->exists()) {
+                $at = $this->today->subDays($daysAgo);
+                $ws->members()->attach($member->id, ['role' => $role->value, 'created_at' => $at, 'updated_at' => $at]);
+                $this->note("{$member->email} añadido al taller como {$role->value}");
+            }
+        }
 
         $customers = $this->workshopCustomers($ws, $owner, $manager);
         $vehicles = $this->workshopVehicles($ws, $customers);
-        $this->workOrders($ws, $owner, $manager, $mechanic, $vehicles);
 
-        foreach ($vehicles as $entry) {
-            $this->mileage->recalculate($entry['vehicle']);
+        if (! WorkOrder::query()->where('workspace_id', $ws->id)->exists()) {
+            $this->workOrders($ws, $owner, $manager, $mechanic, $vehicles);
+            foreach ($vehicles as $entry) {
+                $this->mileage->recalculate($entry['vehicle']);
+            }
+            $this->fleetReminders($vehicles);
+            $this->note('Órdenes del taller creadas (12 meses de entregas y tablero abierto de hoy)');
+        } else {
+            $this->refreshWorkshopDay($ws, $owner, $mechanic, $vehicles);
         }
-
-        $this->fleetReminders($vehicles);
     }
 
     /** @return list<Customer> */
@@ -806,21 +1147,29 @@ class DemoSeeder extends Seeder
         ];
 
         $customers = [];
+        $created = 0;
         foreach ($rows as $i => [$name, $email, $phone, $taxId, $notes]) {
-            $at = $this->today->subDays(400 - $i * 23)->setTime(11, 0);
-            $customer = Customer::create([
-                'workspace_id' => $ws->id, 'name' => $name, 'email' => $email, 'phone' => $phone,
-                'tax_id' => $taxId, 'notes' => $notes, 'created_at' => $at, 'updated_at' => $at,
-            ]);
-            $by = $i % 3 === 0 ? $manager : $owner;
-            $this->activity($ws, $by, null, 'customer.created', 'customer', $customer->id, "{$by->name} dio de alta al cliente {$name}", $at);
+            $customer = Customer::query()->where('workspace_id', $ws->id)->where('name', $name)->first();
+            if ($customer === null) {
+                $at = $this->today->subDays(400 - $i * 23)->setTime(11, 0);
+                $customer = Customer::create([
+                    'workspace_id' => $ws->id, 'name' => $name, 'email' => $email, 'phone' => $phone,
+                    'tax_id' => $taxId, 'notes' => $notes, 'created_at' => $at, 'updated_at' => $at,
+                ]);
+                $by = $i % 3 === 0 ? $manager : $owner;
+                $this->activity($ws, $by, null, 'customer.created', 'customer', $customer->id, "{$by->name} dio de alta al cliente {$name}", $at);
+                $created++;
+            }
             $customers[] = $customer;
+        }
+        if ($created > 0) {
+            $this->note("Clientes del taller creados: {$created}");
         }
 
         return $customers;
     }
 
-    /** @return list<array{vehicle: Vehicle, base: int, daily: int, since: CarbonImmutable}> */
+    /** @return list<array{vehicle: Vehicle, base: ?int, daily: int, since: CarbonImmutable}> */
     private function workshopVehicles(Workspace $ws, array $customers): array
     {
         // [cliente, marca, modelo, versión, año, combustible, cambio, carrocería, color, matrícula, km al alta, km/día, apodo]
@@ -848,18 +1197,27 @@ class DemoSeeder extends Seeder
         ];
 
         $vehicles = [];
+        $created = 0;
         foreach ($rows as $i => [$c, $make, $model, $version, $year, $fuel, $gearbox, $body, $color, $plate, $baseKm, $daily, $nickname]) {
             $since = $this->today->subDays(380 - $i * 9);
-            $vehicle = Vehicle::create([
-                'workspace_id' => $ws->id, 'customer_id' => $customers[$c]->id, 'nickname' => $nickname,
-                'make' => $make, 'model' => $model, 'version' => $version, 'year' => $year, 'fuel_type' => $fuel,
-                'transmission' => $gearbox, 'body_type' => $body, 'color_hex' => $color, 'plate' => $plate,
-                'created_at' => $since->setTime(12, 0), 'updated_at' => $since->setTime(12, 0),
-            ]);
-            if ($baseKm !== null) {
-                $this->log($vehicle, $since, $baseKm, MileageSource::VehicleCreated, $vehicle->id);
+            $vehicle = Vehicle::query()->where('workspace_id', $ws->id)->where('plate', $plate)->first();
+            if ($vehicle === null) {
+                $vehicle = Vehicle::create([
+                    'workspace_id' => $ws->id, 'customer_id' => $customers[$c]->id, 'nickname' => $nickname,
+                    'make' => $make, 'model' => $model, 'version' => $version, 'year' => $year, 'fuel_type' => $fuel,
+                    'transmission' => $gearbox, 'body_type' => $body, 'color_hex' => $color, 'plate' => $plate,
+                    'created_at' => $since->setTime(12, 0), 'updated_at' => $since->setTime(12, 0),
+                ]);
+                if ($baseKm !== null) {
+                    $this->log($vehicle, $since, $baseKm, MileageSource::VehicleCreated, $vehicle->id);
+                }
+                $this->mileage->recalculate($vehicle);
+                $created++;
             }
             $vehicles[] = ['vehicle' => $vehicle, 'base' => $baseKm, 'daily' => $daily, 'since' => $since];
+        }
+        if ($created > 0) {
+            $this->note("Vehículos del taller creados: {$created}");
         }
 
         return $vehicles;
@@ -909,7 +1267,7 @@ class DemoSeeder extends Seeder
 
         // [vehículo, trabajo, estado, recibida, prometida, elevador, asignada, prioridad]
         $specs = [
-            // Entregadas (repartidas en los últimos 12 meses: alimentan facturación y analítica).
+            // Entregadas: repartidas en los últimos 12 meses (analítica) y más densas en los últimos 2.
             [0, 'oil', 'delivered', $at(340, 8, 30), $at(339, 18), null, $mechanic, 'normal'],
             [7, 'timing', 'delivered', $at(318, 9, 10), $at(316, 19), null, $mechanic, 'normal'],
             [12, 'brakes', 'delivered', $at(296, 8, 5), $at(296, 19), null, $owner, 'urgent'],
@@ -922,8 +1280,13 @@ class DemoSeeder extends Seeder
             [12, 'tyres', 'delivered', $at(117, 8, 20), $at(117, 13), null, $mechanic, 'urgent'],
             [9, 'battery', 'delivered', $at(89, 9, 40), $at(89, 12), null, $mechanic, 'normal'],
             [17, 'exhaust', 'delivered', $at(63, 10, 15), $at(62, 18), null, $owner, 'normal'],
+            [6, 'battery', 'delivered', $at(55, 9, 0), $at(54, 18), null, $mechanic, 'normal'],
+            [11, 'oil', 'delivered', $at(48, 8, 30), $at(48, 17), null, $mechanic, 'low'],
             [4, 'brakes', 'delivered', $at(41, 8, 0), $at(41, 19), null, $mechanic, 'high'],
+            [15, 'tyres', 'delivered', $at(34, 10, 0), $at(34, 14), null, $owner, 'normal'],
+            [8, 'pre_itv', 'delivered', $at(29, 9, 15), $at(29, 13), null, $mechanic, 'high'],
             [19, 'service', 'delivered', $at(22, 9, 20), $at(21, 18), null, $mechanic, 'normal'],
+            [2, 'shocks', 'delivered', $at(15, 8, 45), $at(14, 18), null, $owner, 'normal'],
             [14, 'alignment', 'delivered', $at(8, 12, 0), $at(8, 17), null, $owner, 'low'],
             // Canceladas.
             [10, 'diagnosis', 'cancelled', $at(131, 10, 30), $at(130, 18), null, null, 'normal'],
@@ -942,7 +1305,6 @@ class DemoSeeder extends Seeder
             [13, 'battery', 'ready', $at(1, 17, 40), null, null, $mechanic, 'low'],
             [4, 'oil', 'received', $today->setTime(8, 40), $today->addDays(1)->setTime(14, 0), null, null, 'normal'],
             [10, 'shocks', 'received', $at(1, 18, 10), $today->addDays(2)->setTime(19, 0), null, null, 'normal'],
-            [11, 'service', 'received', $today->setTime(10, 15), null, null, null, 'low'],
         ];
 
         usort($specs, fn ($a, $b) => $a[3] <=> $b[3]);
@@ -1041,12 +1403,99 @@ class DemoSeeder extends Seeder
         }
     }
 
+    /**
+     * Taller que ya tenía órdenes: el movimiento del día, con las reglas de la API (WorkOrderService).
+     * Solo si hoy no ha entrado ninguna orden demo (si no, ya está al día). Las órdenes abiertas de la demo
+     * que no se han tocado hoy avanzan un paso (las listas se entregan y crean su intervención) y entran
+     * tres nuevas. Solo toca órdenes de vehículos demo con títulos del catálogo de trabajos de la demo.
+     */
+    private function refreshWorkshopDay(Workspace $ws, User $owner, User $mechanic, array $vehicles): void
+    {
+        $vehicleIds = collect($vehicles)->map(fn (array $e) => $e['vehicle']->id)->all();
+        $titles = collect($this->jobs())->map(fn (array $job) => $job[0])->values()->all();
+        $demoOrders = fn () => WorkOrder::query()->where('workspace_id', $ws->id)->whereIn('vehicle_id', $vehicleIds)->whereIn('title', $titles);
+
+        if ($demoOrders()->where('received_at', '>=', $this->today->startOfDay())->exists()) {
+            $this->note('Taller: ya había movimiento de hoy, no se cambia nada');
+
+            return;
+        }
+
+        $next = [
+            'ready' => [WorkOrderStatus::Delivered, $owner],
+            'in_progress' => [WorkOrderStatus::Ready, $mechanic],
+            'waiting_parts' => [WorkOrderStatus::InProgress, $mechanic],
+            'diagnosing' => [WorkOrderStatus::InProgress, $mechanic],
+            'received' => [WorkOrderStatus::Diagnosing, $mechanic],
+        ];
+        $open = $demoOrders()->open()->where('updated_at', '<', $this->today->startOfDay())
+            ->orderBy('received_at')->orderBy('id')->get();
+        $moved = 0;
+        foreach (array_keys($next) as $from) {
+            foreach ($open->filter(fn (WorkOrder $o) => $o->status->value === $from)->values() as $i => $order) {
+                [$to, $actor] = $next[$from];
+                // Una de cada dos en diagnóstico se queda esperando recambios.
+                if ($from === 'diagnosing' && $i % 2 === 1) {
+                    $to = WorkOrderStatus::WaitingParts;
+                }
+                $bay = ($to === WorkOrderStatus::InProgress && $order->bay === null) ? $this->freeBay($ws) : null;
+                $this->actingAs($actor, fn () => $this->workOrders->changeStatus($order->fresh(), $to, $bay !== null, $bay));
+                $this->note("Taller: {$order->number} pasa de «".WorkOrderStatus::from($from)->label()."» a «{$to->label()}»".($bay ? " (elevador {$bay})" : ''));
+                $moved++;
+            }
+        }
+
+        // Entran tres órdenes nuevas hoy, de vehículos sin orden abierta.
+        $busy = WorkOrder::query()->where('workspace_id', $ws->id)->open()->pluck('vehicle_id')->all();
+        $candidates = collect($vehicles)
+            ->filter(fn (array $e) => ! in_array($e['vehicle']->id, $busy, true) && $e['vehicle']->archived_at === null)
+            ->values();
+        $jobs = $this->jobs();
+        $jobKeys = array_keys($jobs);
+        for ($n = 0; $n < 3 && $candidates->isNotEmpty(); $n++) {
+            $entry = $candidates->pull(mt_rand(0, $candidates->count() - 1));
+            $candidates = $candidates->values();
+            /** @var Vehicle $vehicle */
+            $vehicle = $entry['vehicle']->fresh();
+            [$title, $complaint, , $items] = $jobs[$jobKeys[mt_rand(0, count($jobKeys) - 1)]];
+            $mileageIn = $vehicle->current_mileage === null ? null
+                : $vehicle->current_mileage + max(0, (int) ($vehicle->mileage_updated_at?->diffInDays($this->today) ?? 0)) * $entry['daily'];
+            $order = $this->actingAs($n === 1 ? $owner : $mechanic, fn () => $this->workOrders->create($ws, [
+                'vehicle_id' => $vehicle->id,
+                'title' => $title,
+                'complaint' => $complaint,
+                'priority' => ['normal', 'high', 'low'][$n],
+                'assigned_to' => $n === 2 ? null : $mechanic->id,
+                'promised_at' => $n === 0 ? $this->today->setTime(19, 0) : $this->today->addDays($n)->setTime(18, 0),
+                'mileage_in' => $mileageIn,
+                'items' => $items,
+            ]));
+            $this->note("Taller: entra hoy {$order->number} «{$title}» para {$vehicle->displayName()}");
+        }
+
+        if ($moved === 0) {
+            $this->note('Taller: no había órdenes demo abiertas que mover');
+        }
+    }
+
+    private function freeBay(Workspace $ws): ?int
+    {
+        $used = WorkOrder::query()->where('workspace_id', $ws->id)->open()->whereNotNull('bay')->pluck('bay')->all();
+        foreach (range(1, $ws->baysCount()) as $bay) {
+            if (! in_array($bay, $used)) {
+                return $bay;
+            }
+        }
+
+        return null;
+    }
+
     /** Alertas de flota: ITV vencida, ITV y aceite próximos, y una revisión sin datos de km. */
     private function fleetReminders(array $vehicles): void
     {
         $today = $this->today;
         // Último km conocido por el taller (lecturas de alta y de entrada de órdenes).
-        $km = fn (int $i) => (int) $vehicles[$i]['vehicle']->current_mileage;
+        $km = fn (int $i) => (int) $vehicles[$i]['vehicle']->fresh()->current_mileage;
 
         $specs = [
             [0, ['title' => 'ITV de la furgoneta', 'kind' => 'itv', 'zone' => 'general', 'due_date' => $today->subDays(9)->toDateString(), 'recurrence_months' => 12, 'starts_on' => $today->subDays(9)->subYear()->toDateString()]],
@@ -1058,7 +1507,10 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($specs as [$i, $data]) {
-            $this->reminder($vehicles[$i]['vehicle'], $data);
+            $vehicle = $vehicles[$i]['vehicle'];
+            if (! $vehicle->reminders()->where('title', $data['title'])->exists()) {
+                $this->reminder($vehicle, $data);
+            }
         }
     }
 }

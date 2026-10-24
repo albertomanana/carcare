@@ -266,6 +266,7 @@ final class Contract
             'recorded_at' => 'date',
             'mileage' => 'int',
             'source' => self::enum(MileageSource::class),
+            'source_id' => '?int',
             'note' => '?string',
             'created_at' => 'datetime',
         ];
@@ -529,6 +530,7 @@ final class Contract
             'notes' => '?string',
             'vehicles_count' => 'int',
             'open_orders_count' => 'int',
+            'anonymized_at' => '?datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

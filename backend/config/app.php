@@ -123,4 +123,10 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    | DemoSeeder en modo simulación: calcula y lista los cambios y los deshace al final
+    | (DEMO_DRY_RUN=1 php artisan db:seed --class=DemoSeeder). No escribe ficheros.
+    */
+    'demo_dry_run' => (bool) env('DEMO_DRY_RUN', false),
+
 ];

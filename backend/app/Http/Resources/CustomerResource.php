@@ -26,6 +26,7 @@ class CustomerResource extends ApiResource
             'notes' => $customer->notes,
             'vehicles_count' => (int) $customer->vehicles_count,
             'open_orders_count' => (int) $customer->open_orders_count,
+            'anonymized_at' => self::iso($customer->anonymized_at),
             'created_at' => self::iso($customer->created_at),
             'updated_at' => self::iso($customer->updated_at),
         ];
