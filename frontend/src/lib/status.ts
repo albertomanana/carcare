@@ -43,7 +43,7 @@ export const REMINDER_STATE_ORDER: ReminderState[] = ['overdue', 'soon', 'ok', '
 
 export function zoneDescriptor(zone: Pick<ZoneStatus, 'state' | 'basis'>): StatusDescriptor {
   if (zone.basis === 'none') return { label: 'Sin datos', tone: 'neutral', icon: CircleDashed }
-  if (zone.basis === 'records') return { label: 'Con historial, sin intervalos', tone: 'info', icon: CircleQuestionMark }
+  if (zone.basis === 'records') return { label: 'Sin recordatorio', tone: 'info', icon: CircleQuestionMark }
   return REMINDER_STATE[zone.state]
 }
 

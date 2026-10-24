@@ -21,26 +21,31 @@ function TooltipBox({ title, children }: { title: ReactNode; children: ReactNode
   )
 }
 
-/** Tabla solo para lectores de pantalla con los datos del gráfico. */
+/**
+ * Tabla solo para lectores de pantalla con los datos del gráfico. Va dentro de un div sr-only:
+ * una <table> no respeta height: 1px y alargaba la página con un hueco vacío (hallazgo I2 de UX).
+ */
 function SrTable({ caption, headers, rows }: { caption: string; headers: [string, string]; rows: [string, string][] }) {
   return (
-    <table className="sr-only">
-      <caption>{caption}</caption>
-      <thead>
-        <tr>
-          <th scope="col">{headers[0]}</th>
-          <th scope="col">{headers[1]}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(([a, b]) => (
-          <tr key={a}>
-            <th scope="row">{a}</th>
-            <td>{b}</td>
+    <div className="sr-only">
+      <table>
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{headers[0]}</th>
+            <th scope="col">{headers[1]}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(([a, b]) => (
+            <tr key={a}>
+              <th scope="row">{a}</th>
+              <td>{b}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

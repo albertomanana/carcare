@@ -14,7 +14,7 @@
   --surface-2: #20272b;
   --surface-3: #2a3237;
   --line: #333b40;
-  --line-strong: #5b666c;
+  --line-strong: #6b777d; /* ≥ 3:1 sobre surface y surface-2 (WCAG 1.4.11, hallazgo I3) */
   --fg: #f5f7f7;
   --fg-warm: #f2efe8;
   --fg-muted: #a5b0b5;
@@ -61,7 +61,7 @@
   --surface-2: #f0eee8;
   --surface-3: #e7e4dc;
   --line: #e2ded4;
-  --line-strong: #8c8a82;
+  --line-strong: #85837b; /* ≥ 3:1 sobre surface y surface-2 (hallazgo I3) */
   --fg: #14181b;
   --fg-warm: #111518;
   --fg-muted: #4f5a60;
@@ -327,7 +327,7 @@
   --surface-2: #f4f4f2;
   --surface-3: #eceae4;
   --line: #dcd9d1;
-  --line-strong: #8c8a82;
+  --line-strong: #85837b; /* ≥ 3:1 sobre surface y surface-2 (hallazgo I3) */
   --fg: #14181b;
   --fg-warm: #111518;
   --fg-muted: #4a5459;
@@ -357,7 +357,7 @@
     --surface-2: #f4f4f2;
     --surface-3: #eeeeea;
     --line: #d8d6cf;
-    --line-strong: #8c8a82;
+    --line-strong: #85837b; /* ≥ 3:1 sobre surface y surface-2 (hallazgo I3) */
     --fg: #111111;
     --fg-warm: #111111;
     --fg-muted: #3d4549;

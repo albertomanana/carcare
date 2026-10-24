@@ -70,18 +70,18 @@ export default function AnalyticsPage() {
         }
         actions={
           !noVehicles && (
-          <div className="flex items-center gap-2">
-            <label htmlFor={selectId} className="text-sm text-fg-muted">
-              Periodo
-            </label>
-            <Select id={selectId} value={preset} onChange={(e) => setPreset(e.target.value)} className="w-48">
-              {ANALYTICS_PRESETS.map((p) => (
-                <option key={p} value={p}>
-                  {PERIOD_LABEL[p]}
-                </option>
-              ))}
-            </Select>
-          </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor={selectId} className="text-sm text-fg-muted">
+                Periodo
+              </label>
+              <Select id={selectId} value={preset} onChange={(e) => setPreset(e.target.value)} className="w-48">
+                {ANALYTICS_PRESETS.map((p) => (
+                  <option key={p} value={p}>
+                    {PERIOD_LABEL[p]}
+                  </option>
+                ))}
+              </Select>
+            </div>
           )
         }
       />
