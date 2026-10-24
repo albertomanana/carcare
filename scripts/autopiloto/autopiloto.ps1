@@ -146,6 +146,11 @@ if ($Once) {
   exit 0
 }
 
+# Un solo bucle a la vez: si el acceso directo se lanza dos veces, el segundo se va.
+$otherLoop = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+  Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like '*autopiloto.ps1*' -and $_.CommandLine -notlike '*-Once*' }
+if ($otherLoop) { Write-Log "Ya hay un piloto en marcha (PID $($otherLoop[0].ProcessId)): este se cierra."; exit 0 }
+
 Write-Log '=== Piloto automatico iniciado (arranque de Windows) ==='
 Start-DevServices
 Open-Project

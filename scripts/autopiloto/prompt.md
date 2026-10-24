@@ -7,7 +7,7 @@ Sigue al pie de la letra las reglas de `docs/equipo/AUTOPILOTO.md` (léelo enter
 - Verifica el resultado con evidencias reales. Actualiza la cola, el tablero, la nota de sesión en `CarCare/05_sesiones/` y la tabla "Últimas ejecuciones".
 - Antes de terminar, vuelve a poner la fila "Piloto automático" en `Libre`.
 
-Los servidores de desarrollo pueden no estar arrancados: si los necesitas, comprueba MySQL (puerto 3306; si no, `C:/xampp/mysql/bin/mysqld.exe --defaults-file=C:/xampp/mysql/bin/my.ini --standalone` en segundo plano), la API (`php artisan serve` en `backend/`, :8000) y la web (`npm run dev` en `frontend/`, :5173).
+Los servidores de desarrollo pueden no estar arrancados: si los necesitas, comprueba MySQL (puerto 3306; si no, `C:/xampp/mysql/bin/mysqld.exe --defaults-file=C:/xampp/mysql/bin/my.ini --standalone` en segundo plano), la API (`scripts/servidor-api.cmd`, :8000, con OPcache) y la web (`npm run dev` en `frontend/`, :5173). Esos dos puertos son de Alberto: si un agente necesita probar en el navegador, dale su propia instancia (API 8050‑8090, Vite 5183‑5189; ver "Instancia aislada" en `CLAUDE.md`).
 
 Al terminar: commits en `develop` y `git push origin develop` según la regla 8 de `AUTOPILOTO.md` y `CONTRIBUTING.md`.
 

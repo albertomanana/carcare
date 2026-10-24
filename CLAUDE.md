@@ -43,6 +43,11 @@ npm run typecheck
 npm run lint
 npm run test         # Vitest
 npm run test:e2e     # Playwright (necesita backend y frontend arrancados)
+
+# Instancia AISLADA para un agente (:8000 y :5173 son de Alberto; el servidor de PHP atiende una petición a la vez,
+# así que si varios agentes prueban contra :8000 todo se pone en cola). Ejemplo con API :8020 + web :5181:
+cd backend/public && SANCTUM_STATEFUL_DOMAINS=localhost:5181,127.0.0.1:5181 php -d zend_extension=opcache -d opcache.enable_cli=1 -S 127.0.0.1:8020 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
+cd frontend && VITE_API_TARGET=http://127.0.0.1:8020 npx vite --port 5181 --strictPort
 ```
 
 ## Particularidades de este equipo (Windows + XAMPP)
