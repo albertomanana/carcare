@@ -1,4 +1,4 @@
-import { BellPlus, CalendarCheck, CalendarDays, Car, Gauge, List } from 'lucide-react'
+import { BellPlus, CalendarCheck, Car, Gauge } from 'lucide-react'
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 import { AGENDA_MAX_PAGES, useAllWorkspaceReminders } from '@/api/hooks/workspaces'
@@ -18,7 +18,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParam } from '@/hooks/useSearchParam'
 import { parseMonthKey } from '@/lib/agenda'
 import { cn } from '@/lib/cn'
-import { todayISO } from '@/lib/format'
+import { formatPlate, todayISO } from '@/lib/format'
 import { INTERVAL_DISCLAIMER } from '@/lib/reminders'
 import { REMINDER_STATE, REMINDER_STATE_ORDER, TONE_CLASSES } from '@/lib/status'
 import { plural } from '@/lib/text'
@@ -117,49 +117,38 @@ export default function AgendaPage() {
         />
       ) : (
         <div className="space-y-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:pb-0">
-              <SegmentedControl<StateFilter>
-                label="Filtrar por estado"
-                size="sm"
-                value={stateFilter}
-                onValueChange={(v) => setStateParam(v)}
-                options={[
-                  { value: 'all', label: <FilterLabel text="Todos" count={byVehicle.length} /> },
-                  ...REMINDER_STATE_ORDER.filter((s) => s !== 'unknown' || counts.unknown > 0).map((s) => {
-                    const Icon = REMINDER_STATE[s].icon
-                    return {
-                      value: s,
-                      icon: <Icon aria-hidden className={TONE_CLASSES[REMINDER_STATE[s].tone].text} />,
-                      label: <FilterLabel text={GROUP_TITLE[s].title} count={counts[s]} />,
-                    }
-                  }),
-                ]}
-              />
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:ml-auto">
-              {vehicles.length > 1 && (
-                <Select aria-label="Vehículo" value={vehicleId ? String(vehicleId) : ''} onChange={(e) => setVehicle(e.target.value)} className="sm:w-60">
-                  <option value="">Todos los vehículos</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.display_name}
-                      {v.plate ? ` · ${v.plate}` : ''}
-                    </option>
-                  ))}
-                </Select>
-              )}
-              <SegmentedControl<View>
-                label="Vista"
-                size="sm"
-                value={view}
-                onValueChange={(v) => setView(v)}
-                options={[
-                  { value: 'lista', label: 'Lista', icon: <List aria-hidden /> },
-                  { value: 'calendario', label: 'Calendario', icon: <CalendarDays aria-hidden /> },
-                ]}
-              />
-            </div>
+          {/* Filtros en una fila; el de estado es un selector para que quepa a 360 px (hallazgo I4) */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Select aria-label="Filtrar por estado" value={stateFilter} onChange={(e) => setStateParam(e.target.value)} className="sm:w-56">
+              <option value="all">Todos los estados ({byVehicle.length})</option>
+              {REMINDER_STATE_ORDER.filter((s) => s !== 'unknown' || counts.unknown > 0).map((s) => (
+                <option key={s} value={s}>
+                  {GROUP_TITLE[s].title} ({counts[s]})
+                </option>
+              ))}
+            </Select>
+            {vehicles.length > 1 && (
+              <Select aria-label="Vehículo" value={vehicleId ? String(vehicleId) : ''} onChange={(e) => setVehicle(e.target.value)} className="sm:w-60">
+                <option value="">Todos los vehículos</option>
+                {vehicles.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.display_name}
+                    {v.plate ? ` · ${formatPlate(v.plate)}` : ''}
+                  </option>
+                ))}
+              </Select>
+            )}
+            <SegmentedControl<View>
+              label="Vista"
+              size="sm"
+              value={view}
+              onValueChange={(v) => setView(v)}
+              className="sm:ml-auto"
+              options={[
+                { value: 'lista', label: 'Lista' },
+                { value: 'calendario', label: 'Calendario' },
+              ]}
+            />
           </div>
 
           <p className="text-xs text-fg-subtle">
@@ -249,15 +238,6 @@ export default function AgendaPage() {
 
 function isValidDay(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && parseMonthKey(value.slice(0, 7)) !== null && !Number.isNaN(new Date(value).getTime())
-}
-
-function FilterLabel({ text, count }: { text: string; count: number }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      {text}
-      <span className="rounded-full bg-surface-3 px-1.5 text-[11px] font-semibold leading-4 text-fg-muted tabular">{count}</span>
-    </span>
-  )
 }
 
 function AgendaSkeleton() {

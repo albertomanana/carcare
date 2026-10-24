@@ -283,9 +283,9 @@ function DocumentCard({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
         <div className="flex items-start gap-2">
           <Icon aria-hidden className="mt-0.5 size-4 shrink-0 text-fg-subtle" />
-          <h3 className="min-w-0 flex-1 truncate font-medium text-fg" title={doc.title}>
+          <h2 className="min-w-0 flex-1 truncate font-medium text-fg" title={doc.title}>
             {doc.title}
-          </h3>
+          </h2>
         </div>
         <p className="truncate text-xs text-fg-muted tabular" title={doc.original_filename}>
           {DOCUMENT_TYPE_LABEL[doc.document_type]} · {formatFileSize(doc.size)} · subido el {formatDate(doc.created_at)}

@@ -769,7 +769,7 @@ export interface WorkshopDashboard {
   /** Órdenes cuya fecha prometida es hoy. */
   due_today: WorkOrder[]
   late: WorkOrder[]
-  /** null para el rol mechanic (no ve facturación). */
+  /** null para el rol mechanic (no ve importes ni analítica). */
   revenue: { month: Money; year: Money; by_month: { month: YearMonth; total: Money }[] } | null
   fleet_alerts: Reminder[]
   recent_activity: Activity[]
@@ -779,7 +779,7 @@ export type WorkspaceDashboard = PersonalDashboard | WorkshopDashboard
 
 export interface WorkspaceAnalytics {
   period: { from: ISODate; to: ISODate }
-  /** personal: gasto total · workshop: facturación de órdenes entregadas. */
+  /** personal: gasto total · workshop: importe de las órdenes entregadas (con IVA). */
   total: Money
   by_month: { month: YearMonth; total: Money }[]
   by_vehicle: { vehicle: VehicleRef; total: Money }[]

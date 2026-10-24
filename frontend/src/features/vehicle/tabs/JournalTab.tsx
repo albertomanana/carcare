@@ -149,7 +149,8 @@ function DayCard({ day, showMoney, base }: { day: JournalDay; showMoney: boolean
   return (
     <li className="rounded-card border border-line bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-        <h3 className="text-sm font-semibold capitalize text-fg">{formatDate(day.date, 'weekday')}</h3>
+        {/* h2: la página es h1 (vehículo) → h2 (día). Solo la primera letra en mayúscula (hallazgos M1 y M2) */}
+        <h2 className="text-sm font-semibold text-fg first-letter:uppercase">{formatDate(day.date, 'weekday')}</h2>
         <div className="flex flex-wrap gap-1.5">
           {day.km_driven !== null && <Badge icon={<Gauge aria-hidden />}>{formatKm(day.km_driven)} recorridos</Badge>}
           {showMoney && spent > 0 && <Badge tone="accent">{formatMoney(day.spent)}</Badge>}

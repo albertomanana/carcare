@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader, DataList } from '@/components/ui/Card'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { formatDate, formatDateTime, formatKm, formatRelativeDate } from '@/lib/format'
+import { vehicleColorName } from '@/lib/colors'
 import { BODY_LABEL, FUEL_LABEL, TRANSMISSION_LABEL } from '@/lib/labels'
 import { plural } from '@/lib/text'
 import { useVehicleOutlet } from '../vehicle-outlet'
@@ -45,7 +46,7 @@ export default function DataTab() {
       v.color_hex ? (
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="size-4 rounded-full border border-line-strong" style={{ backgroundColor: v.color_hex }} />
-          <span className="font-mono text-[13px] uppercase">{v.color_hex}</span>
+          <span>{vehicleColorName(v.color_hex) ?? 'Personalizado'}</span>
         </span>
       ) : null,
     ),

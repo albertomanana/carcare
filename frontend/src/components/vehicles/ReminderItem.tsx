@@ -38,6 +38,13 @@ export function ReminderItem({
   const state = reminder.state ? REMINDER_STATE[reminder.state] : null
   const byDate = dueByDate(reminder)
   const byKm = dueByMileage(reminder)
+  // Lo vencido primero; si no, fecha y después km
+  const dueParts = [
+    byDate && { key: 'date', term: 'Por fecha', Icon: CalendarDays, part: byDate },
+    byKm && { key: 'km', term: 'Por kilómetros', Icon: Gauge, part: byKm },
+  ]
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .sort((a, b) => Number(b.part.overdue) - Number(a.part.overdue))
   const recurrence = recurrenceText(reminder)
   const pending = reminder.status === 'pending'
   const hasMenu = pending && !!(actions.onEdit || actions.onPostpone || actions.onDismiss || actions.onDelete)
@@ -72,26 +79,26 @@ export function ReminderItem({
           </Link>
         )}
         <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          {byDate && (
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Por fecha</dt>
-              <CalendarDays aria-hidden className="size-4 shrink-0 text-fg-subtle" />
+          {dueParts.map(({ key, term, Icon: DueIcon, part }) => (
+            <div key={key} className="flex items-center gap-1.5">
+              <dt className="sr-only">{term}</dt>
+              <DueIcon aria-hidden className="size-4 shrink-0 text-fg-subtle" />
               <dd className="tabular">
-                <span className="text-fg">{byDate.label}</span>
-                {byDate.relative && <span className={cn('ml-1', byDate.overdue ? 'text-danger' : 'text-fg-muted')}>· {byDate.relative}</span>}
+                {/* Si ya venció, la causa va primero (hallazgo C4): «superado por 443 km · A los 81.127 km» */}
+                {part.overdue && part.relative ? (
+                  <>
+                    <span className="text-danger">{part.relative}</span>
+                    <span className="ml-1 text-fg-muted">· {part.label}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-fg">{part.label}</span>
+                    {part.relative && <span className="ml-1 text-fg-muted">· {part.relative}</span>}
+                  </>
+                )}
               </dd>
             </div>
-          )}
-          {byKm && (
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Por kilómetros</dt>
-              <Gauge aria-hidden className="size-4 shrink-0 text-fg-subtle" />
-              <dd className="tabular">
-                <span className="text-fg">{byKm.label}</span>
-                {byKm.relative && <span className={cn('ml-1', byKm.overdue ? 'text-danger' : 'text-fg-muted')}>· {byKm.relative}</span>}
-              </dd>
-            </div>
-          )}
+          ))}
           {reminder.status === 'done' && (
             <div className="flex items-center gap-1.5 text-fg-muted">
               <dt className="sr-only">Completado</dt>

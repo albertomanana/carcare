@@ -95,3 +95,14 @@ describe('formatPlate', () => {
     expect(formatPlate(null)).toBe('')
   })
 })
+
+describe('vehicleColorName', () => {
+  it('da el nombre de la paleta o el del color más parecido, nunca el código', async () => {
+    const { vehicleColorName } = await import('./colors')
+    expect(vehicleColorName('#C62828')).toBe('Rojo')
+    expect(vehicleColorName('#c62828')).toBe('Rojo')
+    expect(vehicleColorName('#6B7280')).toMatch(/^Gris/)
+    expect(vehicleColorName(null)).toBeNull()
+    expect(vehicleColorName('rojo')).toBeNull()
+  })
+})

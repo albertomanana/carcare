@@ -21,6 +21,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
 import { searchBrands } from '@/lib/brands'
+import { VEHICLE_COLORS } from '@/lib/colors'
 import { cn } from '@/lib/cn'
 import { formatDate, parseIntegerInput } from '@/lib/format'
 import { applyServerErrors } from '@/lib/forms'
@@ -34,21 +35,7 @@ const BODY_TYPES = Object.keys(BODY_LABEL) as BodyType[]
 const FUEL_TYPES = Object.keys(FUEL_LABEL) as FuelType[]
 const TRANSMISSIONS = Object.keys(TRANSMISSION_LABEL) as Transmission[]
 
-/** Colores habituales (el usuario puede elegir cualquier otro). */
-const COLORS = [
-  { hex: '#F2F2EF', name: 'Blanco' },
-  { hex: '#15171A', name: 'Negro' },
-  { hex: '#A9AEB4', name: 'Gris plata' },
-  { hex: '#4B5157', name: 'Gris grafito' },
-  { hex: '#C62828', name: 'Rojo' },
-  { hex: '#1F4E9C', name: 'Azul' },
-  { hex: '#6FA3D9', name: 'Azul claro' },
-  { hex: '#2E6B45', name: 'Verde' },
-  { hex: '#CDBA96', name: 'Beige' },
-  { hex: '#6B4A35', name: 'Marrón' },
-  { hex: '#E06A1B', name: 'Naranja' },
-  { hex: '#E8C21C', name: 'Amarillo' },
-]
+const COLORS = VEHICLE_COLORS
 
 const mileageField = z.string().superRefine((v, ctx) => {
   const e = mileageError(v)

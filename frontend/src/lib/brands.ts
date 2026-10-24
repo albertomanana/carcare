@@ -68,9 +68,16 @@ export function normalizeSearch(value: string): string {
     .trim()
 }
 
+/**
+ * Sugerencias con el campo vacío: marcas muy vistas en las calles españolas, no las primeras del
+ * abecedario (hallazgo M6 de UX: antes salían Abarth, Alfa Romeo, Alpine, Aston Martin…).
+ * Es una lista orientativa para ahorrar teclas, no un ranking.
+ */
+export const COMMON_BRANDS = ['Seat', 'Toyota', 'Volkswagen', 'Renault', 'Peugeot', 'Dacia', 'Kia', 'Hyundai', 'Citroën', 'Ford'] as const
+
 export function searchBrands(query: string, limit = 8): string[] {
   const q = normalizeSearch(query)
-  if (!q) return CAR_BRANDS.slice(0, limit)
+  if (!q) return COMMON_BRANDS.slice(0, limit)
   const starts: string[] = []
   const contains: string[] = []
   for (const brand of CAR_BRANDS) {

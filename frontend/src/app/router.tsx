@@ -30,6 +30,7 @@ const Analytics = lazy(() => import('@/features/analytics/AnalyticsPage'))
 const Orders = lazy(() => import('@/features/workshop/OrdersPage'))
 const NewOrder = lazy(() => import('@/features/workshop/NewOrderPage'))
 const OrderDetail = lazy(() => import('@/features/workshop/OrderDetailPage'))
+const OrderSummary = lazy(() => import('@/features/workshop/OrderSummaryPage'))
 const Customers = lazy(() => import('@/features/workshop/CustomersPage'))
 const CustomerDetail = lazy(() => import('@/features/workshop/CustomerDetailPage'))
 const WorkshopFloor = lazy(() => import('@/features/workshop/WorkshopFloorPage'))
@@ -81,6 +82,7 @@ export const routes: RouteObject[] = [
             element: <WorkspaceRoute />,
             children: [
               { path: 'vehiculos/:vehicleId/informe', element: page(Report) },
+              { path: 'ordenes/:orderId/resumen', element: page(OrderSummary) },
               {
                 element: <AppShell />,
                 children: [

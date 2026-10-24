@@ -12,7 +12,7 @@ import { formatDate, formatKm, formatMoney } from '@/lib/format'
 import { RECORD_TYPE_LABEL, ZONE_ICON } from '@/lib/labels'
 import { dueByDate, dueByMileage, INTERVAL_DISCLAIMER } from '@/lib/reminders'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
-import { zoneDescriptor } from '@/lib/status'
+import { TONE_CLASSES, zoneDescriptor } from '@/lib/status'
 import { CarSilhouette, CarViewer, useWebGLAvailable } from '@/three'
 
 export interface ZoneMapProps {
@@ -127,23 +127,26 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
 function ZoneList({ zones, selected, onSelect }: { zones: ZoneStatus[]; selected: Zone | null; onSelect: (z: Zone) => void }) {
   return (
     <div>
-      <h3 className="px-1 pb-2 text-xs font-medium uppercase tracking-[0.12em] text-fg-subtle">Zonas ({zones.length})</h3>
-      <ul className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
+      <h3 className="px-1 pb-2 text-sm text-fg-muted">Zonas ({zones.length})</h3>
+      {/* Filas de texto: el estado con icono + texto y sin píldora, para que quepa a 360 px (hallazgo I4) */}
+      <ul className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-1">
         {zones.map((z) => {
-          const Icon = ZONE_ICON[z.zone]
           const d = zoneDescriptor(z)
+          const StateIcon = d.icon
           return (
-            <li key={z.zone}>
+            <li key={z.zone} className="min-w-0 border-b border-line last:border-b-0">
               <button
                 type="button"
                 onClick={() => onSelect(z.zone)}
                 aria-pressed={selected === z.zone}
                 aria-label={`${z.label}: ${d.label}`}
-                className="flex min-h-12 w-full items-center gap-3 rounded-control border border-line bg-surface-2/50 px-3 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
+                className="flex min-h-11 w-full min-w-0 items-center gap-3 rounded-control px-1 text-left transition-colors hover:bg-surface-2"
               >
-                <Icon aria-hidden className="size-4 shrink-0 text-fg-subtle" />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{z.label}</span>
-                <StatusPill status={d} size="sm" className="max-w-[55%]" />
+                <span className="min-w-0 flex-1 truncate text-sm text-fg">{z.label}</span>
+                <span className={cn('inline-flex shrink-0 items-center gap-1 text-xs', TONE_CLASSES[d.tone].text)}>
+                  <StateIcon aria-hidden className="size-3.5" />
+                  {d.label}
+                </span>
               </button>
             </li>
           )

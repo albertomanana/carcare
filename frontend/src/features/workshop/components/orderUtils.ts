@@ -170,3 +170,13 @@ export function floorSummary(bays: Bay[], orders: WorkOrder[] | undefined): stri
   const waiting = orders ? waitingOrders(orders).length : null
   return `Elevadores ocupados: ${busy} de ${total}${waiting !== null ? ` · ${waiting} en espera` : ''}`
 }
+
+// ───────── Resumen imprimible ─────────
+
+/** Rótulo obligatorio de la hoja imprimible (D12 = A): CarCare no emite facturas. */
+export const ORDER_SUMMARY_LABEL = 'Resumen de la orden — no es una factura'
+
+/** Título del documento, que el navegador propone como nombre del PDF: 'Resumen OT-2026-0024 4470LJD 2026-10-24'. */
+export function orderSummaryTitle(number: string, plate: string | null, date: string): string {
+  return ['Resumen', number, plate, date].filter(Boolean).join(' ')
+}

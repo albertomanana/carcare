@@ -192,7 +192,7 @@ function RecordCard({
         <div className="flex flex-wrap items-start gap-3 p-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-medium text-fg">{r.title}</h3>
+              <h2 className="font-medium text-fg">{r.title}</h2>
               {archived && <Badge size="sm">Archivada</Badge>}
             </div>
             <p className="mt-0.5 text-sm text-fg-muted tabular">

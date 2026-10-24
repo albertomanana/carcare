@@ -1,13 +1,17 @@
 /**
  * Punto de entrada público del módulo 3D (propiedad del agente `experto-3d`).
  *
- * Todo lo que usa three.js se carga de forma DIFERIDA (lazy): el bundle inicial solo contiene estos envoltorios,
- * la silueta SVG y la detección de WebGL. Mientras carga, si falla o si no hay WebGL, se muestra el respaldo 2D.
+ * LIGERO (sin three.js, se puede importar desde cualquier pantalla): `CarThumbnail`, `CarSilhouette`,
+ * `useWebGLAvailable`, los respaldos 2D y los envoltorios de abajo. Este módulo y lo que importa NO deben importar
+ * 'three', '@react-three/*' ni nada de ./scenes o ./car/{build,geometry,materials,...} de forma estática.
+ *
+ * PESADO (three.js + R3F + drei, chunk diferido): las escenas de ./scenes, que solo se piden con `lazy()` cuando un
+ * envoltorio decide montarlas. Mientras cargan, si fallan o si no hay WebGL, se muestra el respaldo 2D.
  * Los nombres exportados y sus props (./types.ts) son el contrato con `frontend-react`.
  */
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import type { CarPreviewProps, CarSilhouetteProps, CarThumbnailProps, CarViewerProps, HeroSceneProps, WorkshopSceneProps } from './types'
-import { detectWebGL } from './env'
+import { useWebGLAvailable } from './env'
 import { SilhouetteBox, ThreeBoundary, Workshop2D, ZoneMap2D } from './fallbacks'
 import { CarSilhouette as Silhouette } from './silhouette/CarSilhouette'
 import { CarThumbnailImpl } from './thumbnail/CarThumbnail'
@@ -20,11 +24,7 @@ const WorkshopCanvas = lazy(() => import('./scenes/WorkshopCanvas'))
 const HeroCanvas = lazy(() => import('./scenes/HeroCanvas'))
 const ThreeLabImpl = lazy(() => import('./lab/ThreeLab'))
 
-/** true si el navegador puede crear un contexto WebGL. */
-export function useWebGLAvailable(): boolean {
-  const [ok] = useState(detectWebGL)
-  return ok
-}
+export { useWebGLAvailable } from './env'
 
 /** Coche 3D principal (ficha del vehículo, dashboard). */
 export function CarViewer(props: CarViewerProps) {
@@ -55,7 +55,7 @@ export function CarPreview(props: CarPreviewProps) {
   )
 }
 
-/** Imagen estática para listados: render 3D cacheado por (carrocería, color) o silueta SVG. */
+/** Imagen estática para listados y cabeceras: silueta SVG teñida. No descarga three.js ni crea contextos WebGL. */
 export function CarThumbnail(props: CarThumbnailProps) {
   return <CarThumbnailImpl {...props} />
 }

@@ -14,7 +14,9 @@ export function CarSilhouette({ appearance, className, title }: CarSilhouettePro
   const color = resolveColor(appearance.colorHex)
   const p = useMemo(() => getSilhouettePaths(body), [body])
   const uid = useId().replace(/:/g, '')
-  const label = title ?? `Silueta: ${describeCar(appearance.bodyType, appearance.colorHex)}`
+  // title="" ⇒ decorativa (el contexto ya nombra el vehículo): se oculta a los lectores de pantalla
+  const decorative = title === ''
+  const label = title || `Silueta: ${describeCar(appearance.bodyType, appearance.colorHex)}`
 
   const light = luminance(color)
   const top = mixHex(color, '#ffffff', light > 0.6 ? 0.25 : 0.32)
@@ -27,14 +29,16 @@ export function CarSilhouette({ appearance, className, title }: CarSilhouettePro
 
   return (
     <svg
-      role="img"
-      aria-label={label}
+      role={decorative ? undefined : 'img'}
+      aria-label={decorative ? undefined : label}
+      aria-hidden={decorative || undefined}
+      focusable="false"
       viewBox={`${vx} ${vy} ${vw} ${vh}`}
       preserveAspectRatio="xMidYMid meet"
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>{label}</title>
+      {!decorative && <title>{label}</title>}
       <defs>
         <linearGradient id={`paint-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={top} />

@@ -379,6 +379,7 @@
   }
 
   @page {
+    size: A4;
     margin: 16mm 14mm;
   }
 }

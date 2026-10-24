@@ -28,6 +28,12 @@ export function detectWebGL(): boolean {
   return webglCache
 }
 
+/** true si el navegador puede crear un contexto WebGL (hook estable: se calcula una vez por componente). */
+export function useWebGLAvailable(): boolean {
+  const [ok] = useState(detectWebGL)
+  return ok
+}
+
 // ───────────────────────── Movimiento reducido ─────────────────────────
 
 const RM_QUERY = '(prefers-reduced-motion: reduce)'

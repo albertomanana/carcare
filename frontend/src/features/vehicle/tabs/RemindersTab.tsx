@@ -47,6 +47,9 @@ export default function RemindersTab() {
         {INTERVAL_DISCLAIMER}. El estado se calcula con la fecha de hoy y el kilometraje actual ({formatKm(vehicle.current_mileage, { empty: 'sin lecturas' })}).
       </p>
 
+      <h2 id="recordatorios-lista" className="sr-only">
+        Recordatorios: {STATUSES.find((s) => s.value === status)?.label.toLowerCase()}
+      </h2>
       {query.isPending ? (
         <ReminderListSkeleton />
       ) : query.isError ? (
@@ -66,7 +69,7 @@ export default function RemindersTab() {
           }
         />
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-3" aria-labelledby="recordatorios-lista">
           {reminders.map((r) => (
             <ReminderItem key={r.id} reminder={r} actions={actions} />
           ))}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Bay, WorkOrder } from '@/api/types'
 import { nextBay } from '@/api/hooks/workshop'
-import { bayOptions, baysSummary, dateTimeLocalAt, formatWhen, fromDateTimeLocal, isDeletableStatus, nextStep, toDateTimeLocal, waitingOrders } from './orderUtils'
+import { bayOptions, baysSummary, dateTimeLocalAt, formatWhen, fromDateTimeLocal, isDeletableStatus, nextStep, ORDER_SUMMARY_LABEL, orderSummaryTitle, toDateTimeLocal, waitingOrders } from './orderUtils'
 
 function order(partial: Partial<WorkOrder>): WorkOrder {
   return {
@@ -119,5 +119,16 @@ describe('elevadores', () => {
       order({ id: 5, status: 'delivered' }),
     ])
     expect(list.map((o) => o.id)).toEqual([3, 2, 1])
+  })
+})
+
+describe('resumen imprimible', () => {
+  it('lleva el rótulo de que no es una factura', () => {
+    expect(ORDER_SUMMARY_LABEL).toBe('Resumen de la orden — no es una factura')
+  })
+
+  it('propone un nombre de archivo con número, matrícula y fecha', () => {
+    expect(orderSummaryTitle('OT-2026-0024', '4470LJD', '2026-10-24')).toBe('Resumen OT-2026-0024 4470LJD 2026-10-24')
+    expect(orderSummaryTitle('OT-2026-0024', null, '2026-10-24')).toBe('Resumen OT-2026-0024 2026-10-24')
   })
 })

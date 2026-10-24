@@ -9,6 +9,7 @@ import {
   ExternalLink,
   History,
   Phone,
+  Printer,
   Trash2,
   Undo2,
   UserRound,
@@ -188,6 +189,9 @@ function OrderDetail({ order }: { order: WorkOrder }) {
         </Button>
       )}
       {editable && <MoveToMenu order={order} onRequest={(_o, s) => requestStatus(s)} variant="button" disabled={busy} className="h-11 md:h-10" />}
+      <ButtonLink to={`${ctx.base}/ordenes/${order.id}/resumen`} icon={<Printer aria-hidden />}>
+        Imprimir resumen
+      </ButtonLink>
       {(canDelete || !final) && (
         <DropdownMenu>
           <DropdownMenuTrigger className={iconButtonClasses({ variant: 'secondary' })} aria-label={`Más acciones de ${order.number}`} title="Más acciones">
