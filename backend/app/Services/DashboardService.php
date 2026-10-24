@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\Workspace;
 use App\Support\Dates;
+use App\Support\ExpenseRows;
 use App\Support\Money;
 use App\Support\Totals;
 use Carbon\CarbonImmutable;
@@ -38,10 +39,10 @@ class DashboardService
     {
         $today = CarbonImmutable::today();
         $months = Dates::months($today->startOfMonth()->subMonths(11), $today);
-        $expenses = Expense::query()
+        $expenses = ExpenseRows::get(Expense::query()
             ->whereIn('vehicle_id', $workspace->vehicles()->select('id'))
-            ->where('expense_date', '>=', $months[0].'-01')
-            ->get();
+            ->where('expense_date', '>=', $months[0].'-01'));
+        $thisMonth = $today->format('Y-m');
 
         $reminders = $this->pendingReminders($workspace);
 
@@ -53,9 +54,9 @@ class DashboardService
                     ->orderBy('created_at')->orderBy('id')->get()
             ),
             'spend' => [
-                'month' => Money::format(Totals::sumCents($expenses->filter(fn ($e) => $e->expense_date->format('Y-m') === $today->format('Y-m')))),
-                'year' => Money::format(Totals::sumCents($expenses->filter(fn ($e) => $e->expense_date->year === $today->year))),
-                'by_month' => Totals::byMonth($expenses, $months, fn ($e) => $e->expense_date->format('Y-m')),
+                'month' => Money::format(ExpenseRows::sum($expenses->where('month', $thisMonth))),
+                'year' => Money::format(ExpenseRows::sum($expenses->where('year', $today->year))),
+                'by_month' => ExpenseRows::byMonth($expenses, $months),
             ],
             'reminders' => [
                 'overdue' => $this->countState($reminders, ReminderState::Overdue),
@@ -70,35 +71,36 @@ class DashboardService
     public function workshop(Workspace $workspace, ?WorkspaceRole $role): array
     {
         $today = CarbonImmutable::today();
+        $todayYmd = $today->toDateString();
         $orders = WorkOrder::query()->where('workspace_id', $workspace->id);
         $reminders = $this->pendingReminders($workspace);
 
         $byStatus = (clone $orders)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $open = (clone $orders)->open()->with(WorkOrder::RESOURCE_RELATIONS)->orderBy('id')->get();
+        $late = $open->filter(fn (WorkOrder $o) => $o->isLate())->sortBy(fn (WorkOrder $o) => $o->promised_at->getTimestamp())->values();
+        $dueToday = $open
+            ->filter(fn (WorkOrder $o) => $o->promised_at !== null && $o->promised_at->toDateString() === $todayYmd)
+            ->sortBy(fn (WorkOrder $o) => $o->promised_at->getTimestamp())
+            ->values();
 
         return [
             'type' => 'workshop',
             'counts' => [
                 'vehicles' => $workspace->vehicles()->active()->count(),
                 'customers' => $workspace->customers()->count(),
-                'open_orders' => (clone $orders)->open()->count(),
-                'late_orders' => (clone $orders)->late()->count(),
+                'open_orders' => $open->count(),
+                'late_orders' => $late->count(),
                 'overdue_reminders' => $this->countState($reminders, ReminderState::Overdue),
             ],
             'orders_by_status' => collect(WorkOrderStatus::cases())
                 ->mapWithKeys(fn (WorkOrderStatus $s) => [$s->value => (int) ($byStatus[$s->value] ?? 0)])
                 ->all(),
-            'bays' => $this->workOrders->bays($workspace)->map(fn (array $bay) => [
+            'bays' => $this->workOrders->baysFrom($workspace, $open)->map(fn (array $bay) => [
                 'number' => $bay['number'],
                 'work_order' => $bay['work_order'] ? new WorkOrderResource($bay['work_order']) : null,
             ])->all(),
-            'due_today' => WorkOrderResource::collection(
-                (clone $orders)->open()
-                    ->whereBetween('promised_at', [$today->startOfDay(), $today->endOfDay()])
-                    ->with(WorkOrder::RESOURCE_RELATIONS)->orderBy('promised_at')->get()
-            ),
-            'late' => WorkOrderResource::collection(
-                (clone $orders)->late()->with(WorkOrder::RESOURCE_RELATIONS)->orderBy('promised_at')->get()
-            ),
+            'due_today' => WorkOrderResource::collection($dueToday),
+            'late' => WorkOrderResource::collection($late),
             'revenue' => $role === WorkspaceRole::Mechanic ? null : $this->revenue($workspace, $today),
             'fleet_alerts' => ReminderResource::agenda(
                 $reminders->filter(fn (Reminder $r) => in_array($r->evaluate()['state'], [ReminderState::Overdue, ReminderState::Soon], true))->take(10)

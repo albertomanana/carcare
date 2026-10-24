@@ -202,11 +202,24 @@ class WorkOrderService
             ->open()
             ->whereNotNull('bay')
             ->with(WorkOrder::RESOURCE_RELATIONS)
-            ->get()
-            ->keyBy('bay');
+            ->orderBy('id')
+            ->get();
+
+        return $this->baysFrom($workspace, $orders);
+    }
+
+    /**
+     * Elevadores a partir de órdenes abiertas ya cargadas (el dashboard las reutiliza).
+     *
+     * @param  Collection<int, WorkOrder>  $openOrders
+     * @return Collection<int, array{number: int, work_order: ?WorkOrder}>
+     */
+    public function baysFrom(Workspace $workspace, Collection $openOrders): Collection
+    {
+        $byBay = $openOrders->filter(fn (WorkOrder $o) => $o->bay !== null)->keyBy('bay');
 
         return collect(range(1, $workspace->baysCount()))
-            ->map(fn (int $n) => ['number' => $n, 'work_order' => $orders->get($n)]);
+            ->map(fn (int $n) => ['number' => $n, 'work_order' => $byBay->get($n)]);
     }
 
     private function ensureEditable(WorkOrder $order): void

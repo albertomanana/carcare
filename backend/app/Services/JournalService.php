@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Enums\MileageSource;
 use App\Enums\ReminderStatus;
 use App\Models\Expense;
-use App\Models\MileageLog;
 use App\Models\Vehicle;
+use App\Support\MileageRows;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -28,7 +28,9 @@ class JournalService
         $a = $from->toDateString();
         $b = $to->toDateString();
 
-        $logs = $vehicle->mileageLogs()->oldestFirst()->get();
+        // Lecturas del periodo + la anterior más reciente (no todo el historial).
+        $logs = MileageRows::window($vehicle, $a, $b);
+        $kmDriven = $this->kmDrivenByDay($logs);
         $expenses = $vehicle->expenses()->whereBetween('expense_date', [$a, $b])->get();
 
         $entries = collect()
@@ -57,16 +59,16 @@ class JournalService
                         'full_tank' => $e->full_tank,
                     ],
                 ]))
-            ->merge($this->logsBetween($logs, $a, $b)
-                ->filter(fn (MileageLog $l) => in_array($l->source, [MileageSource::Manual, MileageSource::VehicleCreated], true))
-                ->map(fn (MileageLog $l) => [
+            ->merge(MileageRows::between($logs, $a, $b)
+                ->filter(fn (object $l) => in_array($l->source, [MileageSource::Manual->value, MileageSource::VehicleCreated->value], true))
+                ->map(fn (object $l) => [
                     'type' => 'mileage',
                     'id' => $l->id,
-                    'date' => $l->recorded_at->toDateString(),
+                    'date' => $l->date,
                     'title' => $l->note ?: 'Lectura de kilometraje',
                     'amount' => null,
                     'mileage' => $l->mileage,
-                    'meta' => ['source' => $l->source->value],
+                    'meta' => ['source' => $l->source],
                 ]))
             ->merge($vehicle->reminders()->where('status', ReminderStatus::Done->value)
                 ->whereBetween('completed_at', [$a, $b])->get()
@@ -98,7 +100,7 @@ class JournalService
 
         return $days->map(fn (string $date) => [
             'date' => $date,
-            'km_driven' => $this->kmDriven($logs, $date),
+            'km_driven' => $kmDriven[$date] ?? null,
             'spent' => Money::format((int) ($spentByDay[$date] ?? 0)),
             'entries' => $entries->where('date', $date)
                 ->sortBy([
@@ -110,25 +112,31 @@ class JournalService
         ])->all();
     }
 
-    /** Lectura máxima del día − lectura anterior más reciente; null si no hay ambas. */
-    private function kmDriven(Collection $logs, string $date): ?int
+    /**
+     * km recorridos por día, en una pasada sobre las lecturas en orden canónico ascendente:
+     * lectura máxima del día − última lectura de un día anterior. Sin lectura anterior, no hay entrada.
+     *
+     * @param  Collection<int, object>  $logs
+     * @return array<string, int>
+     */
+    private function kmDrivenByDay(Collection $logs): array
     {
-        $today = $logs->filter(fn (MileageLog $l) => $l->recorded_at->toDateString() === $date);
-        $before = $logs->filter(fn (MileageLog $l) => $l->recorded_at->toDateString() < $date)->last();
-
-        if ($today->isEmpty() || $before === null) {
-            return null;
+        $maxByDay = [];
+        $lastByDay = [];
+        foreach ($logs as $log) {
+            $maxByDay[$log->date] = max($maxByDay[$log->date] ?? $log->mileage, $log->mileage);
+            $lastByDay[$log->date] = $log->mileage; // la última del día en orden canónico
         }
 
-        return (int) $today->max('mileage') - $before->mileage;
-    }
+        $result = [];
+        $previousLast = null;
+        foreach ($maxByDay as $date => $max) {
+            if ($previousLast !== null) {
+                $result[$date] = $max - $previousLast;
+            }
+            $previousLast = $lastByDay[$date];
+        }
 
-    private function logsBetween(Collection $logs, string $a, string $b): Collection
-    {
-        return $logs->filter(function (MileageLog $l) use ($a, $b) {
-            $d = $l->recorded_at->toDateString();
-
-            return $d >= $a && $d <= $b;
-        });
+        return $result;
     }
 }

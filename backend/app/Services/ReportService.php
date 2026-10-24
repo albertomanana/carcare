@@ -6,11 +6,10 @@ use App\Http\Resources\MaintenanceRecordResource;
 use App\Http\Resources\MileageLogResource;
 use App\Http\Resources\ReminderResource;
 use App\Http\Resources\VehicleResource;
-use App\Models\Expense;
 use App\Models\Reminder;
 use App\Models\Vehicle;
+use App\Support\ExpenseRows;
 use App\Support\Money;
-use App\Support\Totals;
 use DateTimeInterface;
 
 /** Informe exportable del vehículo (historial completo para imprimir o vender el coche). */
@@ -18,7 +17,8 @@ class ReportService
 {
     public function forVehicle(Vehicle $vehicle): array
     {
-        $expenses = $vehicle->expenses()->get();
+        // Solo totales: filas ligeras en vez de un modelo por gasto.
+        $expenses = ExpenseRows::get($vehicle->expenses()->getQuery());
         $records = $vehicle->maintenanceRecords()->active()->latestFirst()
             ->with(MaintenanceRecordResource::eagerLoad())->withCount('documents')->get();
         $pending = Reminder::sortByUrgency(
@@ -26,8 +26,8 @@ class ReportService
         );
 
         $byYear = $expenses
-            ->groupBy(fn (Expense $e) => (int) $e->expense_date->format('Y'))
-            ->map(fn ($group, $year) => ['year' => (int) $year, 'total' => Money::format(Totals::sumCents($group))])
+            ->groupBy('year')
+            ->map(fn ($group, $year) => ['year' => (int) $year, 'total' => Money::format(ExpenseRows::sum($group))])
             ->sortKeys()
             ->values()
             ->all();
@@ -37,8 +37,8 @@ class ReportService
             'vehicle' => new VehicleResource($vehicle),
             'records' => MaintenanceRecordResource::collection($records),
             'expenses' => [
-                'total' => Money::format(Totals::sumCents($expenses)),
-                'by_category' => Totals::byCategory($expenses),
+                'total' => Money::format(ExpenseRows::sum($expenses)),
+                'by_category' => ExpenseRows::byCategory($expenses),
                 'by_year' => $byYear,
             ],
             'mileage_logs' => MileageLogResource::collection($vehicle->mileageLogs()->latestFirst()->get()),

@@ -25,6 +25,9 @@ class Reminder extends Model
 
     public const SOON_KM = 1000;
 
+    /** @var array{0: string, 1: array<string, mixed>}|null última evaluación y su clave */
+    private ?array $evaluation = null;
+
     protected $fillable = [
         'vehicle_id', 'title', 'kind', 'zone', 'notes', 'due_date', 'due_mileage', 'recurrence_months',
         'recurrence_km', 'starts_on', 'start_mileage', 'status', 'completed_at', 'completed_mileage',
@@ -74,6 +77,22 @@ class Reminder extends Model
         $today ??= CarbonImmutable::today();
         $current = $this->vehicle?->current_mileage;
 
+        // Memoria por instancia: ordenar, contar estados y serializar piden la misma evaluación varias
+        // veces por petición. La clave cambia si cambia cualquier dato del que depende el resultado.
+        $key = $today->format('Y-m-d').'|'.$current.'|'.implode('|', array_map(
+            fn (string $attribute) => (string) ($this->attributes[$attribute] ?? ''),
+            ['status', 'due_date', 'due_mileage', 'starts_on', 'start_mileage'],
+        ));
+        if ($this->evaluation !== null && $this->evaluation[0] === $key) {
+            return $this->evaluation[1];
+        }
+
+        return ($this->evaluation = [$key, $this->computeEvaluation($today, $current)])[1];
+    }
+
+    /** @return array{state: ReminderState, days_left: ?int, km_left: ?int, progress: ?float} */
+    private function computeEvaluation(CarbonImmutable $today, ?int $current): array
+    {
         $daysLeft = $this->due_date ? Dates::daysBetween($today, $this->due_date) : null;
         $kmLeft = ($this->due_mileage !== null && $current !== null) ? $this->due_mileage - $current : null;
 
@@ -123,27 +142,30 @@ class Reminder extends Model
      */
     public static function sortByUrgency(Collection $reminders): Collection
     {
-        return $reminders->sort(function (Reminder $a, Reminder $b) {
-            if ($a->isPending() !== $b->isPending()) {
-                return $a->isPending() ? -1 : 1;
+        // Clave de orden calculada una vez por recordatorio (antes se evaluaba en cada comparación).
+        $keyed = $reminders->map(function (Reminder $r) {
+            if (! $r->isPending()) {
+                return ['reminder' => $r, 'pending' => false, 'severity' => 0,
+                    'date' => (string) $r->completed_at?->toDateString(), 'km' => 0, 'id' => $r->id];
             }
-            if (! $a->isPending()) {
-                return strcmp((string) $b->completed_at?->toDateString(), (string) $a->completed_at?->toDateString())
-                    ?: $b->id <=> $a->id;
+            $evaluation = $r->evaluate();
+
+            return ['reminder' => $r, 'pending' => true, 'severity' => $evaluation['state']->severity(),
+                'date' => $r->due_date?->toDateString() ?? '9999-12-31', 'km' => $evaluation['km_left'] ?? PHP_INT_MAX, 'id' => $r->id];
+        });
+
+        return $keyed->sort(function (array $a, array $b) {
+            if ($a['pending'] !== $b['pending']) {
+                return $a['pending'] ? -1 : 1;
+            }
+            if (! $a['pending']) {
+                return strcmp($b['date'], $a['date']) ?: $b['id'] <=> $a['id'];
             }
 
-            $sa = $a->evaluate()['state'];
-            $sb = $b->evaluate()['state'];
-
-            return $sb->severity() <=> $sa->severity()
-                ?: strcmp($a->due_date?->toDateString() ?? '9999-12-31', $b->due_date?->toDateString() ?? '9999-12-31')
-                ?: ($a->kmLeftForSorting() <=> $b->kmLeftForSorting())
-                ?: $a->id <=> $b->id;
-        })->values();
-    }
-
-    private function kmLeftForSorting(): int
-    {
-        return $this->evaluate()['km_left'] ?? PHP_INT_MAX;
+            return $b['severity'] <=> $a['severity']
+                ?: strcmp($a['date'], $b['date'])
+                ?: ($a['km'] <=> $b['km'])
+                ?: $a['id'] <=> $b['id'];
+        })->map(fn (array $k) => $k['reminder'])->values();
     }
 }

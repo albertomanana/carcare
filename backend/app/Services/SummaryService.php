@@ -3,19 +3,17 @@
 namespace App\Services;
 
 use App\Enums\ExpenseCategory;
-use App\Enums\FuelUnit;
 use App\Enums\ReminderState;
 use App\Enums\ServiceKind;
 use App\Http\Resources\MaintenanceRecordRefResource;
 use App\Http\Resources\ReminderResource;
-use App\Models\Expense;
 use App\Models\MaintenanceRecord;
-use App\Models\MileageLog;
 use App\Models\Reminder;
 use App\Models\Vehicle;
 use App\Support\Dates;
+use App\Support\ExpenseRows;
+use App\Support\MileageRows;
 use App\Support\Money;
-use App\Support\Totals;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -36,18 +34,24 @@ class SummaryService
     public function forVehicle(Vehicle $vehicle, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $today = CarbonImmutable::today();
-        $expenses = $vehicle->expenses()->orderBy('expense_date')->orderBy('id')->get();
-        $logs = $vehicle->mileageLogs()->oldestFirst()->get();
+        $chartFrom = $to->startOfMonth()->subMonths(11);
+
+        // Solo se carga lo que usan los cálculos (periodo, periodo anterior, mes/año de `to`, gráfica de
+        // 12 meses, últimos 90 días): el coste ya no crece con los años de historial del vehículo.
+        $days = Dates::daysBetween($from, $to) + 1;
+        $earliest = min($from->subDays($days), $to->startOfYear(), $chartFrom, $to->subMonths(12), $to->subDays(90));
+        $until = $to->endOfYear()->toDateString();
+        $expenses = ExpenseRows::get(
+            $vehicle->expenses()->whereBetween('expense_date', [$earliest->toDateString(), $until])
+                ->orderBy('expense_date')->orderBy('id')
+        );
+        $logs = MileageRows::window($vehicle, $earliest->toDateString(), $until);
 
         return [
             'period' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
             'totals' => $this->totals($expenses, $from, $to),
-            'by_category' => Totals::byCategory($this->between($expenses, $from, $to)),
-            'by_month' => Totals::byMonth(
-                $expenses,
-                Dates::months($to->startOfMonth()->subMonths(11), $to),
-                fn (Expense $e) => $e->expense_date->format('Y-m'),
-            ),
+            'by_category' => ExpenseRows::byCategory($this->between($expenses, $from, $to)),
+            'by_month' => ExpenseRows::byMonth($expenses, Dates::months($chartFrom, $to)),
             'cost_per_km' => $this->costPerKm($expenses, $logs, $from, $to),
             'consumption' => $this->consumption($expenses, $from, $to),
             'mileage' => [
@@ -64,34 +68,27 @@ class SummaryService
         ];
     }
 
-    /** @param  Collection<int, Expense>  $expenses */
+    /** @param  Collection<int, object>  $expenses  filas de ExpenseRows */
     private function between(Collection $expenses, CarbonImmutable $from, CarbonImmutable $to): Collection
     {
-        $a = $from->toDateString();
-        $b = $to->toDateString();
-
-        return $expenses->filter(function (Expense $e) use ($a, $b) {
-            $d = $e->expense_date->toDateString();
-
-            return $d >= $a && $d <= $b;
-        })->values();
+        return ExpenseRows::between($expenses, $from->toDateString(), $to->toDateString());
     }
 
     private function totals(Collection $expenses, CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $period = Totals::sumCents($this->between($expenses, $from, $to));
+        $period = ExpenseRows::sum($this->between($expenses, $from, $to));
 
         // Periodo inmediatamente anterior de la misma duración.
         $days = Dates::daysBetween($from, $to) + 1;
         $prevTo = $from->subDay();
         $prevFrom = $prevTo->subDays($days - 1);
         $previousExpenses = $this->between($expenses, $prevFrom, $prevTo);
-        $previous = $previousExpenses->isEmpty() ? null : Totals::sumCents($previousExpenses);
+        $previous = $previousExpenses->isEmpty() ? null : ExpenseRows::sum($previousExpenses);
 
         return [
             'period' => Money::format($period),
-            'month' => Money::format(Totals::sumCents($this->between($expenses, $to->startOfMonth(), $to->endOfMonth()))),
-            'year' => Money::format(Totals::sumCents($this->between($expenses, $to->startOfYear(), $to->endOfYear()))),
+            'month' => Money::format(ExpenseRows::sum($this->between($expenses, $to->startOfMonth(), $to->endOfMonth()))),
+            'year' => Money::format(ExpenseRows::sum($this->between($expenses, $to->startOfYear(), $to->endOfYear()))),
             'previous_period' => $previous === null ? null : Money::format($previous),
             'change_pct' => ($previous === null || $previous === 0) ? null : round(($period - $previous) / $previous * 100, 1),
         ];
@@ -111,12 +108,12 @@ class SummaryService
         }
 
         $km = $inPeriod->max('mileage') - $inPeriod->min('mileage');
-        $days = Dates::daysBetween($inPeriod->first()->recorded_at, $inPeriod->last()->recorded_at);
+        $days = Dates::daysBetween($inPeriod->first()->date, $inPeriod->last()->date);
         if ($km < self::MIN_KM || $days < self::MIN_DAYS) {
             return $unavailable;
         }
 
-        $cents = Totals::sumCents($this->between($expenses, $from, $to));
+        $cents = ExpenseRows::sum($this->between($expenses, $from, $to));
 
         return [
             'available' => true,
@@ -134,19 +131,19 @@ class SummaryService
     private function consumption(Collection $expenses, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $fuel = $this->between($expenses, $from, $to)
-            ->filter(fn (Expense $e) => $e->category === ExpenseCategory::Fuel && $e->fuel_quantity !== null);
+            ->filter(fn (object $e) => $e->category === ExpenseCategory::Fuel->value && $e->quantity !== null);
 
-        $unit = $fuel->countBy(fn (Expense $e) => ($e->fuel_unit ?? FuelUnit::L)->value)->sortDesc()->keys()->first();
+        $unit = $fuel->countBy(fn (object $e) => $e->unit)->sortDesc()->keys()->first();
         $fuel = $fuel
-            ->filter(fn (Expense $e) => ($e->fuel_unit ?? FuelUnit::L)->value === $unit)
+            ->filter(fn (object $e) => $e->unit === $unit)
             ->sortBy([
-                fn (Expense $a, Expense $b) => strcmp($a->expense_date->toDateString(), $b->expense_date->toDateString()),
-                fn (Expense $a, Expense $b) => ($a->mileage ?? 0) <=> ($b->mileage ?? 0),
-                fn (Expense $a, Expense $b) => $a->id <=> $b->id,
+                fn (object $a, object $b) => strcmp($a->date, $b->date),
+                fn (object $a, object $b) => ($a->mileage ?? 0) <=> ($b->mileage ?? 0),
+                fn (object $a, object $b) => $a->id <=> $b->id,
             ])
             ->values();
 
-        $fills = $fuel->filter(fn (Expense $e) => $e->full_tank && $e->mileage !== null)->count();
+        $fills = $fuel->filter(fn (object $e) => $e->full && $e->mileage !== null)->count();
 
         $quantity = 0; // centésimas de unidad
         $km = 0;
@@ -154,9 +151,9 @@ class SummaryService
         $accumulated = 0;
         foreach ($fuel as $expense) {
             if ($previousFull !== null) {
-                $accumulated += Money::toCents($expense->fuel_quantity);
+                $accumulated += $expense->quantity;
             }
-            if ($expense->full_tank && $expense->mileage !== null) {
+            if ($expense->full && $expense->mileage !== null) {
                 if ($previousFull !== null && $expense->mileage > $previousFull->mileage) {
                     $quantity += $accumulated;
                     $km += $expense->mileage - $previousFull->mileage;
@@ -192,7 +189,7 @@ class SummaryService
         }
 
         $startDate = $start->toDateString();
-        $base = $logs->filter(fn (MileageLog $l) => $l->recorded_at->toDateString() < $startDate)->last()
+        $base = $logs->filter(fn (object $l) => $l->date < $startDate)->last()
             ?? $inPeriod->first();
         $last = $inPeriod->last();
 
@@ -207,7 +204,7 @@ class SummaryService
             return null;
         }
 
-        $days = Dates::daysBetween($window->first()->recorded_at, $window->last()->recorded_at);
+        $days = Dates::daysBetween($window->first()->date, $window->last()->date);
         if ($days < 7) {
             return null;
         }
@@ -219,7 +216,7 @@ class SummaryService
     private function series(Collection $logs, CarbonImmutable $from, CarbonImmutable $to): array
     {
         return $this->logsBetween($logs, $from, $to)
-            ->groupBy(fn (MileageLog $l) => $l->recorded_at->toDateString())
+            ->groupBy('date')
             ->map(fn (Collection $day, string $date) => ['date' => $date, 'mileage' => (int) $day->max('mileage')])
             ->values()
             ->all();
@@ -227,12 +224,12 @@ class SummaryService
 
     private function records(Vehicle $vehicle): array
     {
-        $records = $vehicle->maintenanceRecords()->active()->latestFirst()->get();
+        $recent = $vehicle->maintenanceRecords()->active()->latestFirst()->limit(5)->get();
 
         return [
-            'count' => $records->count(),
-            'last' => $records->first() ? new MaintenanceRecordRefResource($records->first()) : null,
-            'recent' => MaintenanceRecordRefResource::collection($records->take(5)),
+            'count' => $recent->count() < 5 ? $recent->count() : $vehicle->maintenanceRecords()->active()->count(),
+            'last' => $recent->first() ? new MaintenanceRecordRefResource($recent->first()) : null,
+            'recent' => MaintenanceRecordRefResource::collection($recent),
         ];
     }
 
@@ -272,16 +269,9 @@ class SummaryService
         ];
     }
 
-    /** @param  Collection<int, MileageLog>  $logs  ordenadas ascendente */
+    /** @param  Collection<int, object>  $logs  filas de MileageRows, ordenadas ascendente */
     private function logsBetween(Collection $logs, CarbonImmutable $from, CarbonImmutable $to): Collection
     {
-        $a = $from->toDateString();
-        $b = $to->toDateString();
-
-        return $logs->filter(function (MileageLog $l) use ($a, $b) {
-            $d = $l->recorded_at->toDateString();
-
-            return $d >= $a && $d <= $b;
-        })->values();
+        return MileageRows::between($logs, $from->toDateString(), $to->toDateString());
     }
 }
