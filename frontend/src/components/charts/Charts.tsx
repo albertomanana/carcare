@@ -52,12 +52,20 @@ export interface MonthlyBarsProps {
   label: string
   height?: number
   className?: string
+  /** Mes resaltado en el color principal. Por defecto, el último; null ⇒ ninguno. */
+  highlightMonth?: YearMonth | null
+  /**
+   * Tabla oculta para lectores de pantalla. Desactívala solo si la pantalla ya muestra
+   * los mismos datos en una tabla visible (si no, el gráfico se queda sin alternativa).
+   */
+  srTable?: boolean
 }
 
-export function MonthlyBars({ data, label, height = 220, className }: MonthlyBarsProps) {
+export function MonthlyBars({ data, label, height = 220, className, highlightMonth, srTable = true }: MonthlyBarsProps) {
   const c = useCssVars(VARS)
   const rows = data.map((d) => ({ month: d.month, value: toNumber(d.total) ?? 0 }))
-  const lastIndex = rows.length - 1
+  const highlighted = highlightMonth === undefined ? rows[rows.length - 1]?.month : highlightMonth
+  const anyHighlighted = rows.some((r) => r.month === highlighted)
   return (
     <figure className={cn('min-w-0', className)}>
       <div aria-hidden style={{ height }}>
@@ -87,14 +95,18 @@ export function MonthlyBars({ data, label, height = 220, className }: MonthlyBar
               }
             />
             <Bar dataKey="value" radius={[6, 6, 2, 2]} maxBarSize={36} isAnimationActive={false}>
-              {rows.map((r, i) => (
-                <Cell key={r.month} fill={i === lastIndex ? c['chart-1'] : c['fg-subtle']} fillOpacity={i === lastIndex ? 1 : 0.45} />
+              {rows.map((r) => (
+                <Cell
+                  key={r.month}
+                  fill={r.month === highlighted ? c['chart-1'] : c['fg-subtle']}
+                  fillOpacity={r.month === highlighted ? 1 : anyHighlighted ? 0.45 : 0.7}
+                />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <SrTable caption={label} headers={['Mes', 'Importe']} rows={data.map((d) => [formatMonth(d.month, 'long'), formatMoney(d.total)])} />
+      {srTable && <SrTable caption={label} headers={['Mes', 'Importe']} rows={data.map((d) => [formatMonth(d.month, 'long'), formatMoney(d.total)])} />}
     </figure>
   )
 }
@@ -205,13 +217,14 @@ export function CategoryBreakdown({ data, className }: { data: { category: Expen
 }
 
 // ───────── Barras horizontales HTML (por vehículo, por cliente) ─────────
+// Todas en gris: la lima se reserva para la acción primaria y el mes en curso del gráfico.
 
 export function HBarList({ items, className, emptyText = 'Sin datos en este periodo.' }: { items: { key: string | number; label: ReactNode; sublabel?: ReactNode; value: number; display: string }[]; className?: string; emptyText?: string }) {
   const max = Math.max(0, ...items.map((i) => i.value))
   if (!items.length) return <p className="py-6 text-center text-sm text-fg-muted">{emptyText}</p>
   return (
     <ul className={cn('space-y-3', className)}>
-      {items.map((item, idx) => (
+      {items.map((item) => (
         <li key={item.key}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
             <span className="min-w-0 truncate text-fg">
@@ -221,7 +234,7 @@ export function HBarList({ items, className, emptyText = 'Sin datos en este peri
             <span className="shrink-0 font-medium text-fg tabular">{item.display}</span>
           </div>
           <div aria-hidden className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-3">
-            <div className={cn('h-full rounded-full', idx === 0 ? 'bg-chart-1' : 'bg-fg-subtle/60')} style={{ width: `${max ? Math.max(2, (item.value / max) * 100) : 0}%` }} />
+            <div className="h-full rounded-full bg-fg-subtle/70" style={{ width: `${max ? Math.max(2, (item.value / max) * 100) : 0}%` }} />
           </div>
         </li>
       ))}

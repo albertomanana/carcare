@@ -256,8 +256,8 @@ export default function LandingPage() {
                 <Feature icon={<ShieldCheck />} title="Equipo con roles">
                   Propietario, gerente y mecánico: cada uno ve lo que le toca.
                 </Feature>
-                <Feature icon={<Receipt />} title="Facturación">
-                  Totales con IVA y facturación de las órdenes entregadas.
+                <Feature icon={<Receipt />} title="Importe de órdenes entregadas">
+                  Totales con IVA por mes y por cliente, ticket medio y tiempo en el taller. No son facturas.
                 </Feature>
                 <Feature icon={<CalendarClock />} title="Alertas de flota">
                   Vencimientos de todos los vehículos que gestionas, por urgencia.

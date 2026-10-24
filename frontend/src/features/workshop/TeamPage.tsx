@@ -1,18 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, ChevronDown, Crown, Lock, LogOut, ShieldCheck, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
+import { Check, ChevronDown, Crown, History, Lock, LogOut, Plus, ShieldCheck, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { errorMessage } from '@/api/client'
-import { flattenPages } from '@/api/hooks/shared'
+import { flattenPages, totalFromPages } from '@/api/hooks/shared'
+import { useVehicle, useVehicles } from '@/api/hooks/vehicles'
 import { useActivity, useAddMember, useMembers, useRemoveMember, useUpdateMemberRole } from '@/api/hooks/workspaces'
-import type { Member, WorkspaceRole } from '@/api/types'
+import type { Member, Vehicle, WorkspaceRole } from '@/api/types'
 import { FormErrors } from '@/components/forms/MileageConflictNotice'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
-import { Button, IconButton } from '@/components/ui/Button'
+import { Button, ButtonLink, IconButton } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog, DialogBody, DialogClose, DialogContent, DialogFooter } from '@/components/ui/Dialog'
@@ -25,7 +26,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Field } from '@/components/ui/Field'
-import { Input } from '@/components/ui/inputs'
+import { Input, Select } from '@/components/ui/inputs'
+import { LoadMore } from '@/components/ui/LoadMore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -34,8 +36,9 @@ import { buttonClasses } from '@/components/ui/variants'
 import { useAuth } from '@/features/auth/auth-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { useSearchParam } from '@/hooks/useSearchParam'
 import { cn } from '@/lib/cn'
-import { formatDate } from '@/lib/format'
+import { formatDate, formatPlate } from '@/lib/format'
 import { handleFormError } from '@/lib/forms'
 import { ROLE_DESCRIPTION, ROLE_LABEL } from '@/lib/labels'
 import { plural } from '@/lib/text'
@@ -301,12 +304,18 @@ function RolesGuide() {
   )
 }
 
+/** Actividad del equipo (E13‑7): paginada de 10 en 10 con «Ver más» y filtro por vehículo en la URL (?vehiculo=ID). */
 function RecentActivity() {
   const ctx = useWorkspace()
-  const activity = useActivity(ctx.id, { per_page: 10 })
+  const [vehicleParam, setVehicleParam] = useSearchParam('vehiculo')
+  const vehicleId = /^\d+$/.test(vehicleParam) ? Number(vehicleParam) : null
+  const activity = useActivity(ctx.id, { per_page: ACTIVITY_PAGE, vehicle_id: vehicleId ?? undefined })
   const items = flattenPages(activity.data)
+  const total = totalFromPages(activity.data)
+
   return (
-    <Section title="Actividad reciente" description="Lo último que ha hecho el equipo en el taller.">
+    <Section title="Actividad" id="actividad">
+      <ActivityVehicleFilter value={vehicleId} onChange={(id) => setVehicleParam(id === null ? null : String(id))} />
       {activity.isPending ? (
         <div role="status" className="space-y-2">
           <span className="sr-only">Cargando actividad…</span>
@@ -316,11 +325,93 @@ function RecentActivity() {
         </div>
       ) : activity.isError ? (
         <ErrorState compact error={activity.error} onRetry={() => void activity.refetch()} />
+      ) : items.length === 0 && vehicleId !== null ? (
+        <EmptyState
+          compact
+          icon={<History />}
+          title="Sin actividad de este vehículo"
+          description="Aquí saldrán sus órdenes, cambios de estado, lecturas de km e intervenciones."
+          action={<Button onClick={() => setVehicleParam(null)}>Ver toda la actividad</Button>}
+        />
+      ) : items.length === 0 ? (
+        <EmptyState
+          compact
+          icon={<History />}
+          title="Sin actividad todavía"
+          description="Aquí verás lo que vaya haciendo el equipo: órdenes abiertas, cambios de estado, entregas…"
+          action={
+            ctx.can('operate') && (
+              <ButtonLink to={`${ctx.base}/ordenes/nueva`} icon={<Plus aria-hidden />}>
+                Abrir una orden
+              </ButtonLink>
+            )
+          }
+        />
       ) : (
-        <TeamActivity items={items} limit={10} />
+        <>
+          <TeamActivity items={items} limit={items.length} />
+          <LoadMore
+            className="mt-4"
+            hasNextPage={!!activity.hasNextPage}
+            isFetchingNextPage={activity.isFetchingNextPage}
+            fetchNextPage={activity.fetchNextPage}
+            shown={items.length}
+            total={total}
+            what={total === 1 ? 'acción' : 'acciones'}
+            label="Ver más"
+          />
+        </>
       )}
     </Section>
   )
+}
+
+const ACTIVITY_PAGE = 10
+
+/** Selector de vehículo para la actividad. Lista los vehículos activos del taller por nombre (hasta 100). */
+function ActivityVehicleFilter({ value, onChange }: { value: number | null; onChange: (id: number | null) => void }) {
+  const ctx = useWorkspace()
+  const vehicles = useVehicles(ctx.id, { per_page: 100, sort: 'name' })
+  const list = vehicles.data?.data ?? []
+  const missing = value !== null && !!vehicles.data && !list.some((v) => v.id === value)
+  // El vehículo elegido puede no estar en la lista (archivado o más allá de los 100 primeros)
+  const selected = useVehicle(missing ? value : undefined)
+
+  if (vehicles.isError) {
+    return value !== null ? (
+      <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+        Solo la actividad de un vehículo.
+        <Button size="sm" onClick={() => onChange(null)}>
+          Ver toda la actividad
+        </Button>
+      </p>
+    ) : null
+  }
+  if (vehicles.data && list.length === 0 && value === null) return null
+
+  return (
+    <label className="mb-3 flex items-center gap-2 text-sm text-fg-muted">
+      <span className="shrink-0">Vehículo</span>
+      <Select
+        value={value === null ? '' : String(value)}
+        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+        disabled={vehicles.isPending}
+        className="w-full sm:w-72"
+      >
+        <option value="">Todos los vehículos</option>
+        {missing && <option value={value}>{selected.data ? vehicleOptionLabel(selected.data) : 'Vehículo elegido'}</option>}
+        {list.map((v) => (
+          <option key={v.id} value={v.id}>
+            {vehicleOptionLabel(v)}
+          </option>
+        ))}
+      </Select>
+    </label>
+  )
+}
+
+function vehicleOptionLabel(v: Pick<Vehicle, 'display_name' | 'plate'>): string {
+  return v.plate ? `${v.display_name} · ${formatPlate(v.plate)}` : v.display_name
 }
 
 const addSchema = z.object({

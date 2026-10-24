@@ -1,5 +1,6 @@
-import { ClipboardList, List, Plus, SquareKanban, TriangleAlert } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Check, ClipboardList, List, Plus, SquareKanban, TriangleAlert, UserRound } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { flattenPages, totalFromPages } from '@/api/hooks/shared'
 import { LIVE_REFRESH_MS, useWorkOrders, useWorkOrdersInfinite } from '@/api/hooks/workshop'
 import { useMembers } from '@/api/hooks/workspaces'
@@ -10,14 +11,16 @@ import { LoadMore } from '@/components/ui/LoadMore'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { EmptyState, ErrorState, NoResults } from '@/components/ui/States'
+import { useAuth } from '@/features/auth/auth-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useSearchParam } from '@/hooks/useSearchParam'
+import { useSearchParam, useSearchParamsPatch } from '@/hooks/useSearchParam'
 import { cn } from '@/lib/cn'
 import { ALL_WORK_ORDER_STATUSES, WORK_ORDER_STATUS_LABEL } from '@/lib/labels'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { plural } from '@/lib/text'
+import { assigneePatch, resolveAssignee, type AssigneeChoice, type AssigneeContext } from './components/assignee'
 import { KanbanBoard, KanbanSkeleton } from './components/KanbanBoard'
 import { OrderRowSkeleton, OrdersTable } from './components/OrderList'
 import { useOrderActions } from './components/useOrderActions'
@@ -30,36 +33,50 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   ...ALL_WORK_ORDER_STATUSES.map((s) => ({ value: s, label: WORK_ORDER_STATUS_LABEL[s] })),
 ]
 
-/** Órdenes de trabajo: tablero kanban (arrastrar y soltar) o lista con filtros, todo en la URL. */
+/**
+ * Órdenes de trabajo: tablero kanban (arrastrar y soltar) o lista con filtros, todo en la URL.
+ * «Mis órdenes» (assigned_to = tú) viene activado para el mecánico y desactivado para los demás.
+ */
 export default function OrdersPage() {
   const ctx = useWorkspace()
+  const { user } = useAuth()
   useDocumentTitle('Órdenes')
+  const [params] = useSearchParams()
+  const patchParams = useSearchParamsPatch()
   const storedView = readStorage(STORAGE_KEYS.ordersView) === 'lista' ? 'lista' : 'tablero'
   const [viewParam, setView] = useSearchParam('vista', storedView)
   const view: View = viewParam === 'lista' ? 'lista' : 'tablero'
   const [q, setQ] = useSearchParam('q')
-  const [mechanic, setMechanic] = useSearchParam('mecanico')
   const [lateParam, setLate] = useSearchParam('tarde')
   const [statusParam, setStatus] = useSearchParam('estado', 'open')
   const status = STATUS_FILTERS.some((s) => s.value === statusParam) ? statusParam : 'open'
   const onlyLate = lateParam === '1'
   const [term, setTerm] = useState(q)
   const debounced = useDebouncedValue(term)
+  const canOperate = ctx.can('operate')
+  const canManage = ctx.can('manage')
   const members = useMembers(ctx.id)
   const actions = useOrderActions()
-  const canOperate = ctx.can('operate')
-  const showTotal = ctx.can('manage')
+  const showTotal = canManage
 
+  const assigneeCtx: AssigneeContext = { userId: user?.id ?? null, role: ctx.workspace.role, canPickMechanic: canManage }
+  const assignee = resolveAssignee({ mias: params.get('mias'), mecanico: params.get('mecanico') }, assigneeCtx)
+  const chooseAssignee = (choice: AssigneeChoice) => patchParams({ ...assigneePatch(choice, assigneeCtx) })
+
+  // La búsqueda pasa a la URL al dejar de escribir (solo cuando cambia lo escrito, no al cambiar otros filtros)
+  const appliedSearch = useRef(debounced)
   useEffect(() => {
-    if (debounced !== q) setQ(debounced)
-  }, [debounced, q, setQ])
+    if (appliedSearch.current === debounced) return
+    appliedSearch.current = debounced
+    setQ(debounced)
+  }, [debounced, setQ])
 
   const changeView = (v: View) => {
     writeStorage(STORAGE_KEYS.ordersView, v)
     setView(v)
   }
 
-  const common = { search: q || undefined, assigned_to: mechanic || undefined }
+  const common = { search: q || undefined, assigned_to: assignee.assignedTo ?? undefined }
   const board = useWorkOrders(ctx.id, { status: 'open', per_page: 200, ...common }, view === 'tablero', LIVE_REFRESH_MS)
   const list = useWorkOrdersInfinite(ctx.id, { status: status === 'all' ? undefined : status, per_page: 25, ...common }, view === 'lista')
 
@@ -71,13 +88,13 @@ export default function OrdersPage() {
   const listOrders = flattenPages(list.data)
   const listTotal = totalFromPages(list.data)
 
-  const filtering = !!q || !!mechanic || (view === 'tablero' ? onlyLate : status !== 'open')
+  // «Mis órdenes» no cuenta como filtro: si no hay nada, se explica aparte y se ofrece ver todas
+  const otherMechanic = assignee.assignedTo !== null && !assignee.mine
+  const filtering = !!q || otherMechanic || (view === 'tablero' ? onlyLate : status !== 'open')
   const resetFilters = () => {
     setTerm('')
-    setQ(null)
-    setMechanic(null)
-    setLate(null)
-    setStatus(null)
+    appliedSearch.current = ''
+    patchParams({ q: null, mecanico: null, mias: null, tarde: null, estado: null })
   }
   const orderHref = (o: WorkOrder) => `${ctx.base}/ordenes/${o.id}`
   const vehicleHref = (o: WorkOrder) => `${ctx.base}/vehiculos/${o.vehicle.id}`
@@ -86,10 +103,10 @@ export default function OrdersPage() {
   const description =
     view === 'tablero'
       ? board.data
-        ? `${plural(board.data.meta.total, 'orden abierta', 'órdenes abiertas')}${lateCount ? ` · ${lateCount} ${lateCount === 1 ? 'va' : 'van'} tarde` : ''}.`
+        ? `${assignee.mine ? plural(board.data.meta.total, 'orden abierta asignada a ti', 'órdenes abiertas asignadas a ti') : plural(board.data.meta.total, 'orden abierta', 'órdenes abiertas')}${lateCount ? ` · ${lateCount} ${lateCount === 1 ? 'va' : 'van'} tarde` : ''}.`
         : 'Todo lo que está en el taller, por estado.'
       : listTotal !== null
-        ? `${plural(listTotal, 'orden', 'órdenes')} con estos filtros.`
+        ? `${assignee.mine ? plural(listTotal, 'orden asignada a ti', 'órdenes asignadas a ti') : plural(listTotal, 'orden', 'órdenes')} con estos filtros.`
         : 'Busca y filtra todas las órdenes, también las entregadas.'
 
   const createAction = canOperate && (
@@ -120,17 +137,37 @@ export default function OrdersPage() {
           className="lg:ml-auto lg:w-80"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none">
-            <span className="shrink-0">Mecánico</span>
-            <Select value={mechanic} onChange={(e) => setMechanic(e.target.value || null)} className="sm:w-44" disabled={!members.data}>
-              <option value="">Todos</option>
-              {members.data?.map((m) => (
-                <option key={m.user.id} value={m.user.id}>
-                  {m.user.name}
-                </option>
-              ))}
-            </Select>
-          </label>
+          <Button
+            size="sm"
+            aria-pressed={assignee.mine}
+            disabled={!user}
+            onClick={() => chooseAssignee(assignee.mine ? 'all' : 'mine')}
+            icon={assignee.mine ? <Check aria-hidden /> : <UserRound aria-hidden />}
+            className={cn('h-11 md:h-10', assignee.mine && 'border-accent/60 bg-accent-soft text-fg')}
+          >
+            Mis órdenes
+          </Button>
+          {canManage && (
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none">
+              <span className="shrink-0">Mecánico</span>
+              <Select
+                value={assignee.assignedTo !== null ? String(assignee.assignedTo) : ''}
+                onChange={(e) => chooseAssignee(e.target.value ? Number(e.target.value) : 'all')}
+                className="sm:w-44"
+                disabled={!members.data}
+              >
+                <option value="">Todos</option>
+                {members.data?.map((m) => (
+                  <option key={m.user.id} value={m.user.id}>
+                    {m.user.id === user?.id ? `${m.user.name} (tú)` : m.user.name}
+                  </option>
+                ))}
+                {assignee.assignedTo !== null && members.data && !members.data.some((m) => m.user.id === assignee.assignedTo) && (
+                  <option value={assignee.assignedTo}>Ya no está en el equipo</option>
+                )}
+              </Select>
+            </label>
+          )}
           {view === 'lista' ? (
             <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none">
               <span className="shrink-0">Estado</span>
@@ -164,6 +201,8 @@ export default function OrdersPage() {
         ) : boardOrders.length === 0 ? (
           filtering ? (
             <NoResults what="órdenes abiertas" onReset={resetFilters} />
+          ) : assignee.mine ? (
+            <MineEmpty onShowAll={() => chooseAssignee('all')} />
           ) : (
             <EmptyState
               icon={<ClipboardList />}
@@ -172,7 +211,14 @@ export default function OrdersPage() {
               action={
                 <>
                   {createAction}
-                  <Button onClick={() => changeView('lista')}>Ver todas las órdenes</Button>
+                  <Button
+                    onClick={() => {
+                      writeStorage(STORAGE_KEYS.ordersView, 'lista')
+                      patchParams({ vista: 'lista', estado: 'all' })
+                    }}
+                  >
+                    Ver las órdenes cerradas
+                  </Button>
                 </>
               }
             />
@@ -193,8 +239,20 @@ export default function OrdersPage() {
       ) : listOrders.length === 0 ? (
         filtering ? (
           <NoResults what="órdenes" onReset={resetFilters} />
+        ) : assignee.mine ? (
+          <MineEmpty onShowAll={() => chooseAssignee('all')} />
         ) : (
-          <EmptyState icon={<ClipboardList />} title="Aún no hay órdenes abiertas" description="Las órdenes entregadas y canceladas siguen disponibles con el filtro «Estado»." action={createAction} />
+          <EmptyState
+            icon={<ClipboardList />}
+            title="No hay órdenes abiertas"
+            description="Las órdenes entregadas y canceladas siguen disponibles."
+            action={
+              <>
+                {createAction}
+                <Button onClick={() => setStatus('all')}>Ver las órdenes cerradas</Button>
+              </>
+            }
+          />
         )
       ) : (
         <>
@@ -204,12 +262,23 @@ export default function OrdersPage() {
             vehicleHref={vehicleHref}
             onRequest={onRequest}
             showTotal={showTotal}
-            caption={`Órdenes de trabajo (${STATUS_FILTERS.find((s) => s.value === status)?.label.toLowerCase()})`}
+            caption={`Órdenes de trabajo${assignee.mine ? ' asignadas a ti' : ''} (${STATUS_FILTERS.find((s) => s.value === status)?.label.toLowerCase()})`}
           />
           <LoadMore hasNextPage={!!list.hasNextPage} isFetchingNextPage={list.isFetchingNextPage} fetchNextPage={list.fetchNextPage} shown={listOrders.length} total={listTotal} what="órdenes" />
         </>
       )}
       {actions.dialogs}
     </>
+  )
+}
+
+function MineEmpty({ onShowAll }: { onShowAll: () => void }) {
+  return (
+    <EmptyState
+      icon={<UserRound />}
+      title="No tienes órdenes abiertas asignadas"
+      description="Cuando te asignen una orden, aparecerá aquí."
+      action={<Button onClick={onShowAll}>Ver las órdenes de todos</Button>}
+    />
   )
 }

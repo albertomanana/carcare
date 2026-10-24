@@ -70,8 +70,8 @@ export const ROLE_LABEL: Record<WorkspaceRole, string> = {
 
 export const ROLE_DESCRIPTION: Record<WorkspaceRole, string> = {
   owner: 'Control total, incluido eliminar el taller.',
-  manager: 'Gestiona clientes, facturación, ajustes y equipo.',
-  mechanic: 'Trabaja con vehículos, órdenes e historial. No ve facturación.',
+  manager: 'Gestiona clientes, importes, analítica, ajustes y equipo.',
+  mechanic: 'Trabaja con vehículos, órdenes e historial. No ve importes ni analítica.',
 }
 
 export const FUEL_LABEL: Record<FuelType, string> = {

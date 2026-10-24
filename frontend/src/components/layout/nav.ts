@@ -37,7 +37,7 @@ export function navItems(ctx: WorkspaceContextValue | null): NavItem[] {
       { to: `${base}/taller`, label: 'Taller 3D', icon: Warehouse },
       { to: `${base}/agenda`, label: 'Agenda de flota', icon: CalendarClock },
       { to: `${base}/equipo`, label: 'Equipo', icon: Users },
-      ...(canManage ? [{ to: `${base}/analitica`, label: 'Facturación', icon: ChartColumn }] : []),
+      ...(canManage ? [{ to: `${base}/analitica`, label: 'Analítica', icon: ChartColumn }] : []),
     ]
   }
   return [

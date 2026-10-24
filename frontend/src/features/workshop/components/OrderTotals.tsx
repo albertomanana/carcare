@@ -9,7 +9,7 @@ import { liveTotals, type TotalsData } from './totals'
 
 /**
  * «Resumen de la orden (no es una factura)»: subtotal, IVA y total con IVA.
- * Sin permiso de facturación (mecánico) solo se muestra el número de líneas.
+ * Sin permiso para ver importes (mecánico) solo se muestra el número de líneas.
  */
 export function OrderTotals({ data, showPrices, className, live }: { data: TotalsData; showPrices: boolean; className?: string; live?: boolean }) {
   const rate = toNumber(data.taxRate)

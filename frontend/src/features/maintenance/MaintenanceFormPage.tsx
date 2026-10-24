@@ -326,7 +326,7 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
           </Card>
 
           <Card className="p-5 md:p-6">
-            <Fieldset legend="Piezas y mano de obra" description={showPrices ? 'Opcional. Con precios, CarCare suma el total por ti.' : 'Opcional. Los importes solo los ve quien gestiona la facturación.'}>
+            <Fieldset legend="Piezas y mano de obra" description={showPrices ? 'Opcional. Con precios, CarCare suma el total por ti.' : 'Opcional. Los importes solo los ven propietarios y gerentes.'}>
               <LineItemsEditor form={form} showPrices={showPrices} />
               {e.items?.message && <p className="text-xs font-medium text-danger">{e.items.message}</p>}
             </Fieldset>

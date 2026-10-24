@@ -229,7 +229,7 @@ function Revenue({ revenue }: { revenue: NonNullable<WorkshopDashboardData['reve
       action={
         ctx.can('manage') && (
           <Link to={`${ctx.base}/analitica`} className="text-sm font-medium text-accent-ink hover:underline">
-            Facturación
+            Analítica
           </Link>
         )
       }

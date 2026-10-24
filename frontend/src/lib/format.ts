@@ -87,6 +87,16 @@ export function formatPercent(value: number | null | undefined, opts: { signed?:
   return `${fmt.format(value)} %`
 }
 
+/**
+ * Matrícula como texto legible (la API la guarda en mayúsculas y sin espacios).
+ * Formato actual español '4821KTB' → '4821 KTB'; las demás se dejan tal cual.
+ */
+export function formatPlate(plate: string | null | undefined): string {
+  if (!plate) return ''
+  const m = /^(\d{4})([A-Z]{3})$/.exec(plate)
+  return m ? `${m[1]} ${m[2]}` : plate
+}
+
 // ───────── Fechas ─────────
 
 /** 'YYYY-MM-DD' (o ISO con hora) → Date en hora local, sin desfases por zona horaria. */

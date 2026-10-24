@@ -26,7 +26,7 @@ const DEMO_ACCOUNTS = [
   { email: 'demo@carcare.test', label: 'Particular', description: '2 vehículos con historial', icon: Car },
   { email: 'taller@carcare.test', label: 'Taller (propietario)', description: 'Taller Demo, 4 elevadores', icon: Warehouse },
   { email: 'gerente@carcare.test', label: 'Gerente de taller', description: 'Rol manager', icon: UserCog },
-  { email: 'mecanico@carcare.test', label: 'Mecánico', description: 'Rol mechanic, sin facturación', icon: Wrench },
+  { email: 'mecanico@carcare.test', label: 'Mecánico', description: 'Rol mechanic, no ve importes', icon: Wrench },
 ]
 
 const LOCK_SECONDS = 60

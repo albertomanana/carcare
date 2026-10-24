@@ -86,3 +86,12 @@ describe('caducidad de documentos', () => {
     expect(expiryDescriptor('2027-03-01', now)).toMatchObject({ tone: 'neutral', label: 'Caduca el 1 mar 2027' })
   })
 })
+
+describe('formatPlate', () => {
+  it('separa números y letras de la matrícula actual y deja las demás igual', async () => {
+    const { formatPlate } = await import('./format')
+    expect(formatPlate('4821KTB')).toBe('4821 KTB')
+    expect(formatPlate('M1234AB')).toBe('M1234AB')
+    expect(formatPlate(null)).toBe('')
+  })
+})
