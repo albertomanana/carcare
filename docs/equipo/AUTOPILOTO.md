@@ -35,7 +35,7 @@ Alberto (24/10): "me gustaría tener ya una buena memoria y una defensa decente 
 |-----|----------|
 | Sáb 24 | Analítica (17, 22, 23), datos demo (19), contratos (27, 28, 29), "Mis órdenes" (25), memoria: borrador de los capítulos 1‑5 (10a) |
 | Dom 25 | Simplificación de las pantallas (16, paso 2) y 3D solo donde aporta; recuperar la contraseña (28); memoria: diseño e implementación |
-| Lun 26 | Dirección visual que elija Alberto (18); resumen imprimible (24); RGPD (29); seguridad (7) y CI (11) |
+| Lun 26 | E16 solicitudes a talleres: backend (33) y pantallas (34, 35); dirección visual solo si Alberto la elige (18); resumen imprimible (24); RGPD (29); seguridad (7) y CI (11) |
 | Mar 27 | Integración completa con las 4 cuentas (5), E2E y axe (6) |
 | Mié 28 | Correcciones (9); capítulo de pruebas con resultados reales, manuales y anexos (10) |
 | Jue 29 | Memoria revisada y exportada; defensa: diapositivas, guion de la demo y preguntas (31) |
@@ -47,7 +47,7 @@ Estados: `Pendiente` · `En curso` · `Hecho` · `Bloqueado`. Prioridad de arrib
 
 | # | Tarea | Agente | Depende de | Estado |
 |---|-------|--------|------------|--------|
-| 0 | **Publicar en GitHub** (pedido por Alberto el 23/10): si `.tools/gh/bin/gh.exe auth status` dice que hay sesión y `git remote` está vacío, ejecutar `bash scripts/github/publicar-repo.sh` (crea el repo privado, `main` mínima y `develop` con commits por área). Si no hay sesión, dejarla `Pendiente` y anotar en "Últimas ejecuciones": "Alberto: ejecuta scripts/github/conectar-github.cmd" | sesión principal | Sesión de GitHub iniciada por Alberto | Bloqueado (autopiloto, 24/10 09:02): la sesión de GitHub ya está iniciada y `git remote` sigue vacío, pero el clasificador de permisos del modo automático **deniega** `publicar-repo.sh` ("Create Public Surface"). **Alberto:** ejecútalo tú desde una terminal (`bash scripts/github/publicar-repo.sh`) o desde la sesión interactiva |
+| 0 | **Publicar en GitHub** (pedido por Alberto el 23/10): si `.tools/gh/bin/gh.exe auth status` dice que hay sesión y `git remote` está vacío, ejecutar `bash scripts/github/publicar-repo.sh` (crea el repo privado, `main` mínima y `develop` con commits por área). Si no hay sesión, dejarla `Pendiente` y anotar en "Últimas ejecuciones": "Alberto: ejecuta scripts/github/conectar-github.cmd" | sesión principal | Sesión de GitHub iniciada por Alberto | Hecho (24/10 14:10, sesión interactiva): repositorio **privado** https://github.com/albertomanana/carcare, `main` por defecto y `develop` con todos los commits. Desde ahora el piloto hace `git push origin develop` al terminar |
 | 1 | Oleada 1c/1d: pantallas del modo particular | frontend-react | — | Hecho (23/10) salvo `AnalyticsPage` (pasa a la tarea 17). Commit 779dc5c. Sin informe final (cortado por límite): se incluye en la tarea 16 |
 | 2 | Oleada 1c/1d: modo taller completo | frontend-react | — | Hecho (23/10). Commit 779dc5c. Sin informe final (cortado por límite): se incluye en la tarea 16 |
 | 3 | Oleada 1c: cerrar tests de la API e informe | backend-laravel | — | Hecho (23/10): 462 tests / 6959 aserciones en verde, verificado por la sesión principal. [Informe](informes/2026-10-23-backend-laravel-api-v1.md) |
@@ -75,6 +75,10 @@ Estados: `Pendiente` · `En curso` · `Hecho` · `Bloqueado`. Prioridad de arrib
 | 10a | **Memoria del TFG, primer borrador completo** (objetivo de Alberto: memoria y defensa listas antes del 31/10). Capítulos que no dependen del aspecto final: introducción y objetivos, análisis y competencia, requisitos, casos de uso, diseño (arquitectura, E‑R, clases y secuencias contra el código real), implementación, planificación, conclusiones y bibliografía. Pruebas y manuales con huecos marcados | documentador-tfg | — | En curso (sesión interactiva, 24/10 09:10) |
 | 10 | Documentación TFG que depende de la app terminada: capítulo de pruebas con resultados reales, manual de usuario con capturas, manual de instalación, anexo de la API | documentador-tfg | 5, 10a | Pendiente |
 | 31 | **Defensa**: diapositivas (10‑15), guion de la demo en vivo con las cuentas demo, vídeo de respaldo (guion) y 20 preguntas probables del tribunal con respuesta | documentador-tfg + producto | 10a, 16 | Pendiente (objetivo: 29/10) |
+| 32 | **E16 · Solicitudes de reparación a talleres** (pedido por Alberto el 24/10): directorio de talleres, solicitud desde el espacio personal, aceptar o rechazar, presupuesto ("no es una factura"), conversión en orden y notificaciones en la app. Paso 1: ADR-0007, contrato e historias | arquitecto | — | En curso (sesión interactiva, 24/10 14:15) |
+| 33 | E16 · backend: modelos, rutas, policies, notificaciones, seed de 3‑4 talleres en el directorio y tests de aislamiento | backend-laravel | 32, 19 | Pendiente |
+| 34 | E16 · frontend particular: directorio, nueva solicitud, seguimiento y respuesta al presupuesto, campana de notificaciones | frontend-react | 32, 16 | Pendiente |
+| 35 | E16 · frontend taller: bandeja de solicitudes, aceptar o rechazar, presupuesto, convertir en orden y perfil del directorio en Ajustes | frontend-react (taller) | 32, 16 | Pendiente |
 | 11 | CI en `.github/workflows/ci.yml` (PHP + Node) probado en local, y revisión de `iniciar-carcare.bat` | devops | 3 | En curso (autopiloto, 2026-10-24 09:05): probado sobre una exportación limpia del último commit |
 | 12 | ~~Investigar proveedores con licencia de modelos reales y logotipos~~ | producto | — | Descartada (D16, 23/10: el proyecto no es comercial) |
 | 13 | ~~Proponer contrato y ADR para la foto de portada del vehículo~~ | arquitecto | — | Aparcada (D16: "mantener la silueta y ya"; se reactiva solo si Alberto lo pide) |
