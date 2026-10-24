@@ -60,6 +60,20 @@ Perfil de CPU de la ficha (CDP, 10 s): 4,9 s en el render de la **miniatura de l
 
 Las 17: portada, entrar, cabina, garaje, ficha (resumen, diario, historial), formulario, agenda, analítica, centro de control, órdenes, nueva orden, detalle de orden, clientes, detalle de cliente y Taller 3D. Solo 5 tienen `<canvas>` (portada, cabina, formulario, centro de control, Taller 3D) y la ficha lo monta pasados los 5 s. Además, 9 de ellas cargan `renderThumbnail` + `materials` para pintar miniaturas con WebGL.
 
+### 2.5 Fugas (antes)
+
+Recorrido dentro de la SPA (sin recargar), 5 ciclos de *cabina → garaje → ficha → garaje → ficha → cabina*, forzando la recolección de basura (`--expose-gc`) antes de cada lectura:
+
+| Momento | Heap JS | Contextos creados | Contextos vivos | Buffers / texturas vivos (GPU) | Renderizadores que siguen en memoria | Oyentes `dispose` en una geometría compartida |
+|---------|-------:|----:|----:|----|----:|----:|
+| Inicio (cabina) | 31,2 MB | 2 | 1 | 127 / 16 | 1 | 1 |
+| Ciclo 1 | 59,3 MB | 6 | 1 | 127 / 16 | 5 | 2 |
+| Ciclo 3 | 62,7 MB | 12 | 1 | 127 / 16 | 11 | 4 |
+| Ciclo 5 | 65,6 MB | 18 | 1 | 127 / 16 | **17** | **6** |
+
+- **GPU: sin fuga.** R3F pierde el contexto al desmontar y los buffers y texturas vivos no crecen.
+- **JS: fuga de ~1,5 MB por ciclo.** Ningún `WebGLRenderer` desmontado se libera: las geometrías y materiales que se memorizan a nivel de módulo (coche por carrocería, materiales compartidos, piezas del elevador) guardan el oyente `dispose` que cada renderizador les añade, y ese oyente retiene al renderizador entero (programas, listas de render, estado). Se corrige llamando a `dispose()` de esos recursos al desmontar el lienzo (apartado 3).
+
 ## 3. Cambios
 
 *(pendiente)*

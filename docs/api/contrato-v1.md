@@ -30,7 +30,7 @@ Un usuario puede pertenecer a varios espacios. Las tablas hijas **no** duplican 
 |-----------|:-----:|:-------:|:--------:|
 | Ver todo el espacio (vehículos, historial, órdenes, clientes, documentos) | ✔ | ✔ | ✔ |
 | **operate**: crear/editar vehículos, intervenciones, kilometraje, recordatorios, documentos, órdenes, clientes | ✔ | ✔ | ✔ |
-| **manage**: archivar/eliminar vehículos y clientes, gastos, facturación/analítica, ajustes del espacio, miembros | ✔ | ✔ | ✘ |
+| **manage**: archivar/eliminar vehículos y clientes, gastos, importes y analítica, ajustes del espacio, miembros | ✔ | ✔ | ✘ |
 | **own**: eliminar el espacio de taller | ✔ | ✘ | ✘ |
 
 - En `personal` solo existe el `owner`.
@@ -196,7 +196,7 @@ Reglas:
 
 Validación: `title` 2–120, `service_date` no futura, importes ≥ 0 y ≤ 999.999,99 con 2 decimales, `items` máx. 50, `quantity` > 0.
 
-**D3‑A — Sin doble conteo:** en espacios **personales**, al guardar una intervención con `total_cost` > 0 se crea/actualiza en la misma transacción un gasto vinculado (`category = repair` si `type ∈ {repair, breakdown, bodywork}`, `inspection` si `type = inspection`, si no `maintenance`; misma fecha, km e importe; `description` = título). Si `total_cost` pasa a null/0, el gasto vinculado se elimina. Al archivar, el gasto vinculado deja de contar (se elimina; al restaurar se recrea). **Todos los totales de gasto salen solo de `expenses`.** En talleres no se generan gastos: la cifra económica es la facturación de órdenes.
+**D3‑A — Sin doble conteo:** en espacios **personales**, al guardar una intervención con `total_cost` > 0 se crea/actualiza en la misma transacción un gasto vinculado (`category = repair` si `type ∈ {repair, breakdown, bodywork}`, `inspection` si `type = inspection`, si no `maintenance`; misma fecha, km e importe; `description` = título). Si `total_cost` pasa a null/0, el gasto vinculado se elimina. Al archivar, el gasto vinculado deja de contar (se elimina; al restaurar se recrea). **Todos los totales de gasto salen solo de `expenses`.** En talleres no se generan gastos: la cifra económica es el importe de las órdenes entregadas (D12 = A: CarCare no emite facturas).
 
 ### 3.6 Gastos (permiso manage en talleres; owner en personal)
 
@@ -345,6 +345,12 @@ Reglas:
 
 Cada acción de escritura relevante registra un `Activity` (sin secretos ni datos personales sensibles en `metadata`): `vehicle.created|updated|archived|restored|deleted`, `mileage.recorded`, `maintenance.created|updated|archived`, `expense.created|updated|deleted`, `reminder.created|completed|dismissed`, `document.uploaded|deleted`, `customer.created|exported|anonymized`, `work_order.created|updated|status_changed`, `member.added|removed|role_changed`. `summary` en español listo para mostrar.
 
+**Autor en la frase, según el tipo de espacio** (hallazgo M5 del informe de UX del 23/10):
+- **`workshop`:** la frase empieza por el nombre de quien hizo la acción, p. ej. "Ana movió OT‑2026‑0003 a «Listo»".
+- **`personal`:** la frase **no lleva el nombre** del usuario. En un espacio de una sola persona, "Lucía Demo registró…" sobra. Se usa la segunda persona y siempre la misma forma: "Anotaste 54.000 km en Kia Sportage", "Registraste la intervención «Cambio de aceite» en Kia Sportage", "Añadiste un gasto de 45,00 € (Combustible) en Kia Sportage".
+- `Activity.user` sigue llegando igual en los dos tipos (la forma no cambia). La SPA no lo muestra en los espacios personales.
+- Las frases ya guardadas no se reescriben: la demo se regenera con `migrate:fresh --seed`.
+
 Datos del cliente en la actividad (§3.10.1):
 - Las frases nunca llevan el email, el teléfono, el NIF ni las notas del cliente.
 - El nombre solo aparece en `customer.created`, y se reescribe sin él al anonimizar o eliminar al cliente.
@@ -376,5 +382,7 @@ Datos del cliente en la actividad (§3.10.1):
 | 2026-10-24 | **Tarea 27 (E7‑1), origen de cada lectura** (§3.4.1). Nuevo `MileageLog.source_id`: id del registro de origen, siempre del mismo vehículo. Es null en las manuales y, para el rol mechanic, en las lecturas de gastos. Borrar un recordatorio borra su lectura (§3.7). Migración de datos para las lecturas huérfanas. Aditivo | Arquitecto |
 | 2026-10-24 | **Tarea 28 (E1‑6), recuperar la contraseña** (§3.1.1). Nuevos `POST /auth/forgot-password` y `POST /auth/reset-password`, y tipos `ForgotPasswordInput` y `ResetPasswordInput`. Detalles: 204 exista o no la cuenta; token hasheado, de un solo uso y que caduca a los 60 min; 429 a partir de la 6.ª petición en un minuto por IP; cierra todas las sesiones y no inicia sesión; CSRF como en el login; correo solo en el log. Rutas de la SPA: `/recuperar` y `/restablecer`. [ADR‑0006](../arquitectura/ADR-0006-recuperar-contrasena.md). Aditivo | Arquitecto (D17 = A, decidida por Alberto el 24/10) |
 | 2026-10-24 | **Tarea 29 (E11‑6), derechos RGPD del cliente** (§3.10.1). Nuevos `Customer.anonymized_at`, tipo `CustomerExport` y `POST /customers/{c}/export` y `/anonymize` (manage). Cambios de reglas: PATCH de un cliente anonimizado ⇒ 409; asignar a un vehículo un cliente anonimizado ⇒ 422; anonimizar o eliminar reescribe la actividad sin el nombre. Nuevas actividades `customer.exported` y `customer.anonymized`. [ADR‑0005](../arquitectura/ADR-0005-rgpd-cliente-taller.md). Aditivo | Arquitecto |
+| 2026-10-24 | **Autor de la actividad en los espacios personales** (§3.12, hallazgo M5 de UX). En `personal`, `Activity.summary` no lleva el nombre del usuario y usa la segunda persona ("Anotaste 54.000 km en Kia Sportage"). En `workshop` sigue con el nombre. La forma JSON no cambia | Arquitecto (a petición de disenador-ux) |
+| 2026-10-24 | **Textos según D12 = A**: el contrato y los comentarios de `types.ts` ya no dicen "facturación"; ahora dicen "importe de las órdenes entregadas" e "importes y analítica". Solo cambia el texto | Arquitecto (petición 12 de frontend-react) |
 
 > **Efecto en los tests del backend (24/10).** `ContractShapeTest` compara las claves de cada interfaz de `types.ts` con `tests/Support/Contract.php`. Hasta que el paso 2 de las tareas 27 y 29 añada `source_id` a `mileageLog()` y `anonymized_at` a `customer()`, fallan los casos `MileageLog` y `Customer` del test "las especificaciones tienen las mismas claves que las interfaces de types.ts". Es el aviso previsto del *contract-first*, no una regresión de otra tarea.

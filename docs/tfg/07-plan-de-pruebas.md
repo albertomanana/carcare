@@ -236,4 +236,8 @@ Leyenda: **U** unitaria · **F** feature/API · **A** aislamiento · **C** compo
 
 | Fecha | Suite / comando | Resultado | Informe de origen |
 |-------|-----------------|-----------|-------------------|
-| | | | |
+| 25/10/2026 | `cd frontend && npm run typecheck` | Correcto | [Informe de cierre](../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
+| 25/10/2026 | `cd frontend && npm run test` | 5 archivos, 44 tests correctos | [Informe de cierre](../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
+| 25/10/2026 | `cd frontend && npm run lint` | Correcto; avisos no bloqueantes de oxlint | [Informe de cierre](../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
+| 25/10/2026 | `cd frontend && npm run build` | Correcto; aviso de chunks grandes | [Informe de cierre](../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
+| 25/10/2026 | `cd backend && php artisan test` | 462 tests y 6934 aserciones correctos | [Informe de cierre](../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
