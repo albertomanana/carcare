@@ -4,6 +4,8 @@ Sigue al pie de la letra las reglas de `docs/equipo/AUTOPILOTO.md` (léelo enter
 - Pon la fila "Piloto automático" del tablero en `En curso` con la hora de inicio.
 - Coge la primera tarea `Pendiente` de la cola con dependencias en `Hecho` (o retoma una `En curso` que dejó a medias una ejecución anterior del piloto). Si la fila "Sesión interactiva" está `En curso` desde hace menos de 2 horas, no toques sus archivos.
 - Encárgala al agente adecuado de `.claude/agents/` (máximo 2 en paralelo, zonas sin solapes) y ESPERA a que terminen todos antes de acabar.
+- Si un agente termina con error de límite de uso ("You've hit your session limit · resets …"), NO te quedes esperando: un agente cortado no vuelve solo. Cuando pase la hora de reseteo, envíale un mensaje con SendMessage ("Se ha renovado el límite: continúa donde lo dejaste") para que siga con su transcripción. Si la hora de reseteo es dentro de más de 30 minutos, cierra la ejecución: deja las tareas `En curso` con una nota de dónde se quedó cada agente y la siguiente ejecución las retoma desde el disco.
+- Prioridad de Alberto (24/10): **terminar lo que está a medias antes de empezar nada nuevo**. Antes de coger una tarea `Pendiente`, mira si hay alguna `En curso` que puedas cerrar.
 - Verifica el resultado con evidencias reales. Actualiza la cola, el tablero, la nota de sesión en `CarCare/05_sesiones/` y la tabla "Últimas ejecuciones".
 - Antes de terminar, vuelve a poner la fila "Piloto automático" en `Libre`.
 

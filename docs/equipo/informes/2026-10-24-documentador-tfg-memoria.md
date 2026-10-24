@@ -13,7 +13,9 @@ Redactar el primer borrador de la memoria (un Markdown por capítulo), contrasta
 
 | Archivo | Capítulo | Estado | Palabras aprox. | Pendiente / depende de |
 |---------|----------|--------|-----------------|------------------------|
-| — | — | Iniciando lectura de fuentes | — | — |
+| `00-indice.md` | Portada provisional, índice, resumen, convenciones | Borrador | ~800 | Datos de portada y *abstract*: ⚠️ D1 (Ilerna) |
+| `01-introduccion.md` | 1. Introducción y objetivos | Borrador completo | ~1.300 | Estado de OE‑5…OE‑9: tareas 5, 6, 7, 8, 11, 20, 30 |
+| `02…15` | Resto | En redacción | — | — |
 
 ## Qué se ha hecho
 

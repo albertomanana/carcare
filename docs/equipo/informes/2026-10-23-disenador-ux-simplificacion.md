@@ -18,7 +18,7 @@
 - **Lo que suena a "hecho con IA"** es sobre todo esto: etiquetas en MAYÚSCULAS con letras separadas, el saludo con la fecha encima ("VIERNES, 23 DE OCTUBRE · Hola, Lucía"), lemas como "Tu coche, al día. Tu taller, bajo control." y "Todo lo de tus vehículos, de un vistazo.", la retícula y el brillo lima del fondo, una píldora para cada dato, un icono para cada etiqueta y una tipografía "tecnológica" (Space Grotesk) sobre carbón y lima neón.
 - **Lo más natural que ya tenemos son el informe imprimible y la tabla de clientes:** texto, tablas y nada más. Propongo llevar toda la app hacia eso.
 - **Plan:** 14 reglas que se pueden comprobar (apartado 4) y un plan por pantalla (apartado 5). El 3D se queda en dos sitios: el **mapa de zonas de la ficha** y el **Taller 3D**. La cabina, el centro de control, los listados y la portada pasan a imagen estática.
-- **Diseño:** 3 propuestas con bocetos hechos sobre los datos reales de la demo (apartado 7). Te pido que elijas una en el tablero. **Recomiendo la A, "Claro y sobrio".**
+- **Diseño:** 3 propuestas con bocetos hechos sobre los datos reales de la demo (apartado 7). Son opciones para más adelante, que se aplicarán solo cambiando tokens: **no hace falta decidir hoy**. **Recomiendo la A, "Claro y sobrio".**
 
 ---
 
@@ -497,7 +497,12 @@ Ordenadas de más a menos evidentes. Las capturas están en la carpeta del infor
 
 ## 7. Dirección visual: tres propuestas para que elija Alberto
 
-Las tres direcciones aplican las mismas reglas del apartado 4 y la misma estructura del apartado 5. Solo cambian el color, la letra, los radios y el tono. Por eso se pueden aplicar **después** de simplificar: casi todo se hace cambiando tokens en `frontend/src/index.css`.
+**Son opciones para más adelante.** Alberto ha confirmado que el diseño lo cambiará más tarde, así que hoy no se aplica ninguna.
+
+- **Lo que no cambia.** Las tres usan las mismas reglas del apartado 4 y la misma estructura del apartado 5, que es lo que se está aplicando ahora con los colores actuales.
+- **Lo que cambia.** Solo el color, la letra, los radios y el tono de los textos.
+- **Cómo se aplicará.** Cambiando los tokens de `frontend/src/index.css` (los dos temas y el bloque `.paper`) y, como mucho, una fuente. No hay que rehacer pantallas: al simplificar, los componentes ya usan solo tokens (`bg-surface`, `text-fg-muted`, `border-line`…), sin colores escritos a mano.
+- **Única condición para el paso 2.** Quien simplifique ahora no debe meter colores, sombras ni degradados nuevos fuera de los tokens; si no, el cambio de dirección ya no sería solo de tokens.
 
 **Bocetos.** Hay un boceto real de "Inicio" para cada dirección, con los datos de la cuenta demo: El rojo, Kia Sportage, el aceite vencido por 443 km, 470,26 € este mes y 5.274,31 € este año.
 
@@ -684,7 +689,7 @@ Las tres direcciones aplican las mismas reglas del apartado 4 y la misma estruct
 
 Si Alberto quiere mantener el oscuro como identidad, la segunda opción es la B. Si quiere que se note una mano detrás, la C.
 
-**Pregunta para Alberto:** es la número 4 del [tablero](../TABLERO.md#preguntas-para-alberto). Mientras no responda, los agentes simplifican con los tokens actuales (las reglas del apartado 4 valen para cualquiera de las tres).
+**Pregunta para Alberto:** es la número 4 del [tablero](../TABLERO.md#preguntas-para-alberto). **No hace falta que decida hoy.** Mientras tanto, los agentes simplifican con los tokens actuales, porque las reglas del apartado 4 valen para cualquiera de las tres. Cuando elija, se aplica el paso 3 del apartado 8.
 
 ---
 
@@ -698,6 +703,11 @@ Si Alberto quiere mantener el oscuro como identidad, la segunda opción es la B.
 | `frontend-react` (taller) | 5.3 centro de control, 5.4 órdenes, la portada y la navegación del taller, con R1‑R14 | Lo mismo, con la cuenta `taller@` y la `mecanico@` |
 | `experto-3d` | 5.7 y R11 | En la pestaña Red, ningún chunk `three*`/`react-three*`/`drei*` en las 14 pantallas de I7, ni en la cabina, el centro o la portada al cargar |
 
+**Condición común del paso 2.** Ni colores, ni sombras, ni degradados fuera de los tokens. Así, la dirección visual que elija Alberto más adelante se aplica solo con tokens.
+
+- **Cómo se comprueba.** `grep -rnE "#[0-9a-fA-F]{6}|rgb\(|bg-\[|text-\[#" src/features src/components` no da resultados nuevos.
+- **Excepción.** El color propio de cada vehículo (`color_hex`) y las paletas del 3D.
+
 ### 8.2 Falta encargar
 
 | # | Para | Tarea | Criterio de aceptación |
@@ -707,7 +717,7 @@ Si Alberto quiere mantener el oscuro como identidad, la segunda opción es la B.
 | 3 | `arquitecto` → `backend-laravel` | **`Activity.summary` sin el nombre de quien lo hizo cuando el espacio es personal:** "54.000 km en Kia Sportage" o "Anotaste 54.000 km…" (M5). Es un cambio del texto del contrato, así que lo aprueba el arquitecto y se anota en su historial | Test del backend: en un espacio `personal`, `summary` no contiene el nombre del usuario. En un `workshop` sigue con el nombre ("Ana movió OT‑…") |
 | 4 | `backend-laravel` (dentro de la tarea 19) | **I8:** que la demo no tenga registros de pruebas ("Prueba QA frontend…") | La actividad de `demo@` solo tiene registros de la siembra |
 | 5 | `qa-tester` (después del paso 2) | Medición antes/después con el mismo script. Pasada de `@axe-core/playwright` por Inicio, ficha, agenda, centro, tablero y detalle de orden a 360 y 1280. Si sale bien, convertir R1, R2, R11 y R13 en una prueba E2E de "presupuesto" para que no vuelvan | Informe con la tabla del apartado 2 rellena con el "después". 0 fallos *serious*/*critical* de axe |
-| 6 | **Paso 3**, cuando Alberto elija (pregunta 4): `frontend-react` | Poner los tokens de la dirección elegida en `index.css` (los dos temas y el bloque `.paper` del informe):<br>• quitar `--fg-warm`;<br>• `font-display` → Inter (o Source Serif 4 en títulos si elige C);<br>• radios;<br>• foco;<br>• colores de los gráficos | Los mismos pares de contraste que `contraste-paletas.cjs` (0 fallos). Sin Space Grotesk en la red, salvo si se elige B y se decide mantenerla |
+| 6 | **Paso 3**, más adelante, cuando Alberto elija (pregunta 4, sin prisa): `frontend-react` | Poner los tokens de la dirección elegida en `index.css` (los dos temas y el bloque `.paper` del informe):<br>• quitar `--fg-warm`;<br>• `font-display` → Inter (o Source Serif 4 en títulos si elige C);<br>• radios;<br>• foco;<br>• colores de los gráficos | Los mismos pares de contraste que `contraste-paletas.cjs` (0 fallos). Sin Space Grotesk en la red, salvo si se elige B y se decide mantenerla |
 | 7 | **Paso 3**: `experto-3d` | Adaptar el estudio del visor y de Taller 3D al fondo elegido, sin reflejos lima en los cristales si se quita el lima | Capturas del visor en los dos temas |
 | 8 | **Paso 3**: `disenador-ux` | Revisión final con capturas y axe frente a los bocetos | Informe de revisión |
 
@@ -715,4 +725,44 @@ Si Alberto quiere mantener el oscuro como identidad, la segunda opción es la B.
 
 ## 9. Archivos tocados, evidencias, limitaciones y siguiente paso
 
-<!-- CIERRE -->
+### Archivos tocados
+
+- **Informe:** `docs/equipo/informes/2026-10-23-disenador-ux-simplificacion.md` (nuevo).
+- **Carpeta** `docs/equipo/informes/2026-10-23-disenador-ux-simplificacion/` (nueva, 2,0 MB):
+  - `metricas-antes.json`: 68 mediciones, 34 pantallas × 2 anchos;
+  - `auditoria-densidad.cjs`: el script de medición;
+  - `contraste-paletas.cjs`: el contraste de las 6 paletas;
+  - `boceto-inicio.html` y 9 `boceto-*.png`;
+  - 12 capturas `actual-*.png`.
+- **Tablero:** `docs/equipo/TABLERO.md`, con mi fila, la pregunta 4 y las peticiones 9, 10 y 11.
+- **Corrección en 5.7.** Cambié una cifra: "12 pantallas dejan de descargar three.js" pasa a "14", porque es lo que salió al terminar de medir. No cambié nada más de los apartados 4‑6.
+- **No he tocado código de la app, ni `index.css`.** Los scripts de trabajo y las capturas sin usar se quedan en el scratchpad de la sesión, fuera del repositorio.
+
+### Evidencias (comandos y resultado)
+
+| Comando | Resultado |
+|---------|-----------|
+| `node audit.cjs guest\|personal\|workshop\|mechanic`, el 23/10: `:5173`/`:8000` hasta las 23:13 y después `:5181`/`:8020` | 68 mediciones correctas (tabla 2.1 y `metricas-antes.json`). Las 5 que salieron vacías por la caída de `:8000` (ajustes e informe en los dos anchos y analítica a 360) se repitieron en `:5181` |
+| `curl -m 10 http://127.0.0.1:8000/api/v1/me`, 20 veces, de 23:14 a 23:20 | `000` (sin respuesta) las 20 veces. `:8020` respondía `401` en 0,1 s |
+| `UX_BASE=http://localhost:5178 node extra.cjs`, el 24/10 a las 09:00, en instancia propia `:8035`/`:5178` | Cabina a 360: `right=505` con `vw=360` (C1). Ficha: `doc=3763`, `mainBottom=2387`, el elemento más bajo es `TABLE.sr-only` (I2). Agenda a 360: filtro con `right=483`. Lista de zonas: `right=428` (I4) |
+| `node contraste-paletas.cjs` | 6 paletas, `FALLOS: 0` |
+| `grep` en `frontend/src` (`.tsx`) | `uppercase` 36 · `font-display` 69 · `rounded-hero` 21 · `<StatCard` 22 · `backdrop-blur` 16 · `gradient` 11 · `<Badge`/`<StatusPill` 35 |
+| `node shoot-boceto.cjs` | 9 bocetos PNG |
+
+No he lanzado tests, typecheck ni build, porque no he cambiado código.
+
+### Limitaciones
+
+- **Tiempos poco fiables.** Están medidos en desarrollo y con WebGL por software. Algunos valores salieron disparados porque otros agentes cargaban la máquina (ver las notas de 2.1). **No he medido el bundle de producción** ni he pasado axe-core: tiene más sentido después del paso 2 (8.2, tarea 5).
+- **Bocetos limitados.** Solo hay boceto de "Inicio". Las siluetas están dibujadas a mano. En C, Georgia hace de Source Serif 4. La fuente Inter se carga desde `node_modules` con una ruta absoluta, así que en otro equipo el boceto cae a la fuente del sistema.
+- **Sin verificar:**
+  - si la portada respeta `prefers-reduced-motion` (I1);
+  - el modo mecánico, salvo el centro, las órdenes y el detalle.
+- **Inventario largo.** El inventario pantalla por pantalla se queda en la tabla 2.1 y en el JSON, como pidió la sesión principal.
+
+### Siguiente paso
+
+1. Los agentes del paso 2 terminan, y cada uno comprueba su parte con el script (8.1) y los hallazgos (8.2, tareas 1 y 2).
+2. `qa-tester` mide el "después" y pasa axe (8.2, tarea 5).
+3. El arquitecto decide sobre `Activity.summary` (8.2, tarea 3).
+4. Cuando Alberto quiera, sin fecha, elige la dirección en la pregunta 4 y se aplica el paso 3 (8.2, tareas 6‑8), que es solo de tokens.
