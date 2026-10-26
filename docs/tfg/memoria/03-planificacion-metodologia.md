@@ -8,7 +8,7 @@ El proyecto combina tres prácticas, cada una con un motivo concreto:
 |----------|-----------------|---------|
 | **Desarrollo guiado por contrato** (*contract-first*) | Antes de programar se escribió el contrato de la API ([`docs/api/contrato-v1.md`](../../api/contrato-v1.md)) y los tipos TypeScript de todas las respuestas ([`frontend/src/api/types.ts`](../../../frontend/src/api/types.ts)). Backend y frontend se construyen contra él; cualquier cambio se propone, se aprueba y se anota en su historial | Permite construir servidor y cliente en paralelo y convierte la API en un entregable verificable: una prueba compara cada respuesta real con su tipo |
 | **Iteraciones por oleadas** | Cada oleada tiene un objetivo, unos responsables por área y un cierre con informe y evidencias | Sin fecha oficial de entrega (D6), no se podían fijar *sprints* de duración fija. Las oleadas se cierran por objetivo, no por calendario |
-| **Backlog priorizado con MoSCoW** | Épicas E0‑E15 con historias *Must*, *Should* y *Could*, criterios "Dado / cuando / entonces" y un núcleo defendible por si hay que recortar | Ordena qué se construye primero y deja por escrito qué se sacrifica si falta tiempo (D9) |
+| **Backlog priorizado con MoSCoW** (Clegg y Barker, 1994) | Épicas E0‑E15 con historias *Must*, *Should* y *Could*, criterios "Dado / cuando / entonces" y un núcleo defendible por si hay que recortar | Ordena qué se construye primero y deja por escrito qué se sacrifica si falta tiempo (D9) |
 
 Las decisiones con impacto en arquitectura o datos se registran como ADR en `docs/arquitectura/`, y las de producto en `CarCare/03_decisiones/registro-decisiones.md`. Las que solo puede tomar el autor (gustos, alcance, prioridades, TFG) se le preguntan explícitamente.
 
