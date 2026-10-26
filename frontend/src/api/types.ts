@@ -793,3 +793,264 @@ export interface WorkspaceAnalytics {
     by_customer: { customer: CustomerRef; total: Money; orders: number }[]
   } | null
 }
+
+// ───────────────────────── Directorio de talleres y solicitudes de reparación (E16) ─────────────────────────
+// Contrato §3.13 · ADR‑0007. Única vía entre un espacio personal y un taller: el resto sigue aislado (404).
+
+/** Servicios que un taller puede anunciar en el directorio (lista cerrada). */
+export type WorkshopService =
+  | 'maintenance' // Mantenimiento y revisiones
+  | 'mechanics' // Mecánica general
+  | 'tyres' // Neumáticos
+  | 'brakes' // Frenos
+  | 'bodywork' // Chapa y pintura
+  | 'electrical' // Electricidad y baterías
+  | 'ac' // Aire acondicionado
+  | 'pre_itv' // Pre‑ITV
+
+/**
+ * GET/PUT /workspaces/{ws}/directory-profile (solo talleres). Datos públicos que elige el owner.
+ * El nombre público es Workspace.name (se edita en Ajustes): no se duplica aquí.
+ */
+export interface DirectoryProfile {
+  workspace_id: ID
+  /** "Aparecer en el directorio". false por defecto. */
+  listed: boolean
+  /** Obligatoria si listed = true. */
+  city: string | null
+  address: string | null
+  phone: string | null
+  services: WorkshopService[]
+  /** Texto libre: "L‑V 8:00‑14:00 y 15:30‑19:00". */
+  opening_hours: string | null
+  /** null si el owner nunca lo ha guardado. */
+  updated_at: ISODateTime | null
+}
+
+export interface DirectoryProfileInput {
+  listed: boolean
+  city?: string | null
+  address?: string | null
+  phone?: string | null
+  services?: WorkshopService[]
+  opening_hours?: string | null
+}
+
+/** GET /workshops: un taller del directorio (solo los que tienen listed = true). */
+export interface DirectoryWorkshop {
+  /** Id del espacio de taller. */
+  id: ID
+  name: string
+  city: string
+  address: string | null
+  phone: string | null
+  services: WorkshopService[]
+  opening_hours: string | null
+  /** true si el usuario es miembro de ese taller: la SPA oculta "Solicitar" (la API daría 422). */
+  is_member: boolean
+}
+
+/** Taller dentro de una solicitud. Datos actuales de su perfil (aunque ya no esté en el directorio). */
+export interface DirectoryWorkshopRef {
+  id: ID
+  name: string
+  city: string | null
+  phone: string | null
+}
+
+export type RepairRequestStatus =
+  | 'pending' // Enviada, esperando al taller
+  | 'accepted' // Aceptada; el presupuesto llegará después (o el cliente rechazó el anterior)
+  | 'quoted' // Hay un presupuesto vigente esperando al cliente
+  | 'rejected' // Rechazada por el taller (final)
+  | 'cancelled' // Cancelada por el particular o al borrar el vehículo (final)
+  | 'converted' // El cliente aceptó el presupuesto y se creó la orden (final)
+
+export type RepairQuoteStatus =
+  | 'sent' // Vigente, esperando respuesta
+  | 'accepted'
+  | 'rejected'
+  | 'superseded' // El taller envió una versión nueva
+
+/**
+ * Copia fija del vehículo tomada al enviar la solicitud: lo único que el taller ve del coche.
+ * No incluye apodo, VIN, fechas de compra, gastos ni documentos.
+ */
+export interface RepairRequestVehicle {
+  make: string
+  model: string
+  year: number | null
+  fuel_type: FuelType | null
+  body_type: BodyType | null
+  color_hex: string | null
+  plate: string | null
+  /** "make model" (nunca el apodo). */
+  display_name: string
+}
+
+/** Versión de un presupuesto. Inmutable: para cambiarlo, el taller envía otra versión. "No es una factura" (D12). */
+export interface RepairQuote {
+  id: ID
+  /** 1, 2, 3… dentro de la solicitud. */
+  version: number
+  status: RepairQuoteStatus
+  /** Siempre con unit_price y total (precio obligatorio en un presupuesto). Sin id. */
+  items: LineItem[]
+  subtotal: Money
+  tax_rate: string
+  tax_amount: Money
+  total: Money
+  /** 1–90. */
+  valid_days: number
+  /** Fecha de envío + valid_days. */
+  valid_until: ISODate
+  /** true si status = 'sent' y hoy > valid_until. Aceptarlo da 409. */
+  is_expired: boolean
+  /** Nota del taller para el cliente. */
+  note: string | null
+  /** Motivo opcional del cliente al rechazarlo. */
+  client_reason: string | null
+  sent_at: ISODateTime
+  answered_at: ISODateTime | null
+}
+
+/** Orden creada al aceptar el presupuesto, vista desde la solicitud (solo lectura para el particular). */
+export interface RepairRequestWorkOrder {
+  id: ID
+  number: string
+  status: WorkOrderStatus
+  received_at: ISODateTime
+  completed_at: ISODateTime | null
+  delivered_at: ISODateTime | null
+}
+
+/**
+ * Solicitud de reparación. La ven sus dos partes: el owner del espacio personal que la envió
+ * (perspective 'requester') y los miembros del taller destinatario ('workshop'). Cualquier otro: 404.
+ */
+export interface RepairRequest {
+  id: ID
+  /** La decide el servidor según quién pregunta. */
+  perspective: 'requester' | 'workshop'
+  status: RepairRequestStatus
+  workshop: DirectoryWorkshopRef
+  /** Nombre y email de la cuenta que la envió. */
+  requester: { name: string; email: string }
+  contact_phone: string | null
+  /** Solo con perspective 'requester': el vehículo de su garaje (null si lo borró). Para el taller, siempre null. */
+  vehicle_id: ID | null
+  vehicle: RepairRequestVehicle
+  /** Asunto corto. Pasa a ser el título de la orden. */
+  title: string
+  description: string
+  zone: Zone | null
+  preferred_date: ISODate
+  /** Km declarados al enviar. No crean una lectura en el garaje. */
+  mileage: number
+  share_history: boolean
+  /** true si ahora mismo se puede pedir GET /repair-requests/{r}/history. */
+  history_available: boolean
+  reject_reason: string | null
+  /** Todas las versiones, de la más reciente a la más antigua. La primera es la vigente si su status es 'sent'. */
+  quotes: RepairQuote[]
+  work_order: RepairRequestWorkOrder | null
+  /** Cuándo aceptó o rechazó el taller. */
+  responded_at: ISODateTime | null
+  /** Cuándo pasó a rejected, cancelled o converted. */
+  closed_at: ISODateTime | null
+  created_at: ISODateTime
+  updated_at: ISODateTime
+}
+
+export interface RepairRequestInput {
+  vehicle_id: ID
+  /** Id del taller (DirectoryWorkshop.id). */
+  workshop_id: ID
+  title: string
+  description: string
+  zone?: Zone | null
+  preferred_date: ISODate
+  mileage: number
+  contact_phone?: string | null
+  /** false por defecto. */
+  share_history?: boolean
+}
+
+/** PATCH /repair-requests/{r}: lo único que el particular puede cambiar (dar o retirar el consentimiento). */
+export interface RepairRequestUpdateInput {
+  share_history: boolean
+}
+
+/** Línea de presupuesto: igual que LineItemInput, pero con precio obligatorio. */
+export type QuoteLineItemInput = Omit<LineItemInput, 'unit_price'> & { unit_price: Money }
+
+export interface RepairQuoteInput {
+  items: QuoteLineItemInput[]
+  /** Por defecto, el IVA del taller. */
+  tax_rate?: string
+  /** 1–90, por defecto 15. */
+  valid_days?: number
+  note?: string | null
+}
+
+/** POST /repair-requests/{r}/accept. Con quote ⇒ 'quoted'; sin quote ⇒ 'accepted'. */
+export interface AcceptRepairRequestInput {
+  quote?: RepairQuoteInput | null
+}
+
+export interface RejectRepairRequestInput {
+  reason: string
+}
+
+/** POST /repair-requests/{r}/quote/accept|reject. quote_id = la versión que el cliente está viendo. */
+export interface QuoteDecisionInput {
+  quote_id: ID
+  /** Solo al rechazar. */
+  reason?: string | null
+}
+
+/** GET /repair-requests/{r}/history: proyección sin importes, descripciones, líneas ni documentos. */
+export interface SharedHistoryEntry {
+  service_date: ISODate
+  type: RecordType
+  zone: Zone
+  service_kind: ServiceKind | null
+  title: string
+  mileage: number | null
+  workshop_name: string | null
+}
+
+// ───────────────────────── Notificaciones en la app (E16) ─────────────────────────
+
+export type NotificationKind =
+  | 'repair_request.received' // → owner y managers del taller
+  | 'repair_request.cancelled' // → owner y managers del taller
+  | 'repair_request.accepted' // → particular
+  | 'repair_request.rejected' // → particular
+  | 'repair_quote.sent' // → particular
+  | 'repair_quote.accepted' // → owner y managers del taller (incluye la orden creada)
+  | 'repair_quote.rejected' // → owner y managers del taller
+  | 'repair_request.order_ready' // → particular, cuando su orden pasa a 'ready'
+
+/** Se llama así para no chocar con el Notification global del navegador. */
+export interface AppNotification {
+  /** UUID (tabla notifications de Laravel). */
+  id: string
+  kind: NotificationKind
+  /** Frase lista para mostrar, sin el nombre del particular. */
+  summary: string
+  /** Espacio desde el que se abre: /app/{workspace_id}/solicitudes/{repair_request_id}. */
+  workspace_id: ID
+  repair_request_id: ID | null
+  read_at: ISODateTime | null
+  created_at: ISODateTime
+}
+
+export interface NotificationCount {
+  unread: number
+}
+
+/** POST /notifications/read. Sin ids ⇒ todas las del usuario. */
+export interface MarkNotificationsReadInput {
+  ids?: string[]
+}

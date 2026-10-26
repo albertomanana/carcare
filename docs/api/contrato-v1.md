@@ -36,6 +36,11 @@ Un usuario puede pertenecer a varios espacios. Las tablas hijas **no** duplican 
 - En `personal` solo existe el `owner`.
 - El rol `mechanic` recibe `revenue: null` en el dashboard y 403 en `/analytics` y en gastos.
 - Implementación sugerida: `Gate`/Policies con `WorkspacePolicy::view|operate|manage|own` y policies de recurso que delegan en el espacio del vehículo. Resolver recursos de otros espacios con **404** (p. ej. scoping en la consulta o `abort(404)` en la policy).
+- **Única excepción entre espacios (E16, [ADR‑0007](../arquitectura/ADR-0007-solicitudes-a-talleres.md)):**
+  - el directorio de talleres, que es optativo y solo muestra lo que publica el owner;
+  - la solicitud de reparación, un recurso con exactamente dos partes: el owner del espacio personal que la envía y los miembros del taller destinatario.
+
+  Ninguna otra ruta cambia: los vehículos, intervenciones, gastos, documentos, clientes y órdenes del otro espacio siguen dando 404. Ver §3.13.
 
 ## 3. Endpoints
 
@@ -142,7 +147,7 @@ Para que el tiempo de respuesta no delate si la cuenta existe (el broker hashea 
 | GET | `/api/v1/vehicles/{v}` | view | `Resource<Vehicle>` |
 | PATCH | `/api/v1/vehicles/{v}` | operate | `VehicleInput` parcial. `current_mileage` **no** se edita aquí (usar `/mileage`) |
 | POST | `/api/v1/vehicles/{v}/archive` · `/restore` | manage | `Resource<Vehicle>` |
-| DELETE | `/api/v1/vehicles/{v}` | manage | Solo si está archivado (409 si no). Borra en cascada su historial y archivos |
+| DELETE | `/api/v1/vehicles/{v}` | manage | Solo si está archivado (409 si no). Borra en cascada su historial y archivos. En personal, cancela sus solicitudes de reparación abiertas y avisa al taller (§3.13.4). En un taller, la copia enlazada de otro vehículo solo pierde el enlace |
 | GET | `/api/v1/vehicles/{v}/summary` | view | `Resource<VehicleSummary>`, `?from&to` (def. año en curso) |
 | GET | `/api/v1/vehicles/{v}/zones` | view | `{ data: ZoneStatus[] }` — siempre las 10 zonas en el orden del enum |
 | GET | `/api/v1/vehicles/{v}/journal` | view | `{ data: JournalDay[] }`, `?from&to` (def. últimos 30 días), días sin eventos omitidos, desc |
@@ -343,7 +348,7 @@ Reglas:
 
 ### 3.12 Actividad (auditoría ligera)
 
-Cada acción de escritura relevante registra un `Activity` (sin secretos ni datos personales sensibles en `metadata`): `vehicle.created|updated|archived|restored|deleted`, `mileage.recorded`, `maintenance.created|updated|archived`, `expense.created|updated|deleted`, `reminder.created|completed|dismissed`, `document.uploaded|deleted`, `customer.created|exported|anonymized`, `work_order.created|updated|status_changed`, `member.added|removed|role_changed`. `summary` en español listo para mostrar.
+Cada acción de escritura relevante registra un `Activity` (sin secretos ni datos personales sensibles en `metadata`): `vehicle.created|updated|archived|restored|deleted`, `mileage.recorded`, `maintenance.created|updated|archived`, `expense.created|updated|deleted`, `reminder.created|completed|dismissed`, `document.uploaded|deleted`, `customer.created|exported|anonymized`, `work_order.created|updated|status_changed`, `member.added|removed|role_changed` y, desde E16, `repair_request.created|cancelled|accepted|rejected`, `repair_quote.sent|accepted|rejected` y `directory_profile.updated` (§3.13.9). `summary` en español listo para mostrar.
 
 **Autor en la frase, según el tipo de espacio** (hallazgo M5 del informe de UX del 23/10):
 - **`workshop`:** la frase empieza por el nombre de quien hizo la acción, p. ej. "Ana movió OT‑2026‑0003 a «Listo»".
@@ -355,6 +360,239 @@ Datos del cliente en la actividad (§3.10.1):
 - Las frases nunca llevan el email, el teléfono, el NIF ni las notas del cliente.
 - El nombre solo aparece en `customer.created`, y se reescribe sin él al anonimizar o eliminar al cliente.
 - `customer.exported` y `customer.anonymized` no lo llevan nunca.
+
+### 3.13 Directorio de talleres, solicitudes de reparación y notificaciones
+
+E16 · [ADR‑0007](../arquitectura/ADR-0007-solicitudes-a-talleres.md). Es la **única vía entre un espacio personal y un taller**. Todo lo demás sigue aislado: §2 y ADR‑0002.
+
+#### 3.13.1 Endpoints
+
+| Método | Ruta | Quién | Cuerpo → respuesta |
+|--------|------|-------|--------------------|
+| GET | `/api/v1/workshops` | autenticado | `Paginated<DirectoryWorkshop>`, solo `listed = true`, por nombre ascendente. `?search=` (nombre o ciudad, contiene, sin distinguir mayúsculas), `?service=` (un `WorkshopService`) |
+| GET | `/api/v1/workshops/{id}` | autenticado | `Resource<DirectoryWorkshop>` · 404 si no existe, no es un taller o no está en el directorio |
+| GET | `/api/v1/workspaces/{ws}/directory-profile` | view (solo `workshop`; en `personal`, 404) | `Resource<DirectoryProfile>`. Si nunca se guardó: `listed = false`, `services = []`, el resto null |
+| PUT | `/api/v1/workspaces/{ws}/directory-profile` | **own** (manager y mechanic ⇒ 403) | `DirectoryProfileInput` → `Resource<DirectoryProfile>` |
+| GET | `/api/v1/workspaces/{ws}/repair-requests` | `personal`: owner (las **enviadas**) · `workshop`: view (las **recibidas**) | `Paginated<RepairRequest>`, `created_at` descendente. `?status=` (lista separada por comas, u `open` = `pending,accepted,quoted`), `?work_order_id=` (solo `workshop`: la solicitud de la que viene una orden) |
+| POST | `/api/v1/workspaces/{ws}/repair-requests` | owner del espacio `personal` (en `workshop`, 404) | `RepairRequestInput` → 201 `Resource<RepairRequest>` con `status = pending` |
+| GET | `/api/v1/repair-requests/{r}` | las dos partes | `Resource<RepairRequest>` |
+| PATCH | `/api/v1/repair-requests/{r}` | solicitante | `RepairRequestUpdateInput` → `Resource<RepairRequest>` · 409 si está cerrada |
+| POST | `/api/v1/repair-requests/{r}/cancel` | solicitante | sin cuerpo → `Resource<RepairRequest>` |
+| POST | `/api/v1/repair-requests/{r}/accept` | **manage** del taller | `AcceptRepairRequestInput` → `Resource<RepairRequest>` |
+| POST | `/api/v1/repair-requests/{r}/reject` | **manage** del taller | `RejectRepairRequestInput` → `Resource<RepairRequest>` |
+| POST | `/api/v1/repair-requests/{r}/quotes` | **manage** del taller | `RepairQuoteInput` → 201 `Resource<RepairRequest>` (con la versión nueva la primera en `quotes`) |
+| POST | `/api/v1/repair-requests/{r}/quote/accept` | solicitante | `QuoteDecisionInput` → `Resource<RepairRequest>` con `status = converted` y `work_order` |
+| POST | `/api/v1/repair-requests/{r}/quote/reject` | solicitante | `QuoteDecisionInput` → `Resource<RepairRequest>` con `status = accepted` |
+| GET | `/api/v1/repair-requests/{r}/history` | las dos partes | `{ data: SharedHistoryEntry[] }` · 403 si `history_available = false` |
+| GET | `/api/v1/notifications` | autenticado (las suyas) | `Paginated<AppNotification>`, `created_at` descendente, `per_page` 20 por defecto y 50 como máximo. `?unread=1` |
+| GET | `/api/v1/notifications/count` | autenticado | `Resource<NotificationCount>` |
+| POST | `/api/v1/notifications/read` | autenticado | `MarkNotificationsReadInput` → 204. Sin `ids`, todas. Los ids que no son suyos se ignoran |
+
+**Las dos partes de una solicitud**, que resuelve `RepairRequestPolicy` en el servidor:
+- **solicitante:** el owner del espacio personal que la envió (`requester_workspace_id`);
+- **taller:** cualquier miembro del espacio destinatario (`workshop_workspace_id`): owner, manager o mechanic.
+
+`perspective` vale `requester` si el usuario es el solicitante; si no, `workshop`.
+
+**Códigos:**
+- **404:** cualquier usuario que no sea una de las dos partes, en todas las rutas `/repair-requests/{r}…`.
+- **403:**
+  - una parte pide una acción de la otra, por ejemplo el taller pide `cancel` o el particular pide `accept`;
+  - el mecánico intenta decidir: `accept`, `reject` o `quotes`.
+
+#### 3.13.2 Directorio
+
+- `DirectoryProfileInput`:
+  - `listed` es obligatorio;
+  - `city` es obligatoria si `listed = true` (2–80);
+  - `address` ≤ 160;
+  - `phone` ≤ 30 y `^[0-9 +()-]{6,30}$`;
+  - `services`: sin repetir y solo valores de `WorkshopService`;
+  - `opening_hours` ≤ 200.
+
+  Si `listed = true` llega sin ciudad: 422 `errors.city`.
+- El nombre público es `Workspace.name`, que se edita con `PATCH /workspaces/{ws}`. No se guarda dos veces.
+- Desactivar `listed` saca al taller del directorio y bloquea las solicitudes **nuevas**. Las abiertas siguen su curso.
+- El directorio solo lista talleres de CarCare. No hay datos externos ni inventados.
+- Actividad del taller: `directory_profile.updated` ("Ana actualizó el perfil del directorio").
+
+#### 3.13.3 Crear una solicitud
+
+Validación de `RepairRequestInput` (422 con el campo):
+- `vehicle_id`:
+  - un vehículo del **mismo espacio personal**;
+  - no archivado ("Este vehículo está archivado.").
+- `workshop_id`:
+  - un taller con `listed = true` ("Este taller no está en el directorio.");
+  - del que el usuario **no es miembro** ("No puedes enviar una solicitud a un taller del que formas parte.").
+- `title` 3–120 y `description` 10–2000.
+- `zone` es un `Zone` o null.
+- `preferred_date`: desde hoy hasta hoy + 180 días.
+- `mileage`:
+  - entero entre 0 y 2.000.000;
+  - **≥ `current_mileage` del vehículo** ("No puede ser menor que el último kilometraje anotado (84.200 km)."). No admite `confirm_mileage_drop`: si la última lectura está mal, se corrige en el diario.
+- `contact_phone`: el mismo formato que el teléfono del directorio.
+- `share_history`: booleano, `false` por defecto.
+
+Reglas:
+- **Copia fija del coche.** Al crear se copian `make`, `model`, `year`, `fuel_type`, `body_type`, `color_hex` y `plate` del vehículo a la solicitud. Es lo único que el taller ve del coche (`RepairRequestVehicle`). Editar el vehículo después no cambia la copia.
+- **Los km no crean una lectura** en el garaje: son un dato declarado para el taller. Si la solicitud se convierte en orden, pasan a ser `mileage_in` de la orden, y esa lectura se registra en el vehículo del taller (§3.4.1).
+- **Límites anti‑spam:**
+  - **429** "Has enviado 5 solicitudes en las últimas 24 horas. Vuelve a intentarlo mañana." si el usuario ya ha creado 5 en las últimas 24 horas (se cuenta en la base de datos);
+  - **409** "Ya tienes una solicitud abierta para este vehículo en este taller." si ya hay una `pending`, `accepted` o `quoted` para la misma pareja vehículo‑taller.
+
+  Pedir presupuesto a **varios talleres** a la vez para el mismo coche está permitido.
+- Avisa al owner y a los managers del taller: `repair_request.received`.
+
+#### 3.13.4 Estados y transiciones
+
+| Acción | Quién | Desde | Hacia | Además |
+|--------|-------|-------|-------|--------|
+| Aceptar sin presupuesto | manage del taller | `pending` | `accepted` | `responded_at`. Avisa: `repair_request.accepted` |
+| Aceptar con presupuesto | manage del taller | `pending` | `quoted` | Crea la versión 1. `responded_at`. Avisa: `repair_quote.sent` ("…aceptó tu solicitud y te envió un presupuesto…") |
+| Enviar presupuesto | manage del taller | `accepted`, `quoted` | `quoted` | Versión n+1. Si había una `sent`, pasa a `superseded`. Avisa: `repair_quote.sent` |
+| Rechazar | manage del taller | `pending`, `accepted`, `quoted` | `rejected` | `reason` obligatorio (5–500) en `reject_reason`. Una versión `sent` pasa a `superseded`. `closed_at`. Avisa: `repair_request.rejected` |
+| Aceptar el presupuesto | solicitante | `quoted` | `converted` | Conversión (§3.13.6). `closed_at`. Avisa: `repair_quote.accepted` |
+| Rechazar el presupuesto | solicitante | `quoted` | `accepted` | La versión pasa a `rejected`, con `client_reason` si llega (≤ 500). Avisa: `repair_quote.rejected` |
+| Cancelar | solicitante | `pending`, `accepted`, `quoted` | `cancelled` | Una versión `sent` pasa a `superseded`. `closed_at`. Avisa: `repair_request.cancelled` |
+| Compartir o retirar el historial | solicitante | `pending`, `accepted`, `quoted` | (igual) | `PATCH share_history` |
+| Borrar el vehículo (§3.3) | solicitante | `pending`, `accepted`, `quoted` | `cancelled` | Automático, en la transacción del borrado. Avisa: `repair_request.cancelled` |
+
+Errores:
+- **409 cuando el estado de partida no está en la tabla.** Mensajes:
+  - solicitud cerrada: "Esta solicitud ya está cerrada."
+  - cancelar una convertida: "Esta solicitud ya es la orden OT‑2026‑0031. Para cancelarla, llama al taller."
+  - aceptar dos veces: "Esta solicitud ya tiene respuesta."
+- **409 al decidir sobre un presupuesto:**
+  - `quote_id` no es la versión `sent` de esa solicitud: "El taller ha enviado un presupuesto nuevo. Revísalo antes de responder.";
+  - la versión está caducada: "El presupuesto caducó el 10/11/2026. Pide al taller uno nuevo." Rechazar una versión caducada sí está permitido.
+- **422:** `quote_id` falta o no es un entero; `reason` falta al rechazar; cualquier error de `RepairQuoteInput`, con las claves `quote.items.0.unit_price`… en `accept` y `items.0.unit_price`… en `quotes`.
+- **Concurrencia:** cada transición bloquea la fila de la solicitud (`lockForUpdate`) dentro de una transacción. Dos clics a la vez dan una transición y un 409.
+
+**Textos de estado en la SPA:**
+
+| Estado | Lo ve el particular | Lo ve el taller |
+|--------|---------------------|-----------------|
+| `pending` | "Enviada" | "Nueva" |
+| `accepted` | "Aceptada · presupuesto pendiente" | "Aceptada · falta el presupuesto" |
+| `quoted` | "Presupuesto recibido" | "Presupuesto enviado" |
+| `rejected` | "Rechazada" | "Rechazada" |
+| `cancelled` | "Cancelada" | "Cancelada por el cliente" |
+| `converted` | "En el taller · OT‑…" | "Orden OT‑…" |
+
+#### 3.13.5 Presupuesto
+
+- `RepairQuoteInput`:
+  - `items`: 1–50 líneas. Cada una con `kind`, `name` (1–120), `part_number` (≤ 60), `quantity` > 0 con 2 decimales y **`unit_price` obligatorio** (≥ 0 y ≤ 999.999,99, string con 2 decimales);
+  - `tax_rate` entre 0 y 100, por defecto `settings.tax_rate` del taller;
+  - `valid_days` entre 1 y 90, por defecto 15;
+  - `note` ≤ 1000.
+- Totales con las mismas reglas que las órdenes (§3.11): `total` de línea = `quantity × unit_price`, `subtotal = Σ`, `tax_amount` con redondeo *half‑up* a 2 decimales y `total = subtotal + tax_amount`. Todo en DECIMAL y como string en el JSON.
+- **Versiones inmutables.** No hay `PATCH` de un presupuesto: para cambiarlo, se envía otro. Las líneas se guardan en una columna JSON de `repair_quotes`. En la respuesta, cada línea lleva `total` y no lleva `id`.
+- `valid_until` = fecha de `sent_at` (zona horaria de la app) + `valid_days`. `is_expired` = `status = sent` y hoy > `valid_until`. Se calcula al leer, sin tareas programadas.
+- **Rótulo obligatorio en la SPA:** "Presupuesto (no es una factura)" (D12 = A). Ningún texto de E16 dice "factura".
+
+#### 3.13.6 Conversión en orden
+
+Al aceptar el cliente la versión vigente, todo en **una transacción**:
+
+1. **Cliente del taller.**
+   - Se reutiliza el `customer_id` de la última solicitud convertida de ese usuario en ese taller, si el cliente existe y no está anonimizado.
+   - Si no, se crea un cliente con:
+     - `name` = nombre del solicitante;
+     - `email` = su email;
+     - `phone` = `contact_phone`;
+     - `tax_id` y `notes` a null.
+
+   **Nunca se enlaza por email** con un cliente dado de alta a mano (ADR‑0007).
+2. **Vehículo del taller.** Por orden de preferencia:
+   - (a) el vehículo no archivado del taller con `source_vehicle_id` = el vehículo del particular;
+   - (b) el vehículo no archivado del taller con la misma matrícula normalizada; se le pone `source_vehicle_id` si no lo tenía y no se le cambia el cliente;
+   - (c) uno nuevo con la copia fija, `customer_id` = el cliente del punto 1, `source_vehicle_id` = el vehículo del particular y `current_mileage` null.
+
+   `source_vehicle_id` es una columna interna y no sale en el JSON.
+3. **Orden** con las reglas de §3.11:
+   - `title` = `title` de la solicitud;
+   - `complaint` = `description`;
+   - `diagnosis` = null;
+   - `priority = normal`;
+   - `mileage_in` = `mileage`, que crea la lectura `work_order` en el vehículo del taller;
+   - `tax_rate` e `items`, copiados del presupuesto;
+   - `customer` = el cliente del punto 1;
+   - `status = received`.
+4. La versión pasa a `accepted`. La solicitud pasa a `converted` y guarda `customer_id` y `work_order_id`, que son columnas internas.
+
+**El particular ve la orden** solo dentro de su solicitud (`RepairRequest.work_order`: número, estado y fechas). `GET /work-orders/{o}` le sigue dando 404.
+- Si el taller borra la orden (solo es posible en `received` o `cancelled`), `work_order` pasa a null y la solicitud sigue `converted`. La SPA dice "El taller ha eliminado la orden".
+- Cuando la orden pasa a `ready`, se avisa al particular: `repair_request.order_ready`. Ningún otro cambio de estado de la orden avisa.
+
+#### 3.13.7 Qué ve el taller y historial compartido
+
+- **El taller ve:**
+  - la copia fija del coche;
+  - los km declarados;
+  - asunto, descripción, zona y fecha preferida;
+  - nombre y email del solicitante, y `contact_phone`;
+  - el historial, si se comparte.
+
+  No ve nunca el apodo, el VIN, los gastos, los documentos ni los recordatorios, y `vehicle_id` le llega a null.
+- **Historial** (`GET /repair-requests/{r}/history`):
+  - las intervenciones **no archivadas** del vehículo del particular, por `service_date` descendente y como máximo 50;
+  - solo los campos de `SharedHistoryEntry`: **sin importes, descripciones, líneas ni documentos**.
+- `history_available` = `share_history` **y** estado `pending`, `accepted` o `quoted` **y** el vehículo sigue existiendo. Si es false: 403 "El cliente no comparte su historial con el taller."
+- Lo pueden pedir las dos partes. El particular lo usa para ver exactamente lo que ve el taller.
+- **Texto del consentimiento en el formulario.** Va junto a la casilla y se envía tal cual:
+
+  > "Taller X verá tu nombre, tu email, el teléfono que indiques, estos datos del coche (marca, modelo, año, combustible, carrocería, color y matrícula) y los km. Si aceptas su presupuesto, te dará de alta como cliente suyo.
+  > ☐ Compartir también el historial de intervenciones (fecha, tipo, zona, título, km y taller; nunca importes ni notas) mientras la solicitud esté abierta. Puedes retirarlo cuando quieras."
+
+#### 3.13.8 Notificaciones en la app
+
+- **Almacenamiento.** Tabla `notifications` estándar de Laravel (canal `database`), con `data = { kind, summary, workspace_id, repair_request_id }`. Sin correo.
+- **Destinatarios:**
+  - de los eventos del taller, la persona que envió la solicitud;
+  - de los eventos del particular, **el owner y los managers** del taller en ese momento.
+
+  Nunca quien hizo la acción. El mecánico no las recibe.
+- **Frases** (`summary`). Nunca llevan el nombre, el email ni el teléfono del particular:
+
+  | `kind` | Frase |
+  |--------|-------|
+  | `repair_request.received` | "Nueva solicitud para Seat Ibiza (1234ABC): «Ruido al frenar»" |
+  | `repair_request.cancelled` | "El cliente canceló la solicitud de Seat Ibiza (1234ABC)" |
+  | `repair_request.accepted` | "Taller Demo aceptó tu solicitud para Seat Ibiza. El presupuesto llegará después" |
+  | `repair_request.rejected` | "Taller Demo rechazó tu solicitud para Seat Ibiza" |
+  | `repair_quote.sent` | "Taller Demo te envió un presupuesto para Seat Ibiza". Si es al aceptar: "Taller Demo aceptó tu solicitud y te envió un presupuesto para Seat Ibiza" |
+  | `repair_quote.accepted` | "El cliente aceptó el presupuesto de Seat Ibiza (1234ABC): se abrió OT‑2026‑0031" |
+  | `repair_quote.rejected` | "El cliente rechazó el presupuesto v1 de Seat Ibiza (1234ABC)" |
+  | `repair_request.order_ready` | "Tu Seat Ibiza está listo en Taller Demo (OT‑2026‑0031)" |
+
+  Si el vehículo no tiene matrícula, se omite el paréntesis.
+- `workspace_id` es el espacio del destinatario desde el que se abre la solicitud: el personal para el particular y el taller para su equipo. La SPA navega a `/app/{workspace_id}/solicitudes/{repair_request_id}` y la marca como leída.
+- **En la interfaz:**
+  - campana con contador en la cabecera de los dos modos;
+  - `GET /notifications/count` cada 60 s, **solo con la pestaña visible**: con TanStack Query, `refetchInterval: 60_000` y sin `refetchIntervalInBackground`;
+  - al volver a la pestaña, se refresca.
+- Al borrar la cuenta, se borran sus notificaciones: la tabla polimórfica no tiene clave foránea. Si la solicitud de una notificación ya no existe, abrirla da 404 y la SPA dice "Esta solicitud ya no existe".
+
+#### 3.13.9 Actividad
+
+Además de las notificaciones, se registran estas actividades (§3.12):
+
+| Espacio | `action` | Frase | Autor |
+|---------|----------|-------|-------|
+| personal | `repair_request.created` | "Enviaste una solicitud a Taller Demo para Kia Sportage" | — |
+| personal | `repair_request.cancelled` | "Cancelaste la solicitud a Taller Demo para Kia Sportage" | — |
+| personal | `repair_quote.accepted` | "Aceptaste el presupuesto de Taller Demo para Kia Sportage" | — |
+| personal | `repair_quote.rejected` | "Rechazaste el presupuesto de Taller Demo para Kia Sportage" | — |
+| workshop | `repair_request.accepted` / `repair_request.rejected` | "Ana aceptó la solicitud de Seat Ibiza (1234ABC)" | quien decide |
+| workshop | `repair_quote.sent` | "Ana envió el presupuesto v2 de Seat Ibiza (1234ABC)" | quien lo envía |
+| workshop | `repair_quote.accepted` / `repair_quote.rejected` | "El cliente aceptó el presupuesto v1 de Seat Ibiza (1234ABC)" | `user = null` |
+| workshop | `customer.created`, en la conversión | "Se dio de alta al cliente Lucía Demo desde una solicitud" (se reescribe al anonimizar, §3.10.1) | `user = null` |
+| workshop | `work_order.created`, en la conversión | "Se abrió OT‑2026‑0031 desde una solicitud" | `user = null` |
+| workshop | `directory_profile.updated` | "Ana actualizó el perfil del directorio" | quien lo guarda |
+
+En los espacios personales, `vehicle_id` es el vehículo del particular. En el taller es null, salvo en `work_order.created`. Las acciones del particular **no** se registran con su nombre en la actividad del taller: llevan `user = null` y la frase dice "El cliente".
 
 ## 4. Analítica: definiciones
 
@@ -373,6 +611,16 @@ Datos del cliente en la actividad (§3.10.1):
 `php artisan db:seed --class=DemoSeeder` (nunca en producción; el seeder aborta si `APP_ENV=production`):
 - `demo@carcare.test` / `password` → espacio personal con 2 vehículos (p. ej. hatchback rojo y SUV gris) y ~18 meses de historial **claramente ficticio**: lecturas de km semanales, repostajes llenos, intervenciones con líneas, gastos varios, recordatorios (uno vencido, uno próximo, varios ok) y algún documento de ejemplo.
 - `taller@carcare.test` / `password` → espacio taller "Taller Demo" con 4 elevadores, 2 miembros más (`mecanico@carcare.test` mechanic, `gerente@carcare.test` manager), ~12 clientes, ~20 vehículos de distintas carrocerías y colores y ~30 órdenes repartidas por todos los estados (algunas tarde, 3 en elevadores).
+- **Directorio y solicitudes (E16, §3.13).**
+  - **Talleres en el directorio.** Hay 4: "Taller Demo", con ciudad Lleida y todos los servicios menos `bodywork`, y otros 3 talleres ficticios con su propio owner (`taller2@`, `taller3@` y `taller4@carcare.test`, con contraseña `password`): "Talleres Ejemplo Norte" (Lleida), "Neumáticos Prueba" (Tarragona) y "Carrocerías Ficticia" (Barcelona).
+  - **Datos de esos talleres.** Las direcciones son claramente inventadas ("C/ Inventada, 12"). El teléfono es null, salvo el de Taller Demo, que es "973 000 000".
+  - **Solicitudes de `demo@`.** Tiene 4, con un vehículo distinto para cada pareja abierta:
+    - una `pending` a Taller Demo, para enseñar aceptar y rechazar;
+    - una `quoted` a Taller Demo, con la v1 vigente, para enseñar la aceptación y la conversión;
+    - una `converted` antigua, con su orden ya entregada en Taller Demo;
+    - una `rejected` por "Carrocerías Ficticia", con motivo.
+  - **Notificaciones.** Hay notificaciones sin leer para `taller@` y `gerente@` (la solicitud nueva) y para `demo@` (el presupuesto recibido).
+  - El seeder se puede volver a ejecutar sin duplicar nada.
 
 ## 6. Historial de cambios
 
@@ -384,5 +632,6 @@ Datos del cliente en la actividad (§3.10.1):
 | 2026-10-24 | **Tarea 29 (E11‑6), derechos RGPD del cliente** (§3.10.1). Nuevos `Customer.anonymized_at`, tipo `CustomerExport` y `POST /customers/{c}/export` y `/anonymize` (manage). Cambios de reglas: PATCH de un cliente anonimizado ⇒ 409; asignar a un vehículo un cliente anonimizado ⇒ 422; anonimizar o eliminar reescribe la actividad sin el nombre. Nuevas actividades `customer.exported` y `customer.anonymized`. [ADR‑0005](../arquitectura/ADR-0005-rgpd-cliente-taller.md). Aditivo | Arquitecto |
 | 2026-10-24 | **Autor de la actividad en los espacios personales** (§3.12, hallazgo M5 de UX). En `personal`, `Activity.summary` no lleva el nombre del usuario y usa la segunda persona ("Anotaste 54.000 km en Kia Sportage"). En `workshop` sigue con el nombre. La forma JSON no cambia | Arquitecto (a petición de disenador-ux) |
 | 2026-10-24 | **Textos según D12 = A**: el contrato y los comentarios de `types.ts` ya no dicen "facturación"; ahora dicen "importe de las órdenes entregadas" e "importes y analítica". Solo cambia el texto | Arquitecto (petición 12 de frontend-react) |
+| 2026-10-26 | **Tarea 32 (E16), solicitudes de reparación a talleres** (§3.13, [ADR‑0007](../arquitectura/ADR-0007-solicitudes-a-talleres.md)).<br>• **Rutas nuevas:** 18. Directorio (`/workshops`), perfil del directorio (`/workspaces/{ws}/directory-profile`, solo el owner lo edita), solicitudes (`/workspaces/{ws}/repair-requests` y `/repair-requests/{r}/…`) y notificaciones (`/notifications`, `/count` y `/read`).<br>• **Tipos nuevos:** `WorkshopService`, `DirectoryProfile(Input)`, `DirectoryWorkshop(Ref)`, `RepairRequest*`, `RepairQuote*`, `QuoteLineItemInput`, `QuoteDecisionInput`, `SharedHistoryEntry`, `NotificationKind`, `AppNotification`, `NotificationCount` y `MarkNotificationsReadInput`.<br>• **Reglas nuevas:**<br>– estados y transiciones de la solicitud, con 409 y 422;<br>– presupuesto en versiones inmutables, "no es una factura";<br>– la orden se crea al aceptar el cliente el presupuesto;<br>– copia fija de 7 datos del coche;<br>– historial compartido solo con consentimiento, sin importes y mientras la solicitud esté abierta;<br>– límites anti‑spam: 5 al día (429) y 1 abierta por pareja vehículo‑taller (409);<br>– actividades y notificaciones sin el nombre del particular.<br>• **Cambios en reglas existentes:**<br>– §2: única excepción al aislamiento;<br>– §3.3: borrar un vehículo personal cancela sus solicitudes abiertas;<br>– §3.12: actividades nuevas;<br>– §5: demo del directorio.<br>• **Columna interna** `vehicles.source_vehicle_id`, que no sale en el JSON.<br>Ningún tipo existente cambia: aditivo | Arquitecto (alcance pedido por Alberto el 24/10) |
 
 > **Efecto en los tests del backend (24/10).** `ContractShapeTest` compara las claves de cada interfaz de `types.ts` con `tests/Support/Contract.php`. Hasta que el paso 2 de las tareas 27 y 29 añada `source_id` a `mileageLog()` y `anonymized_at` a `customer()`, fallan los casos `MileageLog` y `Customer` del test "las especificaciones tienen las mismas claves que las interfaces de types.ts". Es el aviso previsto del *contract-first*, no una regresión de otra tarea.
