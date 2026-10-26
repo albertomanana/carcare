@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | URL de la SPA (CarCare)
+    |--------------------------------------------------------------------------
+    |
+    | Origen de la SPA de React. Los enlaces que salen en los correos (p. ej.
+    | "crear una contraseña nueva", contrato §3.1.1) apuntan aquí, nunca a la API.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

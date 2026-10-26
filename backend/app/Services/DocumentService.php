@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Document;
 use App\Models\Vehicle;
+use App\Support\ActivityPhrase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -47,7 +48,7 @@ class DocumentService
                 ]);
 
                 $this->activity->forVehicle($vehicle, 'document.uploaded', 'document', $document->id,
-                    ActivityLogger::actor()." subió el documento «{$document->title}» a ".$vehicle->displayName(),
+                    ActivityPhrase::of('subió', 'subiste', "el documento «{$document->title}» a ".$vehicle->displayName()),
                     ['document_type' => $document->document_type->value]);
 
                 return $document;
@@ -65,7 +66,7 @@ class DocumentService
         DB::transaction(function () use ($document, $vehicle) {
             $document->delete();
             $this->activity->forVehicle($vehicle, 'document.deleted', 'document', $document->id,
-                ActivityLogger::actor()." eliminó el documento «{$document->title}» de ".$vehicle->displayName());
+                ActivityPhrase::of('eliminó', 'eliminaste', "el documento «{$document->title}» de ".$vehicle->displayName()));
         });
 
         Storage::disk($document->disk)->delete($document->path);

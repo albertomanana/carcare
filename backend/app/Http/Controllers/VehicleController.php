@@ -16,6 +16,7 @@ use App\Services\ZoneService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -112,8 +113,9 @@ class VehicleController extends Controller
         return $this->data($journal->forVehicle($vehicle, $from, $to));
     }
 
-    public function report(Vehicle $vehicle, ReportService $reports): JsonResponse
+    /** Las lecturas de gastos llegan sin `source_id` para quien no ve gastos (contrato §3.4.1). */
+    public function report(Request $request, Vehicle $vehicle, ReportService $reports): JsonResponse
     {
-        return $this->data($reports->forVehicle($vehicle));
+        return $this->data($reports->forVehicle($vehicle, $request->user()->can('manage', $vehicle)));
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HealthController;
@@ -32,6 +33,10 @@ Route::prefix('v1')->group(function () {
     // ───────── Autenticación (Sanctum SPA) ─────────
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
+
+    // Recuperar la contraseña (§3.1.1): públicas, 5 peticiones/min por IP con un contador por endpoint.
+    Route::post('auth/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:5,1,forgot-password');
+    Route::post('auth/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:5,1,reset-password');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -130,6 +135,9 @@ Route::prefix('v1')->group(function () {
         Route::patch('customers/{customer}', [CustomerController::class, 'update'])->can('operate', 'customer');
         Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->can('manage', 'customer');
         Route::get('customers/{customer}/vehicles', [CustomerController::class, 'vehicles'])->can('view', 'customer');
+        // Derechos RGPD (§3.10.1): solo owner y manager.
+        Route::post('customers/{customer}/export', [CustomerController::class, 'export'])->can('manage', 'customer');
+        Route::post('customers/{customer}/anonymize', [CustomerController::class, 'anonymize'])->can('manage', 'customer');
 
         // ───────── Taller: órdenes de trabajo ─────────
         Route::get('work-orders/{workOrder}', [WorkOrderController::class, 'show'])->can('view', 'workOrder');

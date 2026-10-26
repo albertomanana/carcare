@@ -6,6 +6,7 @@ use App\Enums\MileageSource;
 use App\Exceptions\ConflictException;
 use App\Models\MileageLog;
 use App\Models\Vehicle;
+use App\Support\ActivityPhrase;
 use App\Support\Dates;
 use App\Support\Km;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class MileageService
             );
 
             $this->activity->forVehicle($vehicle, 'mileage.recorded', 'mileage_log', $log->id,
-                ActivityLogger::actor().' registró '.Km::human($log->mileage).' en '.$vehicle->displayName(),
+                ActivityPhrase::of('registró', 'anotaste', Km::human($log->mileage).' en '.$vehicle->displayName()),
                 ['mileage' => $log->mileage]);
 
             return $log;

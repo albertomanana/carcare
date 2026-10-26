@@ -461,7 +461,7 @@ class DemoSeeder extends Seeder
 
         $this->simulateOdometer($key, $start, $spec['start_km'], $spec['weekday'], $spec['trip']);
         $this->log($vehicle, $start, $this->odo($key, $start), MileageSource::VehicleCreated, $vehicle->id);
-        $this->activity($ws, $user, $vehicle, 'vehicle.created', 'vehicle', $vehicle->id, "Lucía Demo añadió el vehículo {$vehicle->displayName()}", $at->addMinute());
+        $this->activity($ws, $user, $vehicle, 'vehicle.created', 'vehicle', $vehicle->id, "Añadiste el vehículo {$vehicle->displayName()}", $at->addMinute());
         $this->weeklyReadings($ws, $user, $key, $vehicle, $start);
         $this->fuel($ws, $user, $key, $vehicle, $start, $spec['fuel'], $this->odo($key, $start), 0.0);
 
@@ -533,13 +533,13 @@ class DemoSeeder extends Seeder
             $log = $this->log($vehicle, $d, $km, MileageSource::Manual, note: $notes[mt_rand(0, count($notes) - 1)]);
             if ($d >= $this->today->subDays(45)) {
                 $this->activity($ws, $user, $vehicle, 'mileage.recorded', 'mileage_log', $log->id,
-                    'Lucía Demo registró '.Km::human($km).' en '.$vehicle->displayName(), $d->setTime(21, 10), ['mileage' => $km]);
+                    'Anotaste '.Km::human($km).' en '.$vehicle->displayName(), $d->setTime(21, 10), ['mileage' => $km]);
             }
         }
         $km = $this->odo($key, $this->today);
         $log = $this->log($vehicle, $this->today, $km, MileageSource::Manual, note: 'Lectura de hoy');
         $this->activity($ws, $user, $vehicle, 'mileage.recorded', 'mileage_log', $log->id,
-            'Lucía Demo registró '.Km::human($km).' en '.$vehicle->displayName(), $this->today->setTime(8, 5), ['mileage' => $km]);
+            'Anotaste '.Km::human($km).' en '.$vehicle->displayName(), $this->today->setTime(8, 5), ['mileage' => $km]);
     }
 
     /**
@@ -580,7 +580,7 @@ class DemoSeeder extends Seeder
 
             if ($d >= $this->today->subDays(45)) {
                 $this->activity($ws, $user, $vehicle, 'expense.created', 'expense', $expense->id,
-                    'Lucía Demo añadió un gasto de '.Money::human($amount).' (Combustible) en '.$vehicle->displayName(),
+                    'Añadiste un gasto de '.Money::human($amount).' (Combustible) en '.$vehicle->displayName(),
                     $d->setTime(19, 41), ['category' => 'fuel', 'amount' => $amount]);
             }
 
@@ -631,7 +631,7 @@ class DemoSeeder extends Seeder
             }
             if ($date >= $this->today->subDays(60)) {
                 $this->activity($ws, $user, $vehicle, 'maintenance.created', 'maintenance_record', $record->id,
-                    "Lucía Demo registró la intervención «{$record->title}» en ".$vehicle->displayName(), $date->setTime(17, 16),
+                    "Registraste la intervención «{$record->title}» en ".$vehicle->displayName(), $date->setTime(17, 16),
                     ['type' => $spec['type'], 'zone' => $spec['zone']]);
             }
             $records[$ref] = $record;
@@ -797,7 +797,7 @@ class DemoSeeder extends Seeder
         ]);
         if ($date >= $this->today->subDays(45)) {
             $this->activity($ws, $user, $vehicle, 'expense.created', 'expense', $expense->id,
-                'Lucía Demo añadió un gasto de '.Money::human($amount).' ('.$expense->category->label().') en '.$vehicle->displayName(),
+                'Añadiste un gasto de '.Money::human($amount).' ('.$expense->category->label().') en '.$vehicle->displayName(),
                 $date->setTime(13, 21), ['category' => $category, 'amount' => $amount]);
         }
 
@@ -917,7 +917,7 @@ class DemoSeeder extends Seeder
             'starts_on' => $this->today->subDays(160)->toDateString(), 'status' => ReminderStatus::Dismissed,
         ]);
 
-        $this->activity($ws, $user, $v, 'reminder.created', 'reminder', $batteryReminder->id, "Lucía Demo creó el recordatorio «Revisar la batería» para {$v->displayName()}", $battery->service_date->setTime(17, 30));
+        $this->activity($ws, $user, $v, 'reminder.created', 'reminder', $batteryReminder->id, "Creaste el recordatorio «Revisar la batería» para {$v->displayName()}", $battery->service_date->setTime(17, 30));
     }
 
     /** @param array<string, MaintenanceRecord> $records */
@@ -980,7 +980,7 @@ class DemoSeeder extends Seeder
             $document = $this->storeDocument($ws, $vehicle, $title, $type, $filename, $record, $expires, $date->setTime(18, 0));
             if ($date >= $this->today->subDays(45)) {
                 $this->activity($ws, $user, $vehicle, 'document.uploaded', 'document', $document->id,
-                    "Lucía Demo subió el documento «{$title}» a ".$vehicle->displayName(), $date->setTime(18, 1), ['document_type' => $type]);
+                    "Subiste el documento «{$title}» a ".$vehicle->displayName(), $date->setTime(18, 1), ['document_type' => $type]);
             }
         }
     }

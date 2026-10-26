@@ -15,7 +15,8 @@ use DateTimeInterface;
 /** Informe exportable del vehículo (historial completo para imprimir o vender el coche). */
 class ReportService
 {
-    public function forVehicle(Vehicle $vehicle): array
+    /** @param  bool  $expenseSourceVisible  false para quien no ve gastos (mechanic): sus lecturas van sin `source_id`. */
+    public function forVehicle(Vehicle $vehicle, bool $expenseSourceVisible = true): array
     {
         // Solo totales: filas ligeras en vez de un modelo por gasto.
         $expenses = ExpenseRows::get($vehicle->expenses()->getQuery());
@@ -41,7 +42,7 @@ class ReportService
                 'by_category' => ExpenseRows::byCategory($expenses),
                 'by_year' => $byYear,
             ],
-            'mileage_logs' => MileageLogResource::collection($vehicle->mileageLogs()->latestFirst()->get()),
+            'mileage_logs' => MileageLogResource::collectionFor($vehicle->mileageLogs()->latestFirst()->get(), $expenseSourceVisible),
             'pending_reminders' => ReminderResource::collection($pending),
             'documents' => $vehicle->documents()->orderByDesc('created_at')->get()->map(fn ($d) => [
                 'id' => $d->id,

@@ -64,6 +64,21 @@ class CustomerController extends Controller
         return $this->noContent();
     }
 
+    /**
+     * Derecho de acceso y portabilidad (§3.10.1): `Resource<CustomerExport>`. Es POST porque deja rastro
+     * en la actividad; `Cache-Control: no-store` para que ningún intermediario guarde la copia.
+     */
+    public function export(Customer $customer): JsonResponse
+    {
+        return $this->data($this->customers->export($customer))->header('Cache-Control', 'no-store');
+    }
+
+    /** Derecho de supresión (§3.10.1): irreversible. 409 si ya lo está o tiene órdenes abiertas. */
+    public function anonymize(Customer $customer): CustomerResource
+    {
+        return new CustomerResource($this->customers->anonymize($customer));
+    }
+
     /** Vehículos activos del cliente. */
     public function vehicles(Customer $customer): AnonymousResourceCollection
     {

@@ -8,6 +8,7 @@ use App\Enums\MileageSource;
 use App\Exceptions\ConflictException;
 use App\Models\Expense;
 use App\Models\Vehicle;
+use App\Support\ActivityPhrase;
 use App\Support\Money;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -37,8 +38,8 @@ class ExpenseService
             $this->syncMileage($expense, (bool) ($data['confirm_mileage_drop'] ?? false));
 
             $this->activity->forVehicle($vehicle, 'expense.created', 'expense', $expense->id,
-                ActivityLogger::actor().' añadió un gasto de '.Money::human($expense->amount)
-                ." ({$expense->category->label()}) en ".$vehicle->displayName(),
+                ActivityPhrase::of('añadió', 'añadiste', 'un gasto de '.Money::human($expense->amount)
+                    ." ({$expense->category->label()}) en ".$vehicle->displayName()),
                 ['category' => $expense->category->value, 'amount' => $expense->amount]);
 
             return $expense->refresh();
@@ -57,8 +58,8 @@ class ExpenseService
             $this->syncMileage($expense, (bool) ($data['confirm_mileage_drop'] ?? false));
 
             $this->activity->forVehicle($expense->vehicle, 'expense.updated', 'expense', $expense->id,
-                ActivityLogger::actor().' editó un gasto de '.Money::human($expense->amount)
-                ." ({$expense->category->label()}) en ".$expense->vehicle->displayName());
+                ActivityPhrase::of('editó', 'editaste', 'un gasto de '.Money::human($expense->amount)
+                    ." ({$expense->category->label()}) en ".$expense->vehicle->displayName()));
 
             return $expense->refresh();
         });
@@ -74,8 +75,8 @@ class ExpenseService
             $expense->delete();
 
             $this->activity->forVehicle($vehicle, 'expense.deleted', 'expense', $expense->id,
-                ActivityLogger::actor().' eliminó un gasto de '.Money::human($expense->amount)
-                ." ({$expense->category->label()}) de ".$vehicle->displayName());
+                ActivityPhrase::of('eliminó', 'eliminaste', 'un gasto de '.Money::human($expense->amount)
+                    ." ({$expense->category->label()}) de ".$vehicle->displayName()));
         });
     }
 

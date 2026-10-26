@@ -9,6 +9,7 @@ use App\Models\Expense;
 use App\Models\MaintenanceRecord;
 use App\Models\Vehicle;
 use App\Models\WorkOrder;
+use App\Support\ActivityPhrase;
 use App\Support\LineItems;
 use App\Support\Money;
 use Illuminate\Support\Arr;
@@ -47,7 +48,7 @@ class MaintenanceService
             $this->syncLinkedExpense($record);
 
             $this->activity->forVehicle($vehicle, 'maintenance.created', 'maintenance_record', $record->id,
-                ActivityLogger::actor()." registró la intervención «{$record->title}» en ".$vehicle->displayName(),
+                ActivityPhrase::of('registró', 'registraste', "la intervención «{$record->title}» en ".$vehicle->displayName()),
                 ['type' => $record->type->value, 'zone' => $record->zone->value]);
 
             return $record->refresh();
@@ -76,7 +77,7 @@ class MaintenanceService
             $this->syncLinkedExpense($record);
 
             $this->activity->forVehicle($record->vehicle, 'maintenance.updated', 'maintenance_record', $record->id,
-                ActivityLogger::actor()." editó la intervención «{$record->title}» de ".$record->vehicle->displayName());
+                ActivityPhrase::of('editó', 'editaste', "la intervención «{$record->title}» de ".$record->vehicle->displayName()));
 
             return $record->refresh();
         });
@@ -94,7 +95,7 @@ class MaintenanceService
             $this->syncLinkedExpense($record);
 
             $this->activity->forVehicle($record->vehicle, 'maintenance.archived', 'maintenance_record', $record->id,
-                ActivityLogger::actor()." archivó la intervención «{$record->title}» de ".$record->vehicle->displayName());
+                ActivityPhrase::of('archivó', 'archivaste', "la intervención «{$record->title}» de ".$record->vehicle->displayName()));
 
             return $record;
         });
@@ -111,7 +112,7 @@ class MaintenanceService
             $this->syncLinkedExpense($record);
 
             $this->activity->forVehicle($record->vehicle, 'maintenance.updated', 'maintenance_record', $record->id,
-                ActivityLogger::actor()." restauró la intervención «{$record->title}» de ".$record->vehicle->displayName());
+                ActivityPhrase::of('restauró', 'restauraste', "la intervención «{$record->title}» de ".$record->vehicle->displayName()));
 
             return $record;
         });

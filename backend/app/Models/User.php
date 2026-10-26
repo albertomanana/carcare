@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\WorkspaceRole;
 use App\Enums\WorkspaceType;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -43,6 +44,12 @@ class User extends Authenticatable
         return $this->belongsToMany(Workspace::class, 'workspace_user')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /** Correo en español con el enlace a la SPA (contrato §3.1.1). */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     public function personalWorkspace(): ?Workspace

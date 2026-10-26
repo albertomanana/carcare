@@ -6,15 +6,17 @@ use App\Enums\BodyType;
 use App\Enums\FuelType;
 use App\Enums\Transmission;
 use App\Http\Requests\ApiRequest;
+use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Models\Workspace;
+use Closure;
 use Illuminate\Validation\Rule;
 
 /**
  * POST /workspaces/{ws}/vehicles y PATCH /vehicles/{v} (`VehicleInput`, parcial en PATCH).
  *  - plate: mayúsculas, sin espacios ni guiones; única por espacio entre no archivados.
  *  - vin: 17 caracteres [A-HJ-NPR-Z0-9], único por espacio.
- *  - customer_id: solo en talleres y del mismo espacio (422 en personal).
+ *  - customer_id: solo en talleres, del mismo espacio (422 en personal) y no anonimizado (§3.10.1).
  *  - current_mileage: solo al crear (en PATCH se ignora: se usa /mileage).
  */
 class VehicleRequest extends ApiRequest
@@ -92,7 +94,11 @@ class VehicleRequest extends ApiRequest
             'purchase_date' => ['sometimes', 'nullable', ...self::pastDate()],
             'purchase_mileage' => ['sometimes', 'nullable', ...self::km()],
             'customer_id' => $workspace->isWorkshop()
-                ? ['sometimes', 'nullable', 'integer', Rule::exists('customers', 'id')->where('workspace_id', $workspace->id)]
+                ? [
+                    'sometimes', 'nullable', 'bail', 'integer',
+                    Rule::exists('customers', 'id')->where('workspace_id', $workspace->id),
+                    $this->notAnonymized($vehicle),
+                ]
                 : ['sometimes', 'nullable', 'prohibited'],
         ];
 
@@ -101,6 +107,23 @@ class VehicleRequest extends ApiRequest
         }
 
         return $rules;
+    }
+
+    /**
+     * Un cliente anonimizado no se puede asignar a ningún vehículo (§3.10.1). Si el vehículo ya era suyo y el
+     * PATCH reenvía el mismo `customer_id` (la SPA manda el formulario completo), no es una asignación nueva.
+     */
+    private function notAnonymized(?Vehicle $vehicle): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($vehicle) {
+            if ($vehicle?->customer_id !== null && (int) $value === (int) $vehicle->customer_id) {
+                return;
+            }
+
+            if (Customer::query()->whereKey((int) $value)->whereNotNull('anonymized_at')->exists()) {
+                $fail('Este cliente está anonimizado: crea uno nuevo.');
+            }
+        };
     }
 
     public function messages(): array

@@ -74,6 +74,8 @@ function resourceEndpoints(): array
         'editar cliente' => ['PATCH', '/customers/{customer}'],
         'borrar cliente' => ['DELETE', '/customers/{customer}'],
         'vehículos del cliente' => ['GET', '/customers/{customer}/vehicles'],
+        'exportar cliente' => ['POST', '/customers/{customer}/export'],
+        'anonimizar cliente' => ['POST', '/customers/{customer}/anonymize'],
         // Taller: órdenes
         'ver orden' => ['GET', '/work-orders/{order}'],
         'editar orden' => ['PATCH', '/work-orders/{order}'],
@@ -94,7 +96,10 @@ function accountEndpoints(): array
 /** Rutas públicas. */
 function publicEndpoints(): array
 {
-    return [['GET', '/health'], ['POST', '/auth/register'], ['POST', '/auth/login']];
+    return [
+        ['GET', '/health'], ['POST', '/auth/register'], ['POST', '/auth/login'],
+        ['POST', '/auth/forgot-password'], ['POST', '/auth/reset-password'],
+    ];
 }
 
 dataset('endpoints con recurso', resourceEndpoints());
@@ -197,6 +202,35 @@ it('las rutas de taller responden 404 en un espacio personal', function (string 
 })->with([
     ['GET', 'customers'], ['POST', 'customers'], ['GET', 'work-orders'], ['POST', 'work-orders'], ['GET', 'bays'],
 ]);
+
+it('un cliente de un espacio personal responde 404 en todas sus rutas, también las RGPD', function (string $method, string $suffix) {
+    $user = makeUser();
+    loginAs($user);
+    // En un espacio personal no se pueden crear clientes; este simula un dato que no debería existir.
+    $customer = \App\Models\Customer::create(['workspace_id' => $user->personalWorkspace()->id, 'name' => 'Cliente Imposible']);
+
+    $this->json($method, "/api/v1/customers/{$customer->id}{$suffix}", ['name' => 'X'])
+        ->assertNotFound()
+        ->assertExactJson(['message' => 'Recurso no encontrado.']);
+    expect($customer->fresh()->name)->toBe('Cliente Imposible')
+        ->and($customer->fresh()->anonymized_at)->toBeNull();
+})->with([
+    ['GET', ''], ['PATCH', ''], ['DELETE', ''], ['GET', '/vehicles'], ['POST', '/export'], ['POST', '/anonymize'],
+]);
+
+it('un intruso no puede exportar ni anonimizar un cliente ajeno, y no queda rastro', function () {
+    $w = world();
+    \App\Models\WorkOrder::query()->whereKey($w->order->id)->update(['status' => 'cancelled']); // sin órdenes abiertas
+    loginAs(makeUser('Irene Intrusa', 'Taller Irene'));
+    $activities = \App\Models\Activity::count();
+
+    $this->postJson(api('/customers/{customer}/export', $w))->assertNotFound();
+    $this->postJson(api('/customers/{customer}/anonymize', $w))->assertNotFound();
+
+    expect($w->customer->fresh()->name)->toBe('Cliente Uno')
+        ->and($w->customer->fresh()->anonymized_at)->toBeNull()
+        ->and(\App\Models\Activity::count())->toBe($activities);
+});
 
 it('solo lista los espacios y vehículos propios', function () {
     $w = world();

@@ -322,6 +322,22 @@ it('Customer', function () {
     expectShape($this->patchJson("/api/v1/customers/{$w->customer['id']}", ['notes' => 'Paga a 30 días'])->assertOk(), Contract::customer());
 });
 
+it('CustomerExport y Customer anonimizado', function () {
+    $w = contractWorld();
+
+    $export = expectShape($this->postJson("/api/v1/customers/{$w->customer['id']}/export")->assertOk(), Contract::customerExport());
+    expect($export->json('data.vehicles'))->toHaveCount(1)
+        ->and($export->json('data.work_orders'))->toHaveCount(3)
+        ->and($export->json('data.work_orders.0.items'))->not->toBeEmpty()
+        ->and($export->json('data.customer.anonymized_at'))->toBeNull()
+        ->and($export->headers->get('Cache-Control'))->toContain('no-store');
+
+    $sinOrdenes = $this->postJson("/api/v1/workspaces/{$w->wws->id}/customers", ['name' => 'Cliente sin órdenes'])->json('data.id');
+    $anonimizado = expectShape($this->postJson("/api/v1/customers/{$sinOrdenes}/anonymize")->assertOk(), Contract::customer());
+    expect($anonimizado->json('data.anonymized_at'))->not->toBeNull();
+    expectShape($this->postJson("/api/v1/customers/{$sinOrdenes}/export")->assertOk(), Contract::customerExport());
+});
+
 it('WorkOrder y Bay', function () {
     $w = contractWorld();
     $o = "/api/v1/work-orders/{$w->inBay['id']}";

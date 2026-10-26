@@ -7,6 +7,7 @@ use App\Exceptions\ConflictException;
 use App\Models\Document;
 use App\Models\Vehicle;
 use App\Models\Workspace;
+use App\Support\ActivityPhrase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -31,7 +32,7 @@ class VehicleService
             }
 
             $this->activity->forVehicle($vehicle, 'vehicle.created', 'vehicle', $vehicle->id,
-                ActivityLogger::actor().' añadió el vehículo '.$vehicle->displayName());
+                ActivityPhrase::of('añadió', 'añadiste', 'el vehículo '.$vehicle->displayName()));
 
             return $vehicle->refresh();
         });
@@ -45,7 +46,7 @@ class VehicleService
         if ($vehicle->isDirty()) {
             $vehicle->save();
             $this->activity->forVehicle($vehicle, 'vehicle.updated', 'vehicle', $vehicle->id,
-                ActivityLogger::actor().' editó el vehículo '.$vehicle->displayName(),
+                ActivityPhrase::of('editó', 'editaste', 'el vehículo '.$vehicle->displayName()),
                 ['fields' => array_keys($vehicle->getChanges())]);
         }
 
@@ -57,7 +58,7 @@ class VehicleService
         if (! $vehicle->isArchived()) {
             $vehicle->forceFill(['archived_at' => now()])->save();
             $this->activity->forVehicle($vehicle, 'vehicle.archived', 'vehicle', $vehicle->id,
-                ActivityLogger::actor().' archivó el vehículo '.$vehicle->displayName());
+                ActivityPhrase::of('archivó', 'archivaste', 'el vehículo '.$vehicle->displayName()));
         }
 
         return $vehicle;
@@ -80,7 +81,7 @@ class VehicleService
 
         $vehicle->forceFill(['archived_at' => null])->save();
         $this->activity->forVehicle($vehicle, 'vehicle.restored', 'vehicle', $vehicle->id,
-            ActivityLogger::actor().' restauró el vehículo '.$vehicle->displayName());
+            ActivityPhrase::of('restauró', 'restauraste', 'el vehículo '.$vehicle->displayName()));
 
         return $vehicle;
     }
@@ -96,7 +97,7 @@ class VehicleService
 
         DB::transaction(function () use ($vehicle) {
             $this->activity->log($vehicle->workspace_id, 'vehicle.deleted', 'vehicle', $vehicle->id,
-                ActivityLogger::actor().' eliminó el vehículo '.$vehicle->displayName());
+                ActivityPhrase::of('eliminó', 'eliminaste', 'el vehículo '.$vehicle->displayName()));
             $vehicle->delete();
         });
 

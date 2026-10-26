@@ -536,6 +536,18 @@ final class Contract
         ];
     }
 
+    /** Derecho de acceso y portabilidad del cliente (contrato §3.10.1). */
+    public static function customerExport(): array
+    {
+        return [
+            'generated_at' => 'datetime',
+            'workspace' => ['id' => 'int', 'name' => 'string'],
+            'customer' => self::customer(),
+            'vehicles' => self::listOf(self::vehicle()),
+            'work_orders' => self::listOf(self::workOrder()),
+        ];
+    }
+
     public static function workOrder(): array
     {
         return [
@@ -680,6 +692,7 @@ final class Contract
             'VehicleSummary' => self::vehicleSummary(),
             'VehicleReport' => self::vehicleReport(),
             'Customer' => self::customer(),
+            'CustomerExport' => self::customerExport(),
             'WorkOrder' => self::workOrder(),
             'Bay' => self::bay(),
             'Activity' => self::activity(),

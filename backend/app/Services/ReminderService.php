@@ -8,6 +8,7 @@ use App\Enums\ReminderStatus;
 use App\Exceptions\ConflictException;
 use App\Models\Reminder;
 use App\Models\Vehicle;
+use App\Support\ActivityPhrase;
 use App\Support\Dates;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,7 @@ class ReminderService
         $reminder->save();
 
         $this->activity->forVehicle($vehicle, 'reminder.created', 'reminder', $reminder->id,
-            ActivityLogger::actor()." creó el recordatorio «{$reminder->title}» para ".$vehicle->displayName());
+            ActivityPhrase::of('creó', 'creaste', "el recordatorio «{$reminder->title}» para ".$vehicle->displayName()));
 
         return $reminder->refresh();
     }
@@ -64,9 +65,16 @@ class ReminderService
         return $reminder;
     }
 
+    /**
+     * Si se completó con km, su lectura (`source = reminder`) se borra con él y se recalcula el km
+     * actual, como con gastos y órdenes: una lectura nunca queda huérfana (contrato §3.4.1).
+     */
     public function delete(Reminder $reminder): void
     {
-        $reminder->delete();
+        DB::transaction(function () use ($reminder) {
+            $this->mileage->removeForSource($reminder->vehicle, MileageSource::Reminder, $reminder->id);
+            $reminder->delete();
+        });
     }
 
     /**
@@ -103,7 +111,7 @@ class ReminderService
             }
 
             $this->activity->forVehicle($vehicle, 'reminder.completed', 'reminder', $reminder->id,
-                ActivityLogger::actor()." completó el recordatorio «{$reminder->title}» de ".$vehicle->displayName(),
+                ActivityPhrase::of('completó', 'completaste', "el recordatorio «{$reminder->title}» de ".$vehicle->displayName()),
                 ['next_id' => $next?->id]);
 
             return ['completed' => $reminder->refresh(), 'next' => $next?->refresh()];
@@ -117,7 +125,7 @@ class ReminderService
         $reminder->forceFill(['status' => ReminderStatus::Dismissed])->save();
 
         $this->activity->forVehicle($reminder->vehicle, 'reminder.dismissed', 'reminder', $reminder->id,
-            ActivityLogger::actor()." descartó el recordatorio «{$reminder->title}» de ".$reminder->vehicle->displayName());
+            ActivityPhrase::of('descartó', 'descartaste', "el recordatorio «{$reminder->title}» de ".$reminder->vehicle->displayName()));
 
         return $reminder;
     }

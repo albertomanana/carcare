@@ -19,6 +19,8 @@ dataset('acciones de gestión', [
     'editar gasto' => ['PATCH', '/expenses/{wexpense}', ['amount' => '6.00']],
     'borrar gasto' => ['DELETE', '/expenses/{wexpense}', []],
     'borrar cliente' => ['DELETE', '/customers/{customer}', []],
+    'exportar cliente' => ['POST', '/customers/{customer}/export', []],
+    'anonimizar cliente' => ['POST', '/customers/{customer}/anonymize', []],
     'borrar orden' => ['DELETE', '/work-orders/{order}', []],
 ]);
 

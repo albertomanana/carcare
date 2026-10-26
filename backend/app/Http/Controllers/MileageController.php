@@ -17,11 +17,15 @@ class MileageController extends Controller
 {
     public function __construct(private readonly MileageService $mileage) {}
 
-    /** Desc por fecha y, a igual fecha, por km. */
+    /**
+     * Desc por fecha y, a igual fecha, por km. Quien no ve gastos (mechanic) recibe las lecturas
+     * `expense` sin `source_id` (contrato §3.4.1, regla 3).
+     */
     public function index(ListRequest $request, Vehicle $vehicle): AnonymousResourceCollection
     {
-        return MileageLogResource::collection(
-            $vehicle->mileageLogs()->latestFirst()->paginate($this->perPage($request))
+        return MileageLogResource::collectionFor(
+            $vehicle->mileageLogs()->latestFirst()->paginate($this->perPage($request)),
+            $request->user()->can('manage', $vehicle),
         );
     }
 
