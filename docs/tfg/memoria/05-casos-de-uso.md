@@ -2,6 +2,8 @@
 
 ## 5.1 Actores
 
+*Tabla 5.1. Actores del sistema.*
+
 | Actor | Tipo | Descripción | Rol técnico |
 |-------|------|-------------|-------------|
 | **Visitante** | Primario | Persona sin sesión: ve la portada, se registra o inicia sesión | — |
@@ -117,9 +119,13 @@ flowchart LR
   SIS --- UCACT
 ```
 
+*Figura 5.1. Diagrama de casos de uso.*
+
 *Por legibilidad no se dibuja la asociación de "Iniciar y cerrar sesión" y "Gestionar perfil y cuenta" con los actores del taller (todos los usuarios registrados la tienen), ni la inclusión de "Registrar actividad" en cada caso de uso de escritura.*
 
 ## 5.3 Catálogo
+
+*Tabla 5.2. Catálogo de casos de uso.*
 
 | Caso de uso | Actores | Requisitos |
 |-------------|---------|------------|
@@ -380,6 +386,8 @@ Convenciones: "SPA" es la aplicación React en el navegador y "API", el backend 
 - **3a. Intento de editar un gasto vinculado:** 409; la SPA ofrece ir a su intervención.
 
 ## 5.5 Correcciones respecto a la versión del 21/10/2026
+
+*Tabla 5.3. Correcciones respecto a la versión del 21/10/2026.*
 
 | Punto | Antes | Ahora (código del 24/10) |
 |-------|-------|--------------------------|

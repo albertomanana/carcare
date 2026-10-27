@@ -4,6 +4,8 @@
 
 El proyecto combina tres prácticas, cada una con un motivo concreto:
 
+*Tabla 3.1. Prácticas del enfoque de trabajo.*
+
 | Práctica | En qué consiste | Por qué |
 |----------|-----------------|---------|
 | **Desarrollo guiado por contrato** (*contract-first*) | Antes de programar se escribió el contrato de la API ([`docs/api/contrato-v1.md`](../../api/contrato-v1.md)) y los tipos TypeScript de todas las respuestas ([`frontend/src/api/types.ts`](../../../frontend/src/api/types.ts)). Backend y frontend se construyen contra él; cualquier cambio se propone, se aprueba y se anota en su historial | Permite construir servidor y cliente en paralelo y convierte la API en un entregable verificable: una prueba compara cada respuesta real con su tipo |
@@ -22,6 +24,8 @@ El desarrollo se ha apoyado en **Claude Code**, un asistente de programación co
 
 El asistente se organizó como un equipo de **diez agentes especializados**, definidos en `.claude/agents/*.md` el 21/10/2026. Cada uno tiene un rol, una zona del repositorio de la que es responsable y normas de calidad:
 
+*Tabla 3.2. Agentes del equipo, su rol y su zona.*
+
 | Agente | Rol | Zona |
 |--------|-----|------|
 | `arquitecto` | Diseño técnico, contrato de la API y ADR | `docs/api/`, `docs/arquitectura/`, `frontend/src/api/types.ts` |
@@ -38,6 +42,8 @@ El asistente se organizó como un equipo de **diez agentes especializados**, def
 ### Papel del autor
 
 El autor actúa como **director del proyecto**: fija el alcance y las prioridades, toma las decisiones de producto y de diseño, encarga el trabajo a través de una sesión principal que coordina a los agentes y revisa sus entregas ([`docs/equipo/GUIA-LIDERAZGO.md`](../../equipo/GUIA-LIDERAZGO.md)). Decisiones tomadas expresamente por el autor y registradas con su fecha:
+
+*Tabla 3.3. Decisiones tomadas por el autor.*
 
 | Decisión | Contenido | Fecha |
 |----------|-----------|-------|
@@ -78,6 +84,8 @@ El riesgo R7 del registro de riesgos es "código que no sepa defender ante el tr
 
 Las fechas salen del historial de Git, de las notas de sesión (`CarCare/05_sesiones/`), de los informes de los agentes y del tablero. El repositorio recibió sus primeros commits el **23/10/2026 a las 08:53**, agrupando por área el trabajo de los días anteriores. Por eso, antes de esa hora, la cronología se apoya en las fechas de los documentos y del tablero, no en commits.
 
+*Tabla 3.4. Cronología real del proyecto.*
+
 | Fecha | Hito | Evidencia |
 |-------|------|-----------|
 | 20/10/2026 | Documentación de producto de partida y plan inicial v1 ("No se ha creado repositorio ni código"); decisiones D1‑D6 planteadas | `Car_Care_Documentacion/`, `CarCare/01_plan/plan-inicial-v1.md` |
@@ -92,6 +100,9 @@ Las fechas salen del historial de Git, de las notas de sesión (`CarCare/05_sesi
 | 23/10/2026, 22:50‑23:40 | El autor pide simplificar la interfaz. Auditoría de UX, mapa de huecos del backlog (71 de 90 historias *Must* y *Should* construidas) y reparto de las tareas 16‑29 | Informes de `disenador-ux` y `producto` del 23/10 |
 | 24/10/2026, 00:00 | Nuevo corte por el límite de uso | Tablero, fila de la sesión interactiva |
 | 24/10/2026 | Decisiones D12, D17 y objetivo del 31/10. ADR‑0005 (RGPD del cliente del taller) y ADR‑0006 (recuperar la contraseña) aceptados; tres cambios aditivos en el contrato. Empieza esta memoria. El autor pide la función de solicitudes de reparación (E16) | `registro-decisiones.md`; historial del contrato; tarea 32 de la cola |
+| 24/10/2026, 14:10 | Repositorio publicado en GitHub como privado, con `main` como rama por defecto y `develop` con todos los commits | Tarea 0 de `AUTOPILOTO.md` |
+| 25/10/2026 | Cierre del contrato y de los datos de demostración (commit `92ad333`) y validación de la carga ligera y del *build* del frontend (`d8a31bb`); 462 pruebas en verde | [Informe de cierre](../../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
+| 26/10/2026 | Backend de las tareas 27, 28 y 29 (commit `f1265b6`): 511 pruebas en verde. ADR‑0007 (E16) aceptado por el arquitecto. Primer borrador completo de la memoria, con los quince capítulos | Commit `f1265b6`; ADR‑0007; informe de la memoria |
 
 Los cortes por el límite de uso del asistente han sido el principal factor de retraso. La mitigación adoptada es que cada agente escriba su informe **mientras trabaja**, de modo que la siguiente sesión pueda retomar desde el disco sin rehacer nada (regla 7 del piloto automático).
 
@@ -120,9 +131,13 @@ gantt
   Ensayo y vídeo de respaldo                    :f6, 2026-10-30, 1d
 ```
 
+*Figura 3.1. Cronología real del proyecto en un diagrama de Gantt.*
+
 ## 3.4 Plan hasta la entrega
 
 No hay fecha oficial de entrega ni de defensa (D6). El autor fijó el objetivo de tener la memoria y una defensa preparada antes del 31/10/2026, con este orden de prioridad cuando el tiempo no alcance: **memoria > aplicación completa y simple > calidad (E2E, seguridad, accesibilidad) > defensa > lo demás** ([`AUTOPILOTO.md`](../../equipo/AUTOPILOTO.md), "Plan hasta el 31/10/2026").
+
+*Tabla 3.5. Plan hasta el 31/10/2026.*
 
 | Día | Objetivo |
 |-----|----------|
@@ -142,6 +157,8 @@ No hay fecha oficial de entrega ni de defensa (D6). El autor fijó el objetivo d
 
 El registro completo está en [`CarCare/01_plan/riesgos.md`](../../../CarCare/01_plan/riesgos.md). Los que más han condicionado el proyecto:
 
+*Tabla 3.6. Riesgos principales y mitigación aplicada.*
+
 | ID | Riesgo | Mitigación aplicada |
 |----|--------|---------------------|
 | R1 | No tener la normativa de Ilerna | Estructura provisional de la memoria y marcas "⚠️ Depende de Ilerna" |
@@ -159,4 +176,4 @@ El repositorio es un **monorepo Git** con dos ramas permanentes ([`CONTRIBUTING.
 - `develop`, para el trabajo diario: cada sesión termina con commits aquí;
 - `main`, la versión estable: solo cambia por *pull request* al cerrar un hito (`v0.1` primera versión mostrable, `v0.2` calidad, `v0.3` documentación, `v1.0` entrega) y con el visto bueno del autor.
 
-Los mensajes siguen *Conventional Commits* en español, con un commit por área tocada (`feat(backend): …`, `test(backend): …`, `docs(equipo): …`). A 24/10/2026, `develop` tiene 19 commits y el repositorio aún no tiene remoto: la publicación en GitHub como repositorio privado (D5) es la tarea 0 de la cola y depende de que el autor inicie sesión en GitHub. Los `.env`, `vendor/`, `node_modules/` y los archivos subidos por los usuarios están excluidos del control de versiones.
+Los mensajes siguen *Conventional Commits* en español, con un commit por área tocada (`feat(backend): …`, `test(backend): …`, `docs(equipo): …`). Desde el 24/10/2026 el repositorio está publicado en GitHub como repositorio **privado** (`albertomanana/carcare`, decisión D5, tarea 0 de la cola). A 26/10/2026, `develop` tiene 36 commits y `main` solo el commit inicial con el README y las normas de contribución, porque todavía no se ha cerrado ningún hito (capítulo 9, §9.2). Los `.env`, `vendor/`, `node_modules/` y los archivos subidos por los usuarios están excluidos del control de versiones.

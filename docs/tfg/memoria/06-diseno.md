@@ -1,6 +1,6 @@
 # 6. Diseño
 
-Este capítulo describe el diseño del sistema tal como está en el código confirmado del repositorio a 26/10/2026 (rama `develop`, commit `e530d3e`). Las cifras (rutas, clases, archivos) se refieren a ese commit: mientras se escribía, otro agente tenía en el árbol de trabajo cambios sin confirmar de las tareas 27 y 28, que se citan como "en implementación". Parte de la documentación de diseño escrita el 21/10/2026, antes de que existiera el código ([`docs/tfg/03`](../03-modelo-de-datos.md) a [`06`](../06-diagrama-clases.md)), y la corrige donde la implementación ha tomado otro camino. Las diferencias se resumen en el §6.9.
+Este capítulo describe el diseño del sistema tal como está en el código confirmado del repositorio a 26/10/2026 (rama `develop`). Los diagramas se dibujaron sobre el commit `e530d3e` y se revisaron después contra el commit `f1265b6` (26/10/2026, 13:50), que implementa en el backend las tareas 27, 28 y 29: origen de cada lectura de km, recuperación de la contraseña y derechos RGPD del cliente del taller. Las cifras (rutas, clases, archivos) son las de `f1265b6`. Parte de la documentación de diseño escrita el 21/10/2026, antes de que existiera el código ([`docs/tfg/03`](../03-modelo-de-datos.md) a [`06`](../06-diagrama-clases.md)), y la corrige donde la implementación ha tomado otro camino. Las diferencias se resumen en el §6.9.
 
 Los diagramas están en Mermaid y se han redibujado a partir de las migraciones (`backend/database/migrations/`), los modelos (`backend/app/Models/`), los servicios (`backend/app/Services/`), las rutas (`backend/routes/api.php`) y el enrutador de la SPA (`frontend/src/app/router.tsx`).
 
@@ -49,6 +49,8 @@ flowchart LR
   SVC --> DISK
 ```
 
+*Figura 6.1. Arquitectura general: SPA, API y base de datos.*
+
 **Por qué esta forma** ([ADR‑0001](../../arquitectura/ADR-0001-api-rest-y-spa.md)). El plan inicial planteaba dos opciones: API REST con una SPA separada, o Laravel con Inertia. Se eligió la primera por tres motivos. La interfaz 3D y los dos modos (particular y taller) hacen de la SPA un cliente pesado con estado propio. Un contrato escrito antes que el código permitió construir servidor y cliente en paralelo (capítulo 3). Y la frontera entre presentación, reglas de negocio y persistencia queda explícita, lo que facilita explicarla y probarla. El coste es más configuración inicial (Sanctum, CSRF y el proxy de Vite).
 
 **Mismo origen en desarrollo.** El navegador solo habla con Vite (`localhost:5173`), que reenvía `/api` y `/sanctum` a Laravel (`frontend/vite.config.ts`). Al ser el mismo origen, la cookie de sesión de Sanctum funciona sin CORS. En producción hace falta la misma condición (capítulo 9).
@@ -57,14 +59,16 @@ flowchart LR
 
 ### Capas y responsabilidades
 
+*Tabla 6.1. Capas del backend y sus responsabilidades.*
+
 | Capa | Responsabilidad | Dónde está |
 |------|-----------------|------------|
 | Middleware | Forzar respuestas JSON, sesión, verificación CSRF, autenticación | `bootstrap/app.php` (`statefulApi()`, `ForceJsonResponse`) |
-| Rutas | Mapear `/api/v1/...` a controladores; resolver el recurso de la URL y exigir una capacidad con `->can()` | `routes/api.php` (68 rutas) |
+| Rutas | Mapear `/api/v1/...` a controladores; resolver el recurso de la URL y exigir una capacidad con `->can()` | `routes/api.php` (72 rutas) |
 | *Policies* | Decidir si el usuario es miembro del espacio del recurso (si no, 404) y si su rol alcanza la capacidad pedida (si no, 403) | `app/Policies/` (9 *policies* sobre una clase base común) |
 | *Form Requests* | Validar y normalizar la entrada con mensajes en español | `app/Http/Requests/` |
-| Controladores | Recibir la petición validada, llamar al servicio y devolver el *Resource*. Sin reglas de negocio | `app/Http/Controllers/` (14 controladores) |
-| Servicios | Reglas de negocio y transacciones: kilometraje, gasto vinculado, recurrencia, numeración, elevadores, entrega de órdenes, analítica, actividad | `app/Services/` (17 clases) |
+| Controladores | Recibir la petición validada, llamar al servicio y devolver el *Resource*. Sin reglas de negocio | `app/Http/Controllers/` (15 controladores) |
+| Servicios | Reglas de negocio y transacciones: kilometraje, gasto vinculado, recurrencia, numeración, elevadores, entrega de órdenes, analítica, actividad | `app/Services/` (18 clases) |
 | Modelos | Relaciones, *casts* de fechas, dinero y enumerados, *scopes* | `app/Models/` (13 modelos) |
 | *Resources* | Serializar exactamente las formas de `frontend/src/api/types.ts` (dinero como texto, fechas ISO) | `app/Http/Resources/` |
 | Utilidades | Aritmética de dinero en céntimos, fechas, filas de líneas | `app/Support/` |
@@ -75,16 +79,17 @@ En el cliente, la división equivalente es: pantallas por funcionalidad (`fronte
 
 Las decisiones con impacto en la arquitectura o en los datos se documentan como ADR (*Architecture Decision Record*; Nygard, 2011) en `docs/arquitectura/`, con contexto, opciones, decisión y consecuencias. Las de producto están en `CarCare/03_decisiones/registro-decisiones.md` (D1‑D17).
 
+*Tabla 6.2. Decisiones de arquitectura (ADR).*
+
 | ADR | Decisión | Estado | Por qué | Dónde se ve en el código |
 |-----|----------|--------|---------|--------------------------|
 | [0001](../../arquitectura/ADR-0001-api-rest-y-spa.md) | API REST en Laravel 12 y SPA en React en un monorepo; Sanctum en modo SPA | Aceptada 21/10 (D2, provisional hasta conocer la guía de Ilerna, D1) | Frontera clara entre capas, contrato verificable, desarrollo en paralelo | `backend/`, `frontend/`, `vite.config.ts` |
 | [0002](../../arquitectura/ADR-0002-espacios-de-trabajo.md) | Espacios de trabajo `personal` y `workshop` con roles `owner`, `manager` y `mechanic`; las tablas hijas no guardan `user_id` | Aceptada 21/10 (D7) | Un mismo modelo para los dos modos; una sola fuente de verdad para la propiedad | `workspaces`, `workspace_user`, `WorkspaceScopedPolicy` |
 | [0003](../../arquitectura/ADR-0003-gasto-vinculado.md) | Una intervención con coste genera un gasto vinculado, solo en espacios personales | Aceptada 21/10 (D3) | Los totales salen de una sola tabla y no pueden contar dos veces | `MaintenanceService::syncLinkedExpense()`, `expenses.maintenance_record_id` único |
 | [0004](../../arquitectura/ADR-0004-vehiculo-3d-procedural.md) | Vehículo 3D generado por código por tipo de carrocería, con silueta SVG de respaldo | Aceptada 21/10 (D4, D8, D16) | Sin licencias ni marcas, sin descargas externas; degradación a 2D | `frontend/src/three/` |
-| [0005](../../arquitectura/ADR-0005-rgpd-cliente-taller.md) | Derechos RGPD del cliente del taller: exportar en JSON y anonimizar en lugar de borrar | Aceptada 24/10. **En implementación** | Cumple la petición del cliente sin destruir el historial técnico del taller | Contrato §3.10.1. [PENDIENTE: tarea 29 — migración, rutas y tests] |
-| [0006](../../arquitectura/ADR-0006-recuperar-contrasena.md) | Recuperar la contraseña con el *broker* de Laravel y el correo escrito en el registro local | Aceptada 24/10 (D17). **En implementación** | Mecanismo estándar y probado; sin servicio de correo ni coste | Contrato §3.1.1. [PENDIENTE: tarea 28 — rutas, notificación, tests y pantallas] |
-
-> [PENDIENTE: tarea 32 — ADR‑0007 de las solicitudes de reparación de un particular a un taller (E16). A 26/10/2026 no existe todavía en `docs/arquitectura/`.]
+| [0005](../../arquitectura/ADR-0005-rgpd-cliente-taller.md) | Derechos RGPD del cliente del taller: exportar en JSON y anonimizar en lugar de borrar | Aceptada 24/10. API implementada el 26/10 (`f1265b6`); pantalla en curso | Cumple la petición del cliente sin destruir el historial técnico del taller | Contrato §3.10.1; `CustomerService`, `customers.anonymized_at`, `CustomerPrivacyTest`. [PENDIENTE: tarea 29, paso 3 — pantalla] |
+| [0006](../../arquitectura/ADR-0006-recuperar-contrasena.md) | Recuperar la contraseña con el *broker* de Laravel y el correo escrito en el registro local | Aceptada 24/10 (D17). API implementada el 26/10 (`f1265b6`); pantallas en curso | Mecanismo estándar y probado; sin servicio de correo ni coste | Contrato §3.1.1; `PasswordResetService`, `ResetPasswordNotification`, `PasswordResetTest`. [PENDIENTE: tarea 28, paso 3 — dos pantallas] |
+| [0007](../../arquitectura/ADR-0007-solicitudes-a-talleres.md) | Solicitudes de reparación de un particular a un taller: directorio, presupuesto, conversión en orden y notificaciones en la aplicación (E16) | Aceptada 26/10, sin confirmar todavía en el repositorio | Responde a la petición del autor del 24/10 abriendo de forma acotada el aislamiento entre espacios de ADR‑0002 | Sin código. [PENDIENTE: tareas 32‑35 — contrato §3.13, backend y pantallas] |
 
 Las dos primeras decisiones condicionan todo lo demás: el modelo de datos (§6.4) gira alrededor del espacio de trabajo, y la autorización (§6.3) se resuelve siempre a través de él.
 
@@ -93,6 +98,8 @@ Las dos primeras decisiones condicionan todo lo demás: el modelo de datos (§6.
 Cada recurso pertenece a un **espacio de trabajo**, directamente (vehículos, clientes, órdenes, actividad) o a través de su vehículo (lecturas de km, intervenciones, gastos, recordatorios, documentos). Al registrarse, todo usuario recibe un espacio personal en el que es propietario; puede crear talleres o ser invitado a ellos con otro rol (ADR‑0002).
 
 Es un control de acceso basado en roles (RBAC; Sandhu et al., 1996) en el que cada rol se evalúa dentro de un espacio concreto: la misma persona puede ser propietaria de su garaje y mecánica en un taller. Los permisos se expresan como cuatro **capacidades acumulativas** sobre el espacio del recurso. La tabla de verdad está en un único sitio, el método `WorkspaceRole::allows()` (`backend/app/Enums/WorkspaceRole.php`):
+
+*Tabla 6.3. Capacidades por rol.*
 
 | Capacidad | `owner` | `manager` | `mechanic` | Operaciones que la exigen (según `routes/api.php`) |
 |-----------|:-------:|:---------:|:----------:|---------------------------------------------------|
@@ -122,8 +129,10 @@ flowchart TD
   H -->|"válido"| I["Controlador y servicio"]
 ```
 
+*Figura 6.2. Resolución de una petición: sesión, espacio del recurso y capacidad.*
+
 - **404 y no 403 ante un recurso ajeno.** Un 403 confirmaría que el identificador existe y pertenece a otro. `WorkspaceScopedPolicy::check()` devuelve `Response::denyAsNotFound()` cuando `User::roleIn()` es `null`. Este patrón es habitual en aplicaciones multiinquilino.
-- **La autorización precede a la validación.** El middleware `can:` se ejecuta antes de que Laravel resuelva el *Form Request* del controlador. Por eso una petición con un cuerpo inválido contra un recurso ajeno recibe 404 y no 422, que también delataría su existencia. El diseño del 21/10 dejaba esta cuestión abierta ([`docs/tfg/04`](../04-arquitectura.md), "Orden de validación y autorización"); `IsolationTest` la comprueba enviando cuerpos incompletos a las 58 rutas con recurso (capítulo 8).
+- **La autorización precede a la validación.** El middleware `can:` se ejecuta antes de que Laravel resuelva el *Form Request* del controlador. Por eso una petición con un cuerpo inválido contra un recurso ajeno recibe 404 y no 422, que también delataría su existencia. El diseño del 21/10 dejaba esta cuestión abierta ([`docs/tfg/04`](../04-arquitectura.md), "Orden de validación y autorización"); `IsolationTest` la comprueba enviando cuerpos incompletos a las 60 rutas con recurso (capítulo 8).
 - **Sin caché del rol.** `User::roleIn()` consulta `workspace_user` en cada petición, de modo que un cambio de rol o una expulsión se aplica en la siguiente petición.
 - **El cliente no decide.** La SPA tiene su propia tabla de capacidades (`frontend/src/lib/permissions.ts`) solo para ocultar controles que el usuario no puede usar; su comentario lo dice expresamente: "La autorización real la hace el servidor; esto solo decide qué mostrar".
 
@@ -131,7 +140,7 @@ flowchart TD
 
 ### Diagrama entidad‑relación
 
-El diagrama recoge las 15 tablas del dominio tal como las crean las migraciones `2026_10_21_000001…000003`. Los tipos son los de Laravel (`string` = `VARCHAR`, `bigint` = `BIGINT UNSIGNED` en las claves). No se dibujan las tablas de infraestructura (`sessions`, `password_reset_tokens`, `cache`, `jobs`…): `sessions` guarda las sesiones de Sanctum y `password_reset_tokens` la usará la recuperación de contraseña (ADR‑0006).
+El diagrama recoge las 15 tablas del dominio tal como las crean las migraciones `2026_10_21_000001…000003`. Los tipos son los de Laravel (`string` = `VARCHAR`, `bigint` = `BIGINT UNSIGNED` en las claves). No se dibujan las tablas de infraestructura (`sessions`, `password_reset_tokens`, `cache`, `jobs`…): `sessions` guarda las sesiones de Sanctum y `password_reset_tokens`, los *tokens* de recuperación de contraseña (ADR‑0006). Las migraciones posteriores no crean tablas: `2026_10_24_000001` añade índices para los listados, `2026_10_26_000001` corrige datos (convierte en manuales las lecturas de km huérfanas de recordatorios borrados) y `2026_10_26_000002` añade `customers.anonymized_at`.
 
 ```mermaid
 erDiagram
@@ -187,6 +196,7 @@ erDiagram
     string phone "30, nullable"
     string tax_id "20, nullable, NIF"
     text notes "nullable"
+    timestamp anonymized_at "nullable"
   }
   vehicles {
     bigint id PK
@@ -342,11 +352,15 @@ erDiagram
   }
 ```
 
+*Figura 6.3. Diagrama entidad-relación.*
+
 *Todas las tablas salvo `activities` tienen `created_at` y `updated_at`; se omiten en el diagrama para que se lea mejor. La lista completa de columnas y tipos, con sus longitudes, está en [`docs/tfg/03-modelo-de-datos.md`](../03-modelo-de-datos.md), §3.1, y coincide con las migraciones a 26/10/2026.*
 
-> [PENDIENTE: tarea 29 — la columna `customers.anonymized_at` (ADR‑0005) aún no tiene migración. `CustomerResource` ya la incluye en el JSON desde el 25/10 (commit `92ad333`), siempre con valor `null`, para cumplir la forma del contrato.]
+`customers.anonymized_at` (ADR‑0005) se añadió el 26/10 con la migración `2026_10_26_000002`. Un cliente anonimizado conserva su identificador y sus vínculos con vehículos y órdenes, pero ya no se puede editar (409) ni asignar a otro vehículo (422), como comprueba `CustomerPrivacyTest`.
 
 ### Cardinalidades y reglas de borrado
+
+*Tabla 6.4. Cardinalidades y reglas de borrado.*
 
 | Relación | Cardinalidad | Regla |
 |----------|--------------|-------|
@@ -426,6 +440,7 @@ classDiagram
     +string email
     +string phone
     +string tax_id
+    +datetime anonymized_at
     +vehicles() HasMany
     +workOrders() HasMany
   }
@@ -542,13 +557,15 @@ classDiagram
   User "0..1" -- "0..*" WorkOrder : asignada a
 ```
 
+*Figura 6.4. Diagrama de clases del modelo de dominio.*
+
 Valores que se calculan al consultar y no se guardan: el estado, los días y km restantes y el progreso de un recordatorio (`Reminder::evaluate()`), el estado de cada zona (`ZoneService`), la ocupación de los elevadores (`WorkOrderService::bays()`), el retraso de una orden (`WorkOrder::isLate()`), si un gasto está vinculado (`Expense::isLinked()`) y el nombre visible del vehículo (`Vehicle::displayName()`).
 
 **Lógica pequeña en los enumerados.** Algunas reglas estables viven junto al valor al que se refieren: qué categoría de gasto corresponde a cada tipo de intervención (`RecordType::expenseCategory()`), la zona por defecto de cada tipo de recordatorio (`ReminderKind::defaultZone()`), qué estados de orden son finales o liberan el elevador (`WorkOrderStatus::isFinal()` y `releasesBay()`), la gravedad con la que se ordena el estado de las zonas (`ReminderState::severity()`) y la tabla de permisos (`WorkspaceRole::allows()`). Los 18 enumerados comparten el *trait* `EnumHelpers::values()`, que usan las reglas de validación.
 
 ### Servicios, *policies* y utilidades
 
-Los 17 servicios de `backend/app/Services/` y sus dependencias, tomadas de sus constructores. Laravel las inyecta con su contenedor de servicios.
+Los 18 servicios de `backend/app/Services/` y sus dependencias, tomadas de sus constructores. Laravel las inyecta con su contenedor de servicios.
 
 ```mermaid
 classDiagram
@@ -611,6 +628,11 @@ classDiagram
     +register(data) User
     +delete(user) void
   }
+  class PasswordResetService {
+    <<service>>
+    +sendLink(email) void
+    +reset(credentials) void
+  }
   class ActivityLogger {
     <<service>>
     +log(workspaceId, action, type, id, summary) Activity
@@ -667,7 +689,11 @@ classDiagram
   WorkspaceScopedPolicy ..> WorkspaceRole : allows
 ```
 
+*Figura 6.5. Diagrama de clases de servicios, policies y utilidades.*
+
 Hay dos familias de servicios. Los de **escritura** (`MileageService`, `MaintenanceService`, `ExpenseService`, `ReminderService`, `WorkOrderService`, `VehicleService`, `WorkspaceService`, `AccountService`, `CustomerService`, `DocumentService`) abren transacciones y registran la actividad. Los de **consulta** (`SummaryService`, `JournalService`, `ReportService`, `ZoneService`, `DashboardService`, `AnalyticsService`) calculan resúmenes a partir de los datos sin modificarlos. Esta separación no la impone ningún patrón formal; surgió de que las vistas derivadas (resumen, diario, informe, panel, analítica) tienen reglas propias de cálculo y de "faltan datos" que no conviene mezclar con las de escritura.
+
+*Tabla 6.5. Servicios del backend y requisitos que implementan.*
 
 | Servicio | Responsabilidad | Requisitos |
 |----------|-----------------|------------|
@@ -678,6 +704,8 @@ Hay dos familias de servicios. Los de **escritura** (`MileageService`, `Maintena
 | `WorkOrderService` | Numeración sin huecos, elevadores, totales con IVA, cambios de estado y entrega | RF-62…RF-68 |
 | `WorkspaceService`, `AccountService` | Espacios, miembros y roles; registro y baja de la cuenta | RF-03, RF-09, RF-11…RF-15 |
 | `DocumentService` | Almacenamiento privado, nombre saneado, borrado del fichero | RF-53…RF-56 |
+| `CustomerService` | Clientes del taller; exportar en JSON y anonimizar sin perder el historial técnico | RF-61, RF-72, RF-73 |
+| `PasswordResetService` | Enlace de recuperación con el *broker* de Laravel, misma respuesta exista o no la cuenta y tiempo de respuesta igualado | RF-10 |
 | `SummaryService`, `JournalService`, `ReportService` | Resumen por periodo, coste por km, consumo, diario e informe | RF-36…RF-39, RF-58, RF-59 |
 | `ZoneService` | Estado de las 10 zonas según los recordatorios | RF-46 |
 | `DashboardService`, `AnalyticsService` | Panel de inicio, centro de control y analítica del espacio | RF-40, RF-57, RF-69 |
@@ -724,6 +752,8 @@ sequenceDiagram
   end
   Note over SPA,L: Si el token CSRF ha caducado (419), el cliente pide otra cookie y reintenta una sola vez
 ```
+
+*Figura 6.6. Secuencia del inicio de sesión con Sanctum en modo SPA.*
 
 La cookie de sesión es *HttpOnly* (JavaScript no puede leerla) y el token CSRF impide que otra web envíe peticiones en nombre del usuario. No se guarda ningún token en `localStorage`, lo que reduce el daño de un posible XSS. Regenerar la sesión al entrar evita la fijación de sesión, y el mensaje genérico no revela si el email existe.
 
@@ -778,6 +808,8 @@ sequenceDiagram
   end
 ```
 
+*Figura 6.7. Secuencia del registro de una intervención con coste (gasto vinculado).*
+
 - Intervención, líneas, lectura, gasto vinculado y actividad se confirman juntos: no puede quedar un gasto sin intervención ni una intervención con coste sin su gasto.
 - Si el km no cuadra, la SPA muestra el mensaje del servidor con una casilla de confirmación y repite la petición con `confirm_mileage_drop: true` (CU-03).
 - El mismo `syncLinkedExpense()` se llama al editar, archivar y restaurar: sin coste o archivada, el gasto se borra; restaurada, se recrea.
@@ -820,6 +852,8 @@ sequenceDiagram
   end
 ```
 
+*Figura 6.8. Secuencia de la entrega de una orden de trabajo.*
+
 El bloqueo se toma sobre la **fila del taller**, no sobre la de la orden, como suponía el diseño del 21/10. Así se serializan dentro de un taller todas las operaciones que tocan la numeración o los elevadores (crear, editar y cambiar de estado), y dos peticiones simultáneas no pueden asignar el mismo elevador ni obtener el mismo número. En MariaDB el bloqueo es real; SQLite, que usan las pruebas, lo ignora, por lo que no hay todavía una prueba de concurrencia con dos procesos (capítulo 8).
 
 ### 6.6.4 Ciclo de vida de una orden de trabajo
@@ -840,11 +874,15 @@ stateDiagram-v2
   cancelled --> [*]
 ```
 
+*Figura 6.9. Ciclo de vida de una orden de trabajo.*
+
 Entre los cinco estados abiertos el movimiento es libre en los dos sentidos (tablero kanban); el diagrama muestra el recorrido habitual. Pasar a `ready` fija `completed_at`; volver a un estado anterior lo borra. `ready` libera el elevador salvo que se indique otro; `delivered` y `cancelled` lo liberan siempre y son finales: cualquier cambio posterior responde 409.
 
-### 6.6.5 Recuperar la contraseña (diseño)
+### 6.6.5 Recuperar la contraseña
 
-> Diseño aprobado en el contrato (§3.1.1) y en ADR‑0006 el 24/10/2026. [PENDIENTE: tarea 28 — las rutas `auth/forgot-password` y `auth/reset-password` no están en el commit `e530d3e`. El 26/10 había en el árbol de trabajo, sin confirmar ni verificar, `PasswordResetController`, `PasswordResetService`, una notificación y `PasswordResetTest`. Revisar este diagrama contra el código cuando la tarea se cierre.]
+Requisito RF-10, ADR‑0006. Código: `PasswordResetController`, `PasswordResetService`, `ResetPasswordNotification`, `ForgotPasswordRequest` y `ResetPasswordRequest` (commit `f1265b6`, 26/10/2026). El lado del servidor se ha comprobado contra los 13 casos de `PasswordResetTest`.
+
+> [PENDIENTE: tarea 28, paso 3 — las pantallas `/recuperar` y `/restablecer` estaban en construcción el 26/10. Revisar los mensajes 1, 7 y 12 del diagrama (lo que hace la SPA) cuando se cierren.]
 
 ```mermaid
 sequenceDiagram
@@ -876,7 +914,41 @@ sequenceDiagram
   end
 ```
 
+*Figura 6.10. Secuencia de la recuperación de la contraseña.*
+
 La respuesta igual exista o no la cuenta evita la enumeración de emails; el límite de peticiones y la caducidad del token dificultan la fuerza bruta; y cerrar todas las sesiones expulsa a quien tuviera la contraseña antigua. El correo se escribe en el registro local por decisión del autor (D17): para un servidor de correo real solo cambia la configuración del *mailer*.
+
+### 6.6.6 Solicitud de reparación a un taller (diseño aprobado, sin implementar)
+
+> Diseño de [ADR‑0007](../../arquitectura/ADR-0007-solicitudes-a-talleres.md), aceptado el 26/10/2026 y todavía sin confirmar en el repositorio. **No hay código**: ni migraciones, ni rutas, ni pantallas. [PENDIENTE: tareas 32‑35 — contrato §3.13, backend con pruebas de aislamiento y pantallas. Cuando existan las migraciones, añadir sus tablas al diagrama entidad‑relación del §6.4.]
+
+La función E16 permite a un particular pedir una reparación a un taller de CarCare desde su espacio personal. Es la primera vía de datos entre dos espacios, así que ADR‑0007 la define como una **excepción acotada** a ADR‑0002: el taller solo ve una copia fija del coche y los datos que el particular envía, y el historial completo solo si marca la casilla "Compartir historial", desactivada por defecto. El ciclo de vida de una solicitud, según el punto 3 de la decisión, es este:
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: El particular envía la solicitud
+  pending --> accepted: El taller acepta sin presupuesto
+  pending --> quoted: El taller acepta con presupuesto
+  accepted --> quoted: El taller añade el presupuesto
+  quoted --> quoted: El taller envía una versión nueva
+  quoted --> accepted: El particular rechaza el presupuesto
+  quoted --> converted: El particular acepta el presupuesto vigente
+  pending --> rejected: El taller rechaza con motivo
+  accepted --> rejected: El taller rechaza con motivo
+  quoted --> rejected: El taller rechaza con motivo
+  pending --> cancelled: El particular cancela
+  accepted --> cancelled: El particular cancela
+  quoted --> cancelled: El particular cancela
+  converted --> [*]
+  rejected --> [*]
+  cancelled --> [*]
+```
+
+*Figura 6.11. Ciclo de vida de una solicitud de reparación (diseño de ADR‑0007).*
+
+Solo el propietario y el gerente del taller deciden (capacidad `manage`); el mecánico ve las solicitudes, pero no las responde. Al pasar a `converted`, una transacción reutiliza o crea el cliente y la copia del vehículo en el taller y abre una orden de trabajo con las líneas y el IVA del presupuesto. Los presupuestos son versiones inmutables, rotuladas "Presupuesto (no es una factura)" por la decisión D12. El diseño prevé cuatro tablas nuevas: `workshop_profiles` (ficha del taller en el directorio), `repair_requests` (con la copia fija del coche), `repair_quotes` (con las líneas en una columna JSON) y la tabla `notifications` estándar de Laravel para los avisos dentro de la aplicación.
+
+> [PENDIENTE: pregunta 5 del tablero a Alberto (D13‑C) — si la reparación entregada debe aparecer sola en el historial del garaje del particular. Si responde que sí, añadirlo aquí y en el trabajo futuro del capítulo 13.]
 
 ## 6.7 Diseño de la interfaz
 
@@ -930,6 +1002,10 @@ flowchart LR
   I --> AJ
 ```
 
+*Figura 6.12. Mapa de pantallas.*
+
+> [PENDIENTE: tareas 28 y 16 — el 26/10 se estaban añadiendo al enrutador las pantallas públicas `/recuperar` y `/restablecer` (recuperación de la contraseña), y la simplificación de la interfaz puede cambiar los nombres del menú. Regenerar el mapa desde `frontend/src/app/router.tsx` cuando se cierren.]
+
 El menú lateral (y la barra inferior en el móvil) cambia con el tipo de espacio activo (`frontend/src/components/layout/nav.ts`). En un espacio personal muestra Cabina, Garaje, Agenda y, con la capacidad `manage`, Analítica. En un taller muestra Centro de control, Órdenes, Clientes, Vehículos, Taller 3D, Agenda de flota, Equipo y, con `manage`, Analítica. El informe del vehículo y el resumen de la orden quedan fuera del marco de la aplicación para que se impriman limpios.
 
 ### Principios de diseño de la interfaz
@@ -944,6 +1020,8 @@ El menú lateral (y la barra inferior en el móvil) cambia con el tipo de espaci
 > [PENDIENTE: tarea 16, paso 2 — aplicar el plan por pantalla. Este apartado se completará con capturas de la interfaz final y la dirección visual elegida (tarea 18).]
 
 ### Dónde hay 3D y con qué alternativa
+
+*Tabla 6.6. Pantallas con 3D y su alternativa.*
 
 | Pantalla | Componente | En el código a 26/10 | Alternativa sin WebGL | Plan de UX (§5.7) |
 |----------|------------|----------------------|-----------------------|-------------------|
@@ -985,9 +1063,13 @@ flowchart TB
   BUILD --> THREE
 ```
 
+*Figura 6.13. Módulo 3D: interfaz pública y componentes.*
+
 Cada envoltorio público decide en tiempo de ejecución: si el navegador no puede crear un contexto WebGL (`useWebGLAvailable()`), muestra el respaldo 2D; si puede, carga la escena con `lazy()` y muestra la silueta mientras llega; y si la escena falla, un límite de errores (`ThreeBoundary`) vuelve al respaldo. Los perfiles laterales de cada carrocería (`car/profile.ts`) no dependen de three.js y los usan a la vez el modelo 3D y la silueta SVG, de modo que las dos representaciones tienen exactamente la misma forma. El capítulo 7 (§7.6) describe la generación y las medidas de rendimiento.
 
 ## 6.9 Cambios respecto al diseño del 21/10/2026
+
+*Tabla 6.7. Cambios respecto al diseño del 21/10/2026.*
 
 | Punto | Diseño del 21/10 (`docs/tfg/03…06`) | Código a 26/10 |
 |-------|--------------------------------------|----------------|
@@ -997,7 +1079,7 @@ Cada envoltorio público decide en tiempo de ejecución: si el navegador no pued
 | `DocumentService` | Incluía `stream()` para descargar | La descarga la hace `DocumentController::download()` con las cabeceras de seguridad; el servicio guarda y borra |
 | Bloqueo al entregar una orden | `SELECT work_orders FOR UPDATE` | `SELECT workspaces FOR UPDATE` sobre la fila del taller, en crear, editar y cambiar de estado. La comprobación de orden final (409) se hace antes de abrir la transacción |
 | Lectura de km al entregar | Pendiente de aclarar | No se crea una segunda lectura: ya existe la de `mileage_in` al crear la orden (`createFromWorkOrder()` lo documenta) |
-| Estado de las clases | Servicios y *policies* "pendientes de verificar" | Existen 17 servicios, 9 *policies* con su clase base, 14 controladores y 13 modelos; los diagramas de §6.5 se han redibujado desde el código |
+| Estado de las clases | Servicios y *policies* "pendientes de verificar" | Existen 18 servicios, 9 *policies* con su clase base, 15 controladores y 13 modelos (commit `f1265b6`); los diagramas de §6.5 se han redibujado desde el código |
 | Miniaturas | Imagen estática "render cacheado o silueta" | Hasta el 24/10 se pintaban con un renderizador WebGL compartido; desde el 25/10 son siluetas SVG sin three.js (commit `d8a31bb`) |
 | Índices | Los de las tres migraciones del 21/10 | Tres índices más el 24/10 (`2026_10_24_000001_add_listing_indexes.php`) |
 | Base de datos de los diagramas | "MySQL" | MariaDB 10.4 (XAMPP); las pruebas se han ejecutado también sobre ella (capítulo 8) |

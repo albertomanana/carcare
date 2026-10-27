@@ -6,17 +6,19 @@
 
 La tabla actualiza la del capítulo 1 (§1.3) con lo que se puede comprobar a 26/10/2026.
 
+*Tabla 13.1. Cumplimiento de los objetivos específicos a 26/10/2026.*
+
 | ID | Objetivo | Estado a 26/10/2026 | Evidencia |
 |----|----------|---------------------|-----------|
-| OE‑1 | API REST que cumple un contrato escrito antes que el código | **Cumplido** para las 68 rutas del commit `e530d3e` | `ContractShapeTest` compara cada respuesta con su tipo de `types.ts` (capítulo 8). Las rutas nuevas de las tareas 28 y 29 tendrán que pasar la misma prueba |
-| OE‑2 | Ningún usuario accede a datos de un espacio ajeno | **Cumplido en la API**; falta la auditoría independiente | `IsolationTest`: 404 en las 58 rutas con recurso y una guardia que falla si aparece una ruta sin su caso. [PENDIENTE: tarea 7] |
-| OE‑3 | Reglas críticas protegidas (dinero, gasto vinculado, kilometraje, numeración) | **Cumplido**, salvo la concurrencia | 462 pruebas en verde sobre SQLite (25/10) y sobre MariaDB (23/10). La numeración simultánea no tiene una prueba con dos procesos |
+| OE‑1 | API REST que cumple un contrato escrito antes que el código | **Cumplido** para las 72 rutas del commit `f1265b6` | `ContractShapeTest` compara cada respuesta con su tipo de `types.ts` (capítulo 8), incluidas las respuestas nuevas de las tareas 27, 28 y 29 (`MileageLog.source_id`, `Customer.anonymized_at`, `CustomerExport`) |
+| OE‑2 | Ningún usuario accede a datos de un espacio ajeno | **Cumplido en la API**; falta la auditoría independiente | `IsolationTest`: 404 en las 60 rutas con recurso y una guardia que falla si aparece una ruta sin su caso. [PENDIENTE: tarea 7] |
+| OE‑3 | Reglas críticas protegidas (dinero, gasto vinculado, kilometraje, numeración) | **Cumplido**, salvo la concurrencia | 511 pruebas y 7.864 aserciones en verde sobre SQLite (26/10); la batería anterior, de 462 pruebas, también pasó sobre MariaDB (23/10). La numeración simultánea no tiene una prueba con dos procesos |
 | OE‑4 | La SPA con los dos modos contra la API real | **Construido, sin verificar** | 71 de 90 historias *Must* y *Should* construidas el 23/10; desde entonces se han cerrado la analítica (tareas 17, 22 y 23) y "Mis órdenes" (25). [PENDIENTE: tarea 5 — recorrido completo con las 4 cuentas] |
 | OE‑5 | 3D generado por código, con alternativa 2D y carga diferida | **Parcial** | Las 9 carrocerías, la alternativa 2D y un lienzo por pantalla existen. La carga diferida no se cumple en el *build* de producción (§7.6.4). [PENDIENTE: tarea 20] |
 | OE‑6 | WCAG 2.2 AA | **Pendiente** | [PENDIENTE: tareas 6 y 8] |
 | OE‑7 | Verificación automática: E2E e integración continua | **Pendiente** | No existen `frontend/e2e/` ni `.github/workflows/`. [PENDIENTE: tareas 6 y 11] |
-| OE‑8 | Documentación para el mantenimiento y la defensa | **En curso** | Contrato, 6 ADR y este primer borrador completo de la memoria; manuales en esqueleto. [PENDIENTE: tareas 10 y 31] |
-| OE‑9 | Contraste con usuarios reales | **Pendiente** | Guion listo; ninguna sesión hecha. [PENDIENTE: tarea 30] |
+| OE‑8 | Documentación para el mantenimiento y la defensa | **En curso** | Contrato, 7 ADR y este primer borrador completo de la memoria, con los quince capítulos; manual de usuario en esqueleto y validación solo como plan. [PENDIENTE: tareas 10 y 31] |
+| OE‑9 | Contraste con usuarios reales | **Pendiente** | Guion y plan listos (capítulo 12); ninguna sesión hecha. [PENDIENTE: tarea 30] |
 
 **Valoración.** Los objetivos de **servidor** (OE‑1 a OE‑3) están cumplidos y probados. Los de **cliente** (OE‑4 a OE‑6) están construidos pero sin la verificación que exige la definición de terminado del proyecto (pruebas E2E, accesibilidad y tres anchos de pantalla). Los de **proceso** (OE‑7 a OE‑9) están pendientes. La diferencia refleja el orden en que se ha trabajado: primero el contrato y la API, que es donde un error cuesta más (fugas de datos, importes mal calculados), y después la interfaz.
 
@@ -41,6 +43,8 @@ La tabla actualiza la del capítulo 1 (§1.3) con lo que se puede comprobar a 26
 
 Lo que CarCare **no** hace o **no** se ha comprobado, para que no se interprete lo contrario:
 
+*Tabla 13.2. Limitaciones del sistema.*
+
 | Limitación | Motivo o estado |
 |------------|-----------------|
 | Sin pruebas extremo a extremo, auditoría de accesibilidad, auditoría de seguridad ni integración continua | Pendientes (tareas 6, 7, 8 y 11) |
@@ -58,7 +62,7 @@ Lo que CarCare **no** hace o **no** se ha comprobado, para que no se interprete 
 
 Ordenado por lo que más acerca el producto a su hipótesis principal (capítulo 2, §2.4: "un solo producto para los dos lados del mostrador"):
 
-1. **Solicitudes de reparación de un particular a un taller (E16).** Pedida por el autor el 24/10/2026 y en diseño (tareas 32‑35): directorio de talleres, solicitud desde el espacio personal, presupuesto y conversión en orden. Es el primer puente real entre los dos modos.
+1. **Solicitudes de reparación de un particular a un taller (E16).** Pedida por el autor el 24/10/2026; su diseño quedó fijado el 26/10 en ADR‑0007, pero no tiene código (tareas 32‑35): directorio de talleres, solicitud desde el espacio personal, presupuesto con versiones rotulado "no es una factura", conversión en orden y notificaciones en la aplicación. Es el primer puente real entre los dos modos, y abre de forma acotada el aislamiento entre espacios de ADR‑0002.
 2. **Enlace del cliente para seguir su orden** sin crear cuenta (idea I7, D13‑B) y **vincular el coche del taller con el garaje del particular** con su consentimiento, de modo que la intervención entregada aparezca en su historial (I8, D13‑C). Requiere un ADR de privacidad.
 3. **Avisos fuera de la aplicación**: correo para recordatorios y órdenes listas (I10), o un calendario ICS como alternativa barata (I11).
 4. **Un uso del 3D con utilidad práctica**: una hoja de recepción en la que el taller marca golpes y daños sobre el coche 3D al recibirlo (I13). Responde al riesgo R20 ("que el 3D no aporte valor real").

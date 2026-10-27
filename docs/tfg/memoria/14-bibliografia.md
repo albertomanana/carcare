@@ -25,6 +25,8 @@
 
 Versión usada en el proyecto entre paréntesis (capítulo 7, §7.1).
 
+*Tabla 14.1. Documentación técnica consultada.*
+
 | Tecnología | Documentación oficial | Temas consultados |
 |------------|-----------------------|-------------------|
 | Laravel (12.70) | https://laravel.com/docs/12.x | Sanctum en modo SPA, *policies* y autorización, *Form Requests* y validación, limitación de peticiones, API *Resources*, transacciones, recuperación de contraseña |
@@ -73,6 +75,8 @@ Todas consultadas el **21/10/2026** por el agente de producto. Los precios y val
 ## 14.5 Documentación interna del proyecto
 
 No es bibliografía externa, pero es la fuente de la mayoría de las afirmaciones de esta memoria:
+
+*Tabla 14.2. Documentación interna del proyecto.*
 
 | Documento | Ruta |
 |-----------|------|

@@ -4,19 +4,23 @@
 
 Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`](../../api/contrato-v1.md)), de los ADR y del backlog ([`CarCare/02_backlog/backlog-mvp.md`](../../../CarCare/02_backlog/backlog-mvp.md)). Esta versión actualiza la especificación del 21/10/2026 ([`docs/tfg/01-requisitos.md`](../01-requisitos.md)) contra el código del 24/10/2026.
 
+*Tabla 4.1. Columnas de las tablas de requisitos.*
+
 | Columna | Significado |
 |---------|-------------|
 | Modo | **P** particular · **T** taller · **P/T** ambos |
 | Prior. | MoSCoW de la historia del backlog: **M** *Must* · **S** *Should* · **C** *Could* |
 | Historia | Historia o historias del backlog que lo originan |
 | Prueba | Archivo de `backend/tests/Feature/` que lo verifica. "—" indica que no hay prueba automática todavía (normalmente, requisitos solo de cliente, pendientes de E2E) |
-| Estado | Según el mapa de huecos de producto del 23/10/2026, actualizado el 24/10. **Construido** significa que el flujo está en la aplicación contra la API real y el backend tiene pruebas; **no** que se haya verificado la definición de terminado completa (E2E, axe, 360/768/1280 px), que hoy no cumple ninguna historia |
+| Estado | Según el mapa de huecos de producto del 23/10/2026, actualizado el 26/10 con el commit `f1265b6` y la cola del equipo. **Construido** significa que el flujo está en la aplicación contra la API real y el backend tiene pruebas; **no** que se haya verificado la definición de terminado completa (E2E, axe, 360/768/1280 px), que hoy no cumple ninguna historia |
 
 **Permisos.** Cada operación exige una capacidad sobre el espacio de trabajo del recurso. Las capacidades son acumulativas (`view` ⊂ `operate` ⊂ `manage` ⊂ `own`) y la tabla completa está en el capítulo 6 (§6.3).
 
 ## 4.2 Requisitos funcionales
 
 ### Sistema y cuenta
+
+*Tabla 4.2. Requisitos funcionales: sistema y cuenta.*
 
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
@@ -29,9 +33,11 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 | RF-07 | Edición del perfil (nombre y email) | P/T | M | E1‑4 | `AuthTest` | Construido |
 | RF-08 | Cambio de contraseña indicando la actual | P/T | M | E1‑4 | `AuthTest` | Construido |
 | RF-09 | Baja de la cuenta con confirmación de la contraseña: borra el espacio personal, sus ficheros y los talleres de los que es único propietario; conserva los talleres con otro propietario | P/T | S | E1‑7 | `AuthTest` | Construido |
-| RF-10 | Recuperación de la contraseña por email: misma respuesta exista o no la cuenta, enlace de un solo uso que caduca a los 60 minutos, límite de peticiones; el correo se escribe en el registro local | P/T | S | E1‑6 | — | **Contrato aprobado el 24/10** (§3.1.1, ADR‑0006). [PENDIENTE: tarea 28 — backend con tests y dos pantallas] |
+| RF-10 | Recuperación de la contraseña por email: misma respuesta exista o no la cuenta, enlace de un solo uso que caduca a los 60 minutos, límite de peticiones; el correo se escribe en el registro local | P/T | S | E1‑6 | `PasswordResetTest` | **A medias**: API construida y probada el 26/10 (commit `f1265b6`, ADR‑0006). [PENDIENTE: tarea 28, paso 3 — dos pantallas, en curso el 26/10] |
 
 ### Espacios de trabajo y equipo
+
+*Tabla 4.3. Requisitos funcionales: espacios de trabajo y equipo.*
 
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
@@ -44,6 +50,8 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 
 ### Garaje y kilometraje
 
+*Tabla 4.4. Requisitos funcionales: garaje y kilometraje.*
+
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
 | RF-17 | Alta de vehículo con marca y modelo obligatorios y el resto opcional (apodo, versión, año, combustible, cambio, motor, carrocería, color, matrícula, VIN, compra, km). Si se indican km, se crea la primera lectura. Matrícula normalizada y única entre los vehículos no archivados del espacio; VIN de 17 caracteres único por espacio. En talleres, cliente del mismo espacio | P/T | M | E2‑1, E11‑4 | `VehicleTest`, `WorkOrderTest` | Construido |
@@ -53,11 +61,13 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 | RF-21 | Archivar y restaurar un vehículo conservando su historial | P/T | M | E2‑5 | `VehicleTest` | Construido |
 | RF-22 | Eliminar definitivamente un vehículo, solo si está archivado, con su historial y sus ficheros | P/T | C | E2‑7 | `VehicleTest` | Construido |
 | RF-23 | Lectura de kilometraje con fecha no futura y km entero entre 0 y 2.000.000. Si es menor que una lectura anterior o mayor que una posterior, 422 con el valor coherente; solo se acepta si se reenvía confirmada (`confirm_mileage_drop`) | P/T | M | E2‑6, E3‑7 | `MileageTest` | Construido |
-| RF-24 | Historial de lecturas con su origen (manual, alta, intervención, gasto, orden o recordatorio) y enlace al registro de origen | P/T | M | E7‑1 | `MileageTest` | **A medias**: el enlace al origen (`source_id`) se aprobó en el contrato el 24/10. [PENDIENTE: tarea 27 — backend y pantalla] |
+| RF-24 | Historial de lecturas con su origen (manual, alta, intervención, gasto, orden o recordatorio) y enlace al registro de origen | P/T | M | E7‑1 | `MileageTest`, `MileageSourceTest` | **A medias**: la API devuelve el origen de cada lectura (`source_id`) desde el 26/10 (commit `f1265b6`). [PENDIENTE: tarea 27, paso 3 — mostrarlo en la pestaña `diario`, en curso el 26/10] |
 | RF-25 | Borrado de lecturas manuales con recálculo del km actual; las demás se gestionan desde su origen (409) | P/T | M | E7‑1 | `MileageTest`, `RolesTest` | Construido |
 | RF-26 | Km actual derivado: la lectura más reciente por fecha (a igual fecha, la de más km). Cada dato con km crea o actualiza una sola lectura ligada a su origen | P/T | M | E3‑7 | `MileageTest`, `WorkOrderTest` | Construido |
 
 ### Intervenciones, gastos y analítica
+
+*Tabla 4.5. Requisitos funcionales: intervenciones, gastos y analítica.*
 
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
@@ -74,9 +84,11 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 | RF-37 | Coste por kilómetro solo con 2 o más lecturas separadas al menos 500 km y 30 días; si no, el motivo exacto | P | M | E4‑4 | `AnalyticsTest` | Construido |
 | RF-38 | Consumo medio por el método lleno‑a‑lleno (incluido kWh/100 km en eléctricos), o qué falta para calcularlo | P | M | E7‑3 | `AnalyticsTest` | Construido |
 | RF-39 | "Desde el último" cambio de aceite, revisión e ITV, en días y km | P/T | M | E5‑5 | `AnalyticsTest` | Construido |
-| RF-40 | Analítica del espacio (`manage`). Particular: gasto por mes, vehículo y categoría, solo desde la tabla de gastos. Taller: importe de las órdenes entregadas, ticket medio, días medios en el taller y reparto por cliente; nunca se rotula "facturación" (D12) | P/T | M (P) · S (T) | E15‑1, E15‑2, E15‑3 | `AnalyticsTest`, `RolesTest` | API construida. [PENDIENTE: tareas 17 y 23 — pantalla de Analítica en curso] |
+| RF-40 | Analítica del espacio (`manage`). Particular: gasto por mes, vehículo y categoría, solo desde la tabla de gastos. Taller: importe de las órdenes entregadas, ticket medio, días medios en el taller y reparto por cliente; nunca se rotula "facturación" (D12) | P/T | M (P) · S (T) | E15‑1, E15‑2, E15‑3 | `AnalyticsTest`, `RolesTest` | Construido: `AnalyticsPage` para los dos modos (tareas 17, 22 y 23, terminadas el 24/10) |
 
 ### Recordatorios y zonas
+
+*Tabla 4.6. Requisitos funcionales: recordatorios y zonas.*
 
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
@@ -89,6 +101,8 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 
 ### Experiencia 3D
 
+*Tabla 4.7. Requisitos funcionales: experiencia 3D.*
+
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
 | RF-47 | Vehículo en 3D generado por código según su carrocería (9 tipos) y teñido con su color, sin marcas; en modo inspección se orbita y se seleccionan zonas | P/T | M | E14‑2, E8‑6 | — | Construido. [PENDIENTE: tarea 6 — E2E] |
@@ -100,6 +114,8 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 
 ### Documentos, seguimiento y actividad
 
+*Tabla 4.8. Requisitos funcionales: documentos, seguimiento y actividad.*
+
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
 | RF-53 | Subida de documentos PDF, JPEG, PNG o WebP de hasta 10 MB, comprobando el tipo real del contenido, con título, tipo, intervención del mismo vehículo y caducidad opcionales | P/T | S | E9‑1 | `DocumentTest` | Construido |
@@ -109,9 +125,11 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 | RF-57 | Panel de inicio del particular con datos persistidos: vehículos, gasto, recordatorios, actividad y accesos rápidos; estados vacíos con guía | P | M | E5‑1…E5‑7 | `AnalyticsTest` | Construido; falta la guía de primeros pasos para un vehículo sin datos. [PENDIENTE: tarea 26] |
 | RF-58 | Diario del vehículo por días con lecturas, gastos, intervenciones, recordatorios completados y documentos, km recorridos y gasto del día; omite días sin eventos | P/T | M | E7‑4 | `AnalyticsTest` | Construido |
 | RF-59 | Informe del vehículo con su fecha de generación, imprimible o guardable en PDF desde el navegador | P | S | E10‑1, E10‑2 | `AnalyticsTest` | Construido |
-| RF-60 | Registro de actividad de cada escritura, con una frase en español y sin datos sensibles, consultable por espacio y por vehículo | P/T | S | E13‑7 | `WorkspaceMemberTest` | Construido en la API; la pantalla del equipo muestra solo las 10 últimas acciones. [PENDIENTE: tarea 25] |
+| RF-60 | Registro de actividad de cada escritura, con una frase en español y sin datos sensibles, consultable por espacio y por vehículo | P/T | S | E13‑7 | `WorkspaceMemberTest`, `ActivityAuthorTest` | Construido. Actividad completa del equipo desde el 24/10 (tarea 25). Desde el 26/10, en los espacios personales la frase no lleva el nombre de quien actúa (commit `f1265b6`) |
 
 ### Taller: clientes, órdenes y elevadores
+
+*Tabla 4.9. Requisitos funcionales: taller (clientes, órdenes y elevadores).*
 
 | ID | Requisito | Modo | Prior. | Historia | Prueba | Estado |
 |----|-----------|------|:------:|----------|--------|--------|
@@ -124,31 +142,35 @@ Los requisitos se derivan del contrato de la API v1 ([`docs/api/contrato-v1.md`]
 | RF-67 | Importes calculados en el servidor: subtotal = suma de líneas; IVA redondeado *half‑up* a céntimos; total = subtotal + IVA | T | M | E12‑3 | `WorkOrderTest` | Construido |
 | RF-68 | Edición de órdenes no finales; borrado solo de órdenes recibidas o canceladas | T | M | E12‑3 | `WorkOrderTest` | Construido |
 | RF-69 | Centro de control del taller con contadores, órdenes por estado, elevadores, prometidas para hoy, retrasadas, importe de lo entregado (oculto al mecánico), alertas de flota y actividad | T | M | E12‑6 | `WorkOrderTest`, `RolesTest` | Construido |
-| RF-70 | "Mis órdenes": el mecánico ve por defecto solo las órdenes que tiene asignadas | T | S | E12‑8 | — | **A medias.** [PENDIENTE: tarea 25 — en curso] |
-| RF-71 | Resumen imprimible de la orden rotulado "no es una factura"; el mecánico lo imprime sin precios | T | C | E12‑9 | — | **Pendiente.** D12 = A (24/10). [PENDIENTE: tarea 24] |
-| RF-72 | Exportar en JSON los datos de un cliente, sus vehículos y sus órdenes (`manage`) | T | S | E11‑6 | — | **Contrato aprobado el 24/10** (§3.10.1, ADR‑0005). [PENDIENTE: tarea 29 — backend con tests y pantalla] |
-| RF-73 | Anonimizar un cliente conservando el historial técnico de sus vehículos (`manage`) | T | S | E11‑6 | — | Como RF-72 |
-| RF-74 | Solicitudes de reparación de un particular a un taller, con presupuesto y conversión en orden | P/T | — | E16 | — | **En diseño** desde el 24/10. [PENDIENTE: tarea 32 — ADR‑0007, contrato e historias del arquitecto] |
+| RF-70 | "Mis órdenes": el mecánico ve por defecto solo las órdenes que tiene asignadas | T | S | E12‑8 | — | Construido el 24/10 (tarea 25). Sin prueba automática: es un filtro del cliente [PENDIENTE: tarea 6 — E2E] |
+| RF-71 | Resumen imprimible de la orden rotulado "no es una factura"; el mecánico lo imprime sin precios | T | C | E12‑9 | — | **A medias**: `OrderSummaryPage` existe desde el 25/10 con el rótulo "No es una factura" y sale de `GET /work-orders/{id}`, sin ruta nueva. D12 = A (24/10). [PENDIENTE: tarea 24 — cierre en curso el 26/10] |
+| RF-72 | Exportar en JSON los datos de un cliente, sus vehículos y sus órdenes (`manage`) | T | S | E11‑6 | `CustomerPrivacyTest` | **A medias**: API construida y probada el 26/10 (commit `f1265b6`, ADR‑0005). [PENDIENTE: tarea 29, paso 3 — pantalla, en curso el 26/10] |
+| RF-73 | Anonimizar un cliente conservando el historial técnico de sus vehículos (`manage`) | T | S | E11‑6 | `CustomerPrivacyTest` | Como RF-72 |
+| RF-74 | Solicitudes de reparación de un particular a un taller, con presupuesto y conversión en orden | P/T | — | E16 | — | **En diseño**: ADR‑0007 aceptado el 26/10, sin código. [PENDIENTE: tareas 32‑35 — contrato (§3.13), backend y pantallas] |
 
 ### Cobertura
 
+*Tabla 4.10. Cobertura de los requisitos funcionales por bloque.*
+
 | Bloque | RF | Construidos | A medias | Pendientes o en diseño |
 |--------|----|:-----------:|:--------:|:----------------------:|
-| Sistema y cuenta | 01‑10 | 9 | 0 | 1 (RF-10) |
+| Sistema y cuenta | 01‑10 | 9 | 1 (RF-10) | 0 |
 | Espacios y equipo | 11‑16 | 6 | 0 | 0 |
 | Garaje y km | 17‑26 | 9 | 1 (RF-24) | 0 |
-| Intervenciones, gastos y analítica | 27‑40 | 13 | 1 (RF-30) | 0 (RF-40: pantalla en curso) |
+| Intervenciones, gastos y analítica | 27‑40 | 13 | 1 (RF-30) | 0 |
 | Recordatorios y zonas | 41‑46 | 6 | 0 | 0 |
 | 3D | 47‑52 | 6 | 0 | 0 |
 | Documentos y seguimiento | 53‑60 | 8 | 0 | 0 |
-| Taller | 61‑74 | 9 | 1 (RF-70) | 4 (RF-71…74) |
-| **Total** | **74** | **66** | **3** | **5** |
+| Taller | 61‑74 | 10 | 3 (RF-71…73) | 1 (RF-74) |
+| **Total** | **74** | **67** | **6** | **1** |
 
-Los 66 "construidos" incluyen varios con detalles pendientes que figuran en su fila (RF-36, RF-40, RF-57, RF-60). Ninguno se considera terminado hasta superar las pruebas del capítulo 8.
+Los 67 "construidos" incluyen varios con detalles pendientes que figuran en su fila (por ejemplo, RF-36 y RF-57). "A medias" significa, salvo en RF-30, que la API está construida y probada y falta la pantalla. Ninguno se considera terminado hasta superar las pruebas del capítulo 8.
 
 ## 4.3 Requisitos no funcionales
 
-| ID | Categoría | Requisito | Cómo se verifica | Estado a 24/10/2026 |
+*Tabla 4.11. Requisitos no funcionales.*
+
+| ID | Categoría | Requisito | Cómo se verifica | Estado a 26/10/2026 |
 |----|-----------|-----------|------------------|---------------------|
 | RNF-01 | Seguridad · autenticación | Sanctum en modo SPA: cookie de sesión HttpOnly y cabecera `X-XSRF-TOKEN`, sin tokens en `localStorage`; contraseñas con *hash* del framework; regeneración de la sesión al entrar y salir; 5 intentos fallidos por minuto | `AuthTest` | Construido y probado |
 | RNF-02 | Seguridad · aislamiento | Todo recurso se resuelve hasta su espacio; un recurso ajeno responde **404**, nunca 403; una prueba de aislamiento por ruta con recurso | `IsolationTest` (215 casos, compara su lista con `route:list`) | Construido y probado. [PENDIENTE: tarea 7] |
@@ -157,19 +179,21 @@ Los 66 "construidos" incluyen varios con detalles pendientes que figuran en su f
 | RNF-05 | Seguridad · ficheros | Disco privado fuera de `public/`, nombre interno UUID, tipo MIME real, máximo 10 MB, descarga solo por controlador autorizado con `X-Content-Type-Options: nosniff` | `DocumentTest` | Construido y probado |
 | RNF-06 | Integridad de datos | Dinero en `DECIMAL` y como cadena con 2 decimales en JSON, aritmética en céntimos enteros; km entero ≥ 0 con control de retrocesos; transacciones en las operaciones compuestas; numeración sin huecos con bloqueo | `MaintenanceExpenseTest`, `WorkOrderTest`, `AnalyticsTest` | Construido y probado. La numeración concurrente no tiene prueba con dos procesos (informe del backend, §7) |
 | RNF-07 | Veracidad | Ninguna cifra sin fuente real: si falta un dato se dice qué falta y qué acción lo resuelve; zonas "según tus intervalos, no medido"; rayos X "Ilustrativo"; el taller no habla de "facturación" | `AnalyticsTest` (motivos); revisión de textos | API probada; textos de la interfaz en revisión (tareas 16 y 22) |
-| RNF-08 | Rendimiento · 3D | three.js en un *chunk* diferido; un único `<Canvas>` por pantalla; `frameloop="demand"` con la escena quieta; densidad de píxeles limitada a [1, 2]; miniaturas estáticas en listados; sin descargas externas | Análisis del *build*, red del navegador, medición de fotogramas | Construido. La auditoría de UX del 23/10 midió que three.js se descargaba en 17 de 26 pantallas y solo 5 mostraban un lienzo. [PENDIENTE: tareas 16 y 20 — limitar el 3D a la ficha y al taller y medir] |
-| RNF-09 | Rendimiento · API | Listados paginados (25 por defecto, máximo 100; 200 en el tablero); índices compuestos en las columnas de filtro y orden; sin consultas N+1 | `VehicleTest`, `WorkOrderTest` | Construido. [PENDIENTE: tarea 19 — informe de tiempos y número de consultas] |
+| RNF-08 | Rendimiento · 3D | three.js en un *chunk* diferido; un único `<Canvas>` por pantalla; `frameloop="demand"` con la escena quieta; densidad de píxeles limitada a [1, 2]; miniaturas estáticas en listados; sin descargas externas | Análisis del *build*, red del navegador, medición de fotogramas | **Parcial.** La auditoría de UX del 23/10 midió que three.js se descargaba en 17 de 26 pantallas y solo 5 mostraban un lienzo, y el *build* de producción todavía lo precarga en todas (capítulo 7, §7.6.4). [PENDIENTE: tareas 16 y 20 — limitar el 3D a la ficha y al taller y medir] |
+| RNF-09 | Rendimiento · API | Listados paginados (25 por defecto, máximo 100; 200 en el tablero); índices compuestos en las columnas de filtro y orden; sin consultas N+1 | `VehicleTest`, `WorkOrderTest` | Construido: índices y agregados en SQL (tarea 19, commits `adea7ef` y `5fbe44d`). [PENDIENTE: no hay pruebas que fijen el número de consultas ni una medición de tiempos con el escenario de integración (capítulo 8, §8.5)] |
 | RNF-10 | Accesibilidad | WCAG 2.2 AA: teclado completo, foco visible, contraste AA, tamaño mínimo de objetivo, estado nunca solo por color, `prefers-reduced-motion`, nombre accesible del lienzo 3D y su información también en HTML | axe (0 incidencias críticas o serias), recorrido por teclado, revisión manual | [PENDIENTE: tareas 6 y 8] |
 | RNF-11 | Responsive | Sin desplazamiento horizontal a 360, 768 y 1280 px; objetivos táctiles de 44 px en móvil | E2E en tres tamaños | [PENDIENTE: tareas 5 y 6] |
-| RNF-12 | Privacidad (RGPD) | Datos mínimos; baja de la cuenta con borrado en cascada; actividad sin datos sensibles; exportar y anonimizar al cliente del taller; secretos solo en variables de entorno | `AuthTest`, `WorkspaceMemberTest`; revisión de `seguridad` | Parcial: RF-72 y RF-73 pendientes (tarea 29). Política de privacidad pendiente antes de cualquier uso real |
+| RNF-12 | Privacidad (RGPD) | Datos mínimos; baja de la cuenta con borrado en cascada; actividad sin datos sensibles; exportar y anonimizar al cliente del taller; secretos solo en variables de entorno | `AuthTest`, `WorkspaceMemberTest`, `CustomerPrivacyTest`, `ActivityAuthorTest`; revisión de `seguridad` | Parcial: RF-72 y RF-73 construidos en la API el 26/10, falta su pantalla (tarea 29). Política de privacidad pendiente antes de cualquier uso real |
 | RNF-13 | Mantenibilidad | Contrato como fuente de verdad; capas separadas; módulo 3D tras una interfaz pública; decisiones como ADR; *lint* y comprobación de tipos; sin dependencias injustificadas | `npm run lint`, `npm run typecheck` | Construido |
-| RNF-14 | Pruebas | Pruebas automáticas de reglas críticas, aislamiento por ruta, forma JSON del contrato, E2E e integración continua | Capítulo 8 | Backend cumplido (462 pruebas); E2E y CI pendientes (tareas 6 y 11) |
+| RNF-14 | Pruebas | Pruebas automáticas de reglas críticas, aislamiento por ruta, forma JSON del contrato, E2E e integración continua | Capítulo 8 | Backend cumplido (511 pruebas el 26/10); E2E y CI pendientes (tareas 6 y 11) |
 | RNF-15 | Localización | Interfaz y mensajes en español; números, importes y fechas formateados en el cliente con `Intl` (`es-ES`), porque el PHP del entorno no tiene la extensión `intl` | `ValidationTest` (mensajes) | Construido |
 | RNF-16 | Compatibilidad | PHP 8.2, Laravel 12, MariaDB 10.4; pruebas en SQLite y MariaDB; navegadores con módulos ES; degradación a 2D sin WebGL | Ejecución de la batería en los dos motores | Construido. Soporte de versiones: D15 pendiente |
 | RNF-17 | Propiedad intelectual | Sin modelos 3D, logotipos ni formas de marcas; tipografías libres autoalojadas | Revisión del código 3D y de dependencias | Construido |
 | RNF-18 | Usabilidad | Ningún control decorativo; confirmación en acciones destructivas; errores junto al campo; estados de carga, vacío y error en cada pantalla | Revisión de UX | En revisión: el autor pidió simplificar la interfaz el 23/10 (tarea 16) |
 
 ## 4.4 Cambios respecto a la especificación del 21/10/2026
+
+*Tabla 4.12. Cambios respecto a la especificación del 21/10/2026.*
 
 | Cambio | Motivo |
 |--------|--------|

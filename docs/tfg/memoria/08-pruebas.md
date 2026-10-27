@@ -6,11 +6,13 @@
 
 Las pruebas se organizan por niveles. La tabla indica cuáles existen a 26/10/2026.
 
+*Tabla 8.1. Niveles de prueba y su estado.*
+
 | Nivel | Qué comprueba | Herramienta | Estado a 26/10/2026 |
 |-------|---------------|-------------|---------------------|
-| API (*feature*) | Cada endpoint por HTTP: camino feliz, validación (422), roles (403), conflictos (409), forma JSON del contrato y reglas de negocio | Pest 3 sobre SQLite en memoria | **Hecho:** 14 archivos, 462 casos |
+| API (*feature*) | Cada endpoint por HTTP: camino feliz, validación (422), roles (403), conflictos (409), forma JSON del contrato y reglas de negocio | Pest 3 sobre SQLite en memoria | **Hecho:** 18 archivos, 511 casos (26/10) |
 | Aislamiento | Un usuario ajeno recibe 404 en cada ruta con recurso; sin sesión, 401 | Pest, *datasets* de rutas | **Hecho:** dentro de `IsolationTest` |
-| Misma batería sobre MariaDB | Que el comportamiento no dependa de SQLite | Pest contra una base `carcare_test` | **Hecho una vez** (23/10) |
+| Misma batería sobre MariaDB | Que el comportamiento no dependa de SQLite | Pest contra una base `carcare_test` | **Hecho una vez** (23/10, con 462 casos) |
 | Unitarias del backend | Reglas puras sin HTTP | Pest | **No existen:** `tests/Unit` está vacío; todo se prueba a través de la API |
 | Cliente | Funciones de cálculo y formato, y que el módulo 3D ligero no importe three.js | Vitest 4 | **Hecho:** 5 archivos, 44 pruebas |
 | Estáticas | Tipos y estilo | `tsc`, oxlint | **Hecho** |
@@ -33,38 +35,50 @@ Las pruebas se organizan por niveles. La tabla indica cuáles existen a 26/10/20
 
 ### Ejecuciones documentadas
 
+*Tabla 8.2. Ejecuciones documentadas de la batería del backend.*
+
 | Fecha | Comando | Motor | Resultado | Duración | Fuente |
 |-------|---------|-------|-----------|----------|--------|
 | 23/10/2026 | `php artisan test` | SQLite en memoria | **462 pruebas superadas, 6.959 aserciones** | 32,75 s | [Informe del backend](../../equipo/informes/2026-10-23-backend-laravel-api-v1.md), §6 |
 | 23/10/2026 | `DB_CONNECTION=mysql … DB_DATABASE=carcare_test php artisan test` | MariaDB 10.4.32 | **462 pruebas superadas, 6.959 aserciones** | 134,23 s | ídem |
 | 25/10/2026 | `cd backend && php artisan test` | SQLite en memoria | **462 pruebas superadas, 6.934 aserciones** | — | [Informe de cierre](../../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
+| 26/10/2026 | `cd backend && php artisan test --parallel` (12 procesos) | SQLite en memoria | **511 pruebas superadas, 7.864 aserciones** | 87,49 s | [Informe de la memoria](../../equipo/informes/2026-10-24-documentador-tfg-memoria.md), evidencias; mismo resultado en el mensaje del commit `f1265b6` |
 
-Entre la segunda y la tercera ejecución cambió el *seeder* de demostración (commit `92ad333`, que también tocó `Contract.php`). El informe de cierre no explica la diferencia de 25 aserciones; el número de pruebas es el mismo. La batería no se ha vuelto a ejecutar sobre MariaDB desde el 23/10.
+Entre la segunda y la tercera ejecución cambió el *seeder* de demostración (commit `92ad333`, que también tocó `Contract.php`). El informe de cierre no explica la diferencia de 25 aserciones; el número de pruebas es el mismo. Entre la tercera y la cuarta, el commit `f1265b6` (tareas 27, 28 y 29) añadió cuatro archivos de pruebas y amplió otros tres (49 casos más en total; desglose abajo). La duración de la cuarta no es comparable con las anteriores: se ejecutó en paralelo y con otras instancias de la aplicación en marcha en el mismo equipo.
 
-> [PENDIENTE: tareas 27, 28 y 29 — el 26/10 otro agente estaba añadiendo pruebas (`MileageSourceTest`, `PasswordResetTest`). Actualizar esta tabla con la ejecución que cierre esas tareas, en SQLite y en MariaDB.]
+> [PENDIENTE: tarea 11 — la batería no se ha vuelto a ejecutar sobre MariaDB desde el 23/10, así que los 49 casos nuevos solo se han probado en SQLite. Repetirla en MariaDB (a mano o en la integración continua) antes de cerrar el capítulo.]
 
-### Desglose por archivo (ejecución del 23/10)
+### Desglose por archivo (26/10)
 
-Los 152 bloques `it()` o `test()` de los 14 archivos (contados con `grep` sobre el commit `e530d3e`) se expanden a 462 casos porque varios usan *datasets*: por ejemplo, la prueba de aislamiento se ejecuta una vez por ruta.
+Casos contados con `vendor/bin/pest --list-tests` el 26/10/2026 (511 en total). Varios archivos usan *datasets*, de modo que un mismo bloque `it()` se ejecuta varias veces: por ejemplo, la prueba de aislamiento se ejecuta una vez por ruta. La columna "23/10" da la cifra de la primera ejecución documentada, para ver qué ha crecido.
 
-| Archivo | Casos | Qué cubre |
-|---------|------:|-----------|
-| `IsolationTest` | 215 | 404 a un usuario de otro espacio en las 58 rutas con recurso; 401 sin sesión en todas las rutas no públicas; gerente y mecánico del taller no ven el garaje personal de la propietaria; rutas de taller con 404 en un espacio personal; un intruso no modifica nada; la lista de casos coincide con `route:list` |
-| `ContractShapeTest` | 67 | Forma JSON de cada interfaz de respuesta frente a `types.ts`; enumerados PHP frente a TypeScript |
-| `ValidationTest` | 35 | 422 representativos en español en cada formulario y filtro, sin trazas ni SQL |
-| `RolesTest` | 22 | El mecánico recibe 403 en gastos, analítica, archivar y borrar vehículos, borrar clientes y órdenes, ajustes y miembros; ve `revenue: null`; el gerente no borra el taller ni toca al propietario |
-| `ReminderTest` | 22 | Estado y progreso en los límites, recurrencia (incluido 31/01 + 1 mes = 28/02), completar y descartar |
-| `AnalyticsTest` | 19 | Resumen, coste por km con sus motivos de "faltan datos", consumo lleno a lleno (gasolina y kWh), diario, zonas, panel y analítica, sin doble conteo |
-| `MaintenanceExpenseTest` | 18 | Gasto vinculado: creación, actualización, archivo, restauración, 409 al editarlo desde gastos; orden del historial |
-| `WorkOrderTest` | 16 | Numeración `OT-AAAA-NNNN` sin huecos y por año, IVA, elevador ocupado (409), estados finales, entrega con intervención, km de entrada |
-| `VehicleTest` | 10 | Alta, matrícula y VIN únicos, archivado y borrado en cascada con sus ficheros |
-| `AuthTest` | 11 | Registro, inicio de sesión, límite de intentos, perfil, contraseña y baja de la cuenta |
-| `MileageTest` | 8 | Retroceso con 422 y confirmación, km actual derivado, borrado solo de lecturas manuales |
-| `WorkspaceMemberTest` | 8 | Miembros, roles, último propietario (409), ajustes del taller |
-| `DocumentTest` | 6 | Tipo real del fichero, tamaño, descarga con cabeceras seguras, filtros |
-| `DemoSeederTest` | 5 | Cuentas, volúmenes y coherencia de los datos demo; repetible; bloqueado en producción |
+*Tabla 8.3. Casos de prueba del backend por archivo.*
+
+| Archivo | Casos | 23/10 | Qué cubre |
+|---------|------:|------:|-----------|
+| `IsolationTest` | 226 | 215 | 404 a un usuario de otro espacio en las 60 rutas con recurso; 401 sin sesión en todas las rutas no públicas; gerente y mecánico del taller no ven el garaje personal de la propietaria; rutas de taller con 404 en un espacio personal; un intruso no modifica nada; la lista de casos coincide con `route:list` |
+| `ContractShapeTest` | 69 | 67 | Forma JSON de cada interfaz de respuesta frente a `types.ts`; enumerados PHP frente a TypeScript |
+| `ValidationTest` | 35 | 35 | 422 representativos en español en cada formulario y filtro, sin trazas ni SQL |
+| `RolesTest` | 24 | 22 | El mecánico recibe 403 en gastos, analítica, archivar y borrar vehículos, borrar clientes y órdenes, ajustes y miembros; ve `revenue: null`; el gerente no borra el taller ni toca al propietario |
+| `ReminderTest` | 22 | 22 | Estado y progreso en los límites, recurrencia (incluido 31/01 + 1 mes = 28/02), completar y descartar |
+| `AnalyticsTest` | 19 | 19 | Resumen, coste por km con sus motivos de "faltan datos", consumo lleno a lleno (gasolina y kWh), diario, zonas, panel y analítica, sin doble conteo |
+| `MaintenanceExpenseTest` | 18 | 18 | Gasto vinculado: creación, actualización, archivo, restauración, 409 al editarlo desde gastos; orden del historial |
+| `WorkOrderTest` | 16 | 16 | Numeración `OT-AAAA-NNNN` sin huecos y por año, IVA, elevador ocupado (409), estados finales, entrega con intervención, km de entrada |
+| `VehicleTest` | 10 | 10 | Alta, matrícula y VIN únicos, archivado y borrado en cascada con sus ficheros |
+| `AuthTest` | 11 | 11 | Registro, inicio de sesión, límite de intentos, perfil, contraseña y baja de la cuenta |
+| `MileageTest` | 8 | 8 | Retroceso con 422 y confirmación, km actual derivado, borrado solo de lecturas manuales |
+| `WorkspaceMemberTest` | 8 | 8 | Miembros, roles, último propietario (409), ajustes del taller |
+| `DocumentTest` | 6 | 6 | Tipo real del fichero, tamaño, descarga con cabeceras seguras, filtros |
+| `DemoSeederTest` | 5 | 5 | Cuentas, volúmenes y coherencia de los datos demo; repetible; bloqueado en producción |
+| `PasswordResetTest` | 13 | — | Recuperar la contraseña (RF-10): misma respuesta exista o no la cuenta, enlace de un solo uso que caduca, límite de peticiones (429) |
+| `CustomerPrivacyTest` | 10 | — | Exportar y anonimizar al cliente del taller (RF-72, RF-73): solo propietario y gerente, historial técnico conservado, `anonymized_at` |
+| `MileageSourceTest` | 8 | — | Origen de cada lectura de km (`source_id`, RF-24) en sus cinco orígenes; el mecánico no ve el origen de las lecturas que vienen de gastos; migración que convierte en manuales las lecturas huérfanas de recordatorios, sin borrarlas |
+| `ActivityAuthorTest` | 3 | — | En un espacio personal la frase de actividad no lleva el nombre del usuario; en un taller empieza por el nombre de quien actúa |
+| **Total** | **511** | **462** | |
 
 ### Casos críticos del plan y su prueba
+
+*Tabla 8.4. Casos críticos del plan de pruebas y su resultado.*
 
 | Caso del plan (`docs/tfg/07`, §7.6) | Resultado esperado | Dónde se comprueba | Estado |
 |-------------------------------------|--------------------|--------------------|--------|
@@ -85,6 +99,8 @@ Los 152 bloques `it()` o `test()` de los 14 archivos (contados con `grep` sobre 
 
 ## 8.4 Resultados del frontend
 
+*Tabla 8.5. Ejecuciones documentadas del frontend.*
+
 | Fecha | Comando | Resultado | Fuente |
 |-------|---------|-----------|--------|
 | 25/10/2026 | `npm run typecheck` | Correcto | [Informe de cierre](../../equipo/informes/2026-10-25-sesion-principal-cierre.md) |
@@ -93,6 +109,8 @@ Los 152 bloques `it()` o `test()` de los 14 archivos (contados con `grep` sobre 
 | 25/10/2026 | `npm run build` | Correcto, con el aviso de Vite de *chunks* de más de 500 kB | ídem |
 
 Reparto de las 44 pruebas (contadas con `grep` en cada archivo; la suma coincide con la ejecución):
+
+*Tabla 8.6. Pruebas del frontend por archivo.*
 
 | Archivo | Pruebas | Qué cubre |
 |---------|--------:|-----------|
@@ -110,6 +128,8 @@ No hay todavía pruebas de componentes con Testing Library (formularios, estados
 
 **3D.** El agente `experto-3d` midió el estado inicial el 23/10 con un navegador sin cabeza y WebGL por software (SwiftShader), que **no representa una tarjeta gráfica real** pero permite comparar antes y después en la misma máquina ([informe](../../equipo/informes/2026-10-23-experto-3d-rendimiento.md), §2):
 
+*Tabla 8.7. Medición inicial del 3D (23/10/2026).*
+
 | Pantalla | Tiempo hasta el primer dibujo 3D | Llamadas de dibujo · triángulos |
 |----------|---------------------------------:|---------------------------------|
 | Ficha (mapa de zonas) | 10.410 ms | 21 · 252.490 |
@@ -126,19 +146,24 @@ El mismo informe midió una fuga de memoria de unos 1,5 MB de JavaScript por cad
 
 ## 8.6 Trazabilidad
 
-De los 74 requisitos funcionales del capítulo 4, **63** tienen al menos un archivo de pruebas de la API que los cubre y **11** no tienen prueba automática:
+De los 74 requisitos funcionales del capítulo 4, **66** tienen al menos un archivo de pruebas de la API que los cubre y **8** no tienen prueba automática:
+
+*Tabla 8.8. Requisitos funcionales sin prueba automática.*
 
 | Sin prueba automática | Motivo |
 |-----------------------|--------|
 | RF-47, RF-48, RF-49, RF-50, RF-52 | Son del cliente (3D, alternativa 2D, portada): necesitan pruebas extremo a extremo [PENDIENTE: tarea 6] |
 | RF-70 | "Mis órdenes": construido el 24/10 y cubierto por `assignee.test.ts` en el cliente, pero sin prueba de extremo a extremo |
-| RF-71 | Resumen imprimible de la orden: la pantalla existe desde el 25/10, sin prueba [PENDIENTE: tarea 24] |
-| RF-10, RF-72, RF-73 | En implementación [PENDIENTE: tareas 28 y 29] |
-| RF-74 | En diseño [PENDIENTE: tarea 32] |
+| RF-71 | Resumen imprimible de la orden: la pantalla existe desde el 25/10 y usa una ruta ya probada (`GET /work-orders/{id}`), pero la pantalla no tiene prueba [PENDIENTE: tareas 6 y 24] |
+| RF-74 | En diseño (ADR‑0007), sin código [PENDIENTE: tareas 32‑35] |
+
+RF-10, RF-72 y RF-73 tenían prueba pendiente en el borrador del 24/10; desde el 26/10 los cubren `PasswordResetTest` y `CustomerPrivacyTest` en la API, aunque sus pantallas siguen en construcción.
 
 Los requisitos no funcionales de seguridad (RNF-01 a RNF-05) e integridad (RNF-06) tienen prueba en la API; los de accesibilidad, adaptación a pantallas y usabilidad (RNF-10, RNF-11, RNF-18) dependen de las tareas 6 y 8.
 
 ## 8.7 Pruebas pendientes
+
+*Tabla 8.9. Pruebas pendientes y criterio de aceptación.*
 
 | Prueba | Criterio de aceptación (fijado en el plan) | Tarea |
 |--------|---------------------------------------------|-------|
@@ -155,5 +180,6 @@ Los requisitos no funcionales de seguridad (RNF-01 a RNF-05) e integridad (RNF-0
 - **Sin pruebas de concurrencia.** El bloqueo de la fila del taller es real en MariaDB, pero no hay una prueba con dos procesos simultáneos (informe del backend, §7).
 - **El cierre de sesión** se prueba (la sesión queda cerrada), pero no que se regenere el token CSRF, aunque el código lo hace.
 - **Dos ejecuciones a la vez interfieren.** `Storage::fake('local')` usa una sola carpeta; lanzar la batería en SQLite y en MariaDB en paralelo dio un fallo espurio en cada una (informe del backend, §7). Por separado, las dos pasaron.
-- **La batería sobre MariaDB** solo se ha ejecutado una vez, a mano.
+- **La batería sobre MariaDB** solo se ha ejecutado una vez, a mano, el 23/10, con 462 casos.
+- **En paralelo sí funciona.** La ejecución del 26/10 con `--parallel` (12 procesos sobre SQLite) pasó entera, así que la interferencia anterior se limita a lanzar a la vez dos baterías independientes.
 - **Las pruebas del cliente son pocas** y cubren funciones de cálculo, no pantallas.

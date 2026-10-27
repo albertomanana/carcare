@@ -6,6 +6,8 @@ Este manual explica cómo instalar y arrancar CarCare en un equipo **Windows con
 
 ## 10.1 Requisitos
 
+*Tabla 10.1. Requisitos de software.*
+
 | Componente | Versión | Notas |
 |------------|---------|-------|
 | Sistema operativo | Windows 10 u 11 | Desarrollado en Windows 11 Pro. Los scripts `.bat` y `.cmd` son de Windows; en otros sistemas se usan los comandos del apartado 10.5 |
@@ -100,6 +102,8 @@ Se recomienda `scripts/servidor-api.cmd` en lugar de `php artisan serve`: activa
 
 **Comprobar que funciona:**
 
+*Tabla 10.2. Comprobaciones tras el arranque.*
+
 | Comprobación | Resultado esperado |
 |--------------|--------------------|
 | http://127.0.0.1:8000/api/v1/health | `{"status":"ok"}` |
@@ -109,6 +113,8 @@ Se recomienda `scripts/servidor-api.cmd` en lugar de `php artisan serve`: activa
 ## 10.5 Cuentas de demostración
 
 Todas con la contraseña `password` (`backend/database/seeders/DemoSeeder.php`). Los datos son ficticios.
+
+*Tabla 10.3. Cuentas de demostración.*
 
 | Cuenta | Perfil | Qué tiene |
 |--------|--------|-----------|
@@ -124,6 +130,7 @@ El `README.md` y `iniciar-carcare.bat` solo mencionan las dos primeras. [PENDIEN
 ```bash
 # Backend (desde backend/): SQLite en memoria, no toca la base carcare
 php artisan test
+php artisan test --parallel   # igual, repartido en varios procesos (511 pruebas el 26/10/2026)
 
 # Frontend (desde frontend/)
 npm run typecheck
@@ -138,9 +145,11 @@ Para ejecutar la batería del backend sobre MariaDB, sin tocar la base `carcare`
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=carcare_test DB_USERNAME=root DB_PASSWORD= php artisan test
 ```
 
-No conviene lanzar dos ejecuciones a la vez en la misma carpeta: comparten el disco falso de ficheros y se interfieren (capítulo 8, §8.8).
+No conviene lanzar dos baterías independientes a la vez en la misma carpeta (por ejemplo, SQLite y MariaDB): comparten el disco falso de ficheros y se interfieren. La opción `--parallel` de una sola batería sí funciona (capítulo 8, §8.8).
 
 ## 10.7 Problemas frecuentes
+
+*Tabla 10.4. Problemas frecuentes.*
 
 | Síntoma | Causa probable | Solución |
 |---------|----------------|----------|

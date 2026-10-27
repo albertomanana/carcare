@@ -4,6 +4,8 @@ Este capítulo recorre la implementación con fragmentos del código real. Cada 
 
 ## 7.1 Entorno y versiones
 
+*Tabla 7.1. Versiones del entorno de desarrollo.*
+
 | Pieza | Versión instalada | Fuente |
 |-------|-------------------|--------|
 | PHP | 8.2.12 (XAMPP) | `php --version` |
@@ -33,17 +35,17 @@ CarCare/
 │   ├── app/
 │   │   ├── Enums/           18 enumerados + EnumHelpers
 │   │   ├── Http/
-│   │   │   ├── Controllers/ 14 controladores delgados
+│   │   │   ├── Controllers/ 15 controladores delgados
 │   │   │   ├── Middleware/  ForceJsonResponse
 │   │   │   ├── Requests/    Form Requests por área
 │   │   │   └── Resources/   formas JSON del contrato
 │   │   ├── Models/          13 modelos Eloquent
 │   │   ├── Policies/        WorkspaceScopedPolicy + 9 policies
-│   │   ├── Services/        17 servicios
+│   │   ├── Services/        18 servicios
 │   │   └── Support/         Money, Dates, LineItems, Totals…
 │   ├── database/            migraciones, factorías y DemoSeeder
-│   ├── routes/api.php       68 rutas bajo /api/v1
-│   └── tests/Feature/       14 archivos de pruebas (Pest)
+│   ├── routes/api.php       72 rutas bajo /api/v1
+│   └── tests/Feature/       18 archivos de pruebas (Pest)
 ├── frontend/                SPA React 19
 │   └── src/
 │       ├── api/             cliente HTTP, claves de caché, hooks y types.ts (contrato)
@@ -57,17 +59,19 @@ CarCare/
 └── iniciar-carcare.bat      arranque local con un clic
 ```
 
-Tamaño por área, contado sobre el árbol de trabajo el 26/10/2026 con `find … | wc -l` (líneas físicas, incluidos comentarios y líneas en blanco):
+Tamaño por área, contado el 26/10/2026 con `find … | wc -l` (líneas físicas, incluidos comentarios y líneas en blanco). El backend se contó sobre el commit `f1265b6`; el frontend, por la mañana, sobre el árbol de trabajo:
+
+*Tabla 7.2. Tamaño del código por área.*
 
 | Área | Archivos | Líneas |
 |------|---------:|-------:|
-| `backend/app` | 136 | 7.580 |
-| `backend/database` | 11 | 2.106 |
-| `backend/tests` | 19 | 4.116 |
+| `backend/app` | 137 | 7.861 |
+| `backend/database` | 13 | 2.133 |
+| `backend/tests` | 21 | 4.545 |
 | `frontend/src` sin el 3D | 160 | 21.967 |
 | `frontend/src/three` | 36 | 7.298 |
 
-Las cifras del backend incluyen cambios sin confirmar de las tareas 27 y 28 que otro agente tenía en curso ese día; son orientativas.
+Las cifras del frontend son orientativas: ese día dos agentes de `frontend-react` estaban cambiando pantallas (tareas 16, 24, 26, 27, 28 y 29).
 
 ## 7.3 Autorización por espacio y rol
 
@@ -122,7 +126,7 @@ it('los datasets cubren todas las rutas de route:list --path=api', function () {
 });
 ```
 
-La misma prueba recorre todas las rutas y exige `auth:sanctum` en las no públicas y un middleware `can:` en las que reciben un recurso. Después, un usuario intruso, con sus propios espacios, llama a cada una de las 58 rutas con recurso con un cuerpo incompleto y debe recibir exactamente `{"message": "Recurso no encontrado."}`. Si alguien añade una ruta sin su caso, o sin `can:`, la batería falla. El capítulo 8 da los resultados.
+La misma prueba recorre todas las rutas y exige `auth:sanctum` en las no públicas y un middleware `can:` en las que reciben un recurso. Después, un usuario intruso, con sus propios espacios, llama a cada una de las 60 rutas con recurso con un cuerpo incompleto y debe recibir exactamente `{"message": "Recurso no encontrado."}`. Si alguien añade una ruta sin su caso, o sin `can:`, la batería falla. El capítulo 8 da los resultados.
 
 **En el cliente**, `frontend/src/lib/permissions.ts` replica la tabla de capacidades solo para no mostrar botones que el usuario no puede usar (regla de oro 5). Si la SPA se equivocara, el servidor respondería 403 o 404 igualmente.
 
@@ -313,9 +317,12 @@ El tipo se detecta por el contenido del fichero, no por la extensión ni por lo 
 
 ### 7.4.7 Registro de actividad
 
-`ActivityLogger` guarda, para cada escritura, una frase en español lista para mostrar y unos metadatos con identificadores y valores de negocio, nunca secretos ni datos personales sensibles. Hoy la frase incluye siempre el nombre de quien actúa ("Lucía Demo registró 54.000 km en Kia Sportage").
+`ActivityLogger` guarda, para cada escritura, una frase en español lista para mostrar y unos metadatos con identificadores y valores de negocio, nunca secretos ni datos personales sensibles. La forma de la frase depende del tipo de espacio (contrato §3.12, hallazgo M5 del informe de UX), y la decide `App\Support\ActivityPhrase` desde el 26/10 (commit `f1265b6`):
 
-> [PENDIENTE: petición 9 del tablero — el contrato (§3.12) ya dice que en los espacios personales la frase va en segunda persona y sin nombre ("Anotaste 54.000 km…"), pero `ActivityLogger` aún no distingue el tipo de espacio.]
+- en un **taller**, empieza por el nombre de quien actúa, porque hay varias personas: "Ana registró 54.000 km en Kia Sportage";
+- en un **espacio personal**, va en segunda persona y sin nombre, porque solo hay una: "Anotaste 54.000 km en Kia Sportage".
+
+`ActivityAuthorTest` comprueba las dos formas. Al exportar o anonimizar a un cliente del taller, la actividad tampoco conserva su nombre (`CustomerPrivacyTest`).
 
 ## 7.5 La aplicación de página única
 
@@ -461,11 +468,13 @@ Sin embargo, **en el *build* de producción three.js todavía no llega de forma 
 
 ## 7.8 Trabajo en construcción a 26/10/2026
 
+*Tabla 7.3. Trabajo en construcción a 26/10/2026.*
+
 | Tarea | Qué es | Estado verificable |
 |-------|--------|-------------------|
-| 27 | Cada lectura de km enlaza con su origen (RF-24) | Contrato aprobado el 24/10 (§3.4.1). `source_id` ya sale en el JSON desde el 25/10. El ocultarlo al mecánico en las lecturas de gastos, la limpieza de lecturas huérfanas (migración `2026_10_26_000001`) y `MileageSourceTest` estaban en el árbol de trabajo sin confirmar. [PENDIENTE: tarea 27 — backend y pantalla `JournalTab`] |
-| 28 | Recuperar la contraseña (RF-10, ADR‑0006) | Diseño en el §6.6.5. Controlador, servicio, notificación y pruebas en el árbol de trabajo sin confirmar. [PENDIENTE: tarea 28 — backend con pruebas y dos pantallas] |
-| 29 | Exportar y anonimizar al cliente del taller (RF-72, RF-73, ADR‑0005) | Contrato aprobado; `anonymized_at` ya en el JSON (siempre `null`). Sin migración ni rutas. [PENDIENTE: tarea 29] |
-| 24 | Resumen imprimible de la orden, "no es una factura" (RF-71) | `frontend/src/features/workshop/OrderSummaryPage.tsx` existe desde el 25/10 (commit `d8a31bb`) con el texto "No es una factura", pero la tarea sigue pendiente en la cola y no hay informe que lo verifique. [PENDIENTE: tarea 24 — revisión y prueba] |
+| 27 | Cada lectura de km enlaza con su origen (RF-24) | **Backend terminado** el 26/10 (commit `f1265b6`): `source_id` en el JSON, oculto al mecánico en las lecturas de gastos, y migración `2026_10_26_000001` que convierte en manuales las lecturas huérfanas sin borrarlas. `MileageSourceTest`, 8 casos. [PENDIENTE: tarea 27, paso 3 — pestaña `diario`, en curso] |
+| 28 | Recuperar la contraseña (RF-10, ADR‑0006) | **Backend terminado** el 26/10 (commit `f1265b6`, §6.6.5): dos rutas con límite de 5 peticiones por minuto, enlace de un solo uso que caduca a los 60 minutos y correo en el registro. `PasswordResetTest`, 13 casos. [PENDIENTE: tarea 28, paso 3 — pantallas `/recuperar` y `/restablecer`, en curso] |
+| 29 | Exportar y anonimizar al cliente del taller (RF-72, RF-73, ADR‑0005) | **Backend terminado** el 26/10 (commit `f1265b6`): rutas `export` y `anonymize` con la capacidad `manage`, migración de `anonymized_at` y nombre del cliente borrado de la actividad. `CustomerPrivacyTest`, 10 casos. [PENDIENTE: tarea 29, paso 3 — `CustomerDetailPage`, en curso] |
+| 24 | Resumen imprimible de la orden, "no es una factura" (RF-71) | `frontend/src/features/workshop/OrderSummaryPage.tsx` existe desde el 25/10 (commit `d8a31bb`) con el texto "No es una factura", y sale de `GET /work-orders/{id}`, sin ruta nueva. El 26/10 `frontend-react` (taller) la estaba cerrando según el criterio del mapa de huecos; todavía no hay informe que lo verifique. [PENDIENTE: tarea 24 — cierre y prueba] |
 | 16 | Simplificación de la interfaz | Plan aprobado (R1‑R14). Aplicado en parte (miniaturas SVG, contraste de bordes, tabla accesible de gráficos). [PENDIENTE: tarea 16, paso 2] |
-| 32‑35 | Solicitudes de reparación de un particular a un taller (E16, RF-74) | En diseño por el arquitecto. [PENDIENTE: tarea 32 — ADR‑0007, contrato e historias] |
+| 32‑35 | Solicitudes de reparación de un particular a un taller (E16, RF-74) | ADR‑0007 aceptado el 26/10 (directorio de talleres, solicitud con vehículo y km declarados, estados, presupuesto con versiones "no es una factura", conversión en orden y notificaciones en la aplicación), todavía sin confirmar en el repositorio. Sin código. [PENDIENTE: tareas 32‑35 — contrato §3.13, backend y pantallas] |

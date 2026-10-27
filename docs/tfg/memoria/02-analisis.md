@@ -20,6 +20,8 @@ Para un taller independiente pequeño (entre 1 y 12 elevadores, con dueño, enca
 
 ## 2.2 Usuarios y roles
 
+*Tabla 2.1. Perfiles de usuario y su rol en CarCare.*
+
 | Perfil | Necesidad principal | Rol en CarCare |
 |--------|---------------------|----------------|
 | Particular con uno o varios coches, sobre todo usados | Registrar en segundos km, repostajes y gastos; saber qué le toca y cuánto le cuesta el coche | Propietario (`owner`) de su espacio `personal` |
@@ -32,6 +34,8 @@ Una misma persona puede ser particular en su espacio personal y mecánico en un 
 ### Hipótesis de producto (no son hechos)
 
 La planificación las formula para validarlas con usuarios (`CarCare/01_plan/plan-general.md`, §2):
+
+*Tabla 2.2. Hipótesis de producto pendientes de validar.*
 
 | ID | Hipótesis |
 |----|-----------|
@@ -56,6 +60,8 @@ Tiene tres límites que conviene declarar:
 
 ### Aplicaciones para particulares
 
+*Tabla 2.3. Aplicaciones para particulares.*
+
 | Aplicación | Plataformas | Precio publicado (21/10/2026) | Puntos fuertes según su fuente | Lo que no aparece en la fuente |
 |------------|-------------|-------------------------------|-------------------------------|--------------------------------|
 | **Drivvo** | Android, iOS y web | Gratis (2 vehículos) · Individual 24,90 $/año · PRO 49,90 $/año · Fleet 42 $/vehículo/año | Repostajes y consumo, gastos, recordatorios por fecha o km, coste por día y por km; transferencia del historial entre comprador y vendedor; 4,6/5 con 345 valoraciones en la App Store de España | Gestión de talleres; visualización 3D |
@@ -65,6 +71,8 @@ Tiene tres límites que conviene declarar:
 | **miDGT** (oficial) | iOS, Android | Gratis | Datos oficiales del vehículo, última ITV con km anotados, aseguradora; avisa de la caducidad de la ITV y del seguro | No registra gastos, repostajes ni historial de taller |
 
 ### Software de gestión de talleres
+
+*Tabla 2.4. Software de gestión de talleres.*
 
 | Producto | País | Precio publicado (21/10/2026) | Puntos fuertes según su fuente |
 |----------|------|-------------------------------|-------------------------------|
@@ -102,6 +110,8 @@ El Real Decreto‑ley 15/2025 (BOE‑A‑2025‑24446, BOE n.º 290 de 03/12/202
 - La siguiente fase debe empezar por unir los dos lados. Esa línea ha empezado el 24/10/2026 con la función de solicitudes de reparación de un particular a un taller (capítulo 13).
 
 ## 2.5 Viabilidad técnica
+
+*Tabla 2.5. Viabilidad técnica.*
 
 | Aspecto | Valoración | Fuente |
 |---------|------------|--------|

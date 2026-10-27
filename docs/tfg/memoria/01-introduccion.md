@@ -31,18 +31,20 @@ Diseñar, construir, probar y documentar una aplicación web completa que permit
 
 ### Objetivos específicos
 
-Cada objetivo tiene un criterio verificable. La columna *Estado* indica la situación a 24/10/2026 y la evidencia; lo que no se ha comprobado figura como pendiente.
+Cada objetivo tiene un criterio verificable. La columna *Estado* indica la situación a 26/10/2026 y la evidencia; lo que no se ha comprobado figura como pendiente.
 
-| ID | Objetivo específico | Criterio de cumplimiento | Estado a 24/10/2026 |
+*Tabla 1.1. Objetivos específicos, criterio de cumplimiento y estado.*
+
+| ID | Objetivo específico | Criterio de cumplimiento | Estado a 26/10/2026 |
 |----|---------------------|--------------------------|---------------------|
-| OE‑1 | Implementar una API REST versionada que cumpla un contrato escrito antes que el código | Todas las rutas del contrato v1 existen bajo `/api/v1` y cada forma JSON coincide clave a clave con `frontend/src/api/types.ts` | **Cumplido.** 68 rutas (`php artisan route:list --path=api`, ejecutado el 24/10). La prueba `ContractShapeTest` compara cada respuesta con su tipo (informe del backend del 23/10) |
-| OE‑2 | Garantizar que ningún usuario accede a datos de un espacio al que no pertenece | Cada ruta con recurso responde 404 a un usuario ajeno; una prueba falla si aparece una ruta sin su caso de aislamiento | **Cumplido en la API.** `IsolationTest` con 215 casos (informe del 23/10). [PENDIENTE: tarea 7 — auditoría de seguridad independiente] |
-| OE‑3 | Proteger las reglas de negocio críticas: dinero exacto, gasto sin doble conteo, kilometraje coherente y numeración de órdenes sin huecos | Cada regla tiene pruebas automáticas que pasan sobre SQLite y sobre MariaDB | **Cumplido.** 462 pruebas y 6.959 aserciones en verde en los dos motores (informe del 23/10) |
-| OE‑4 | Construir la aplicación de página única con los dos modos | Las historias *Must* del núcleo defendible del backlog funcionan contra la API real | **Construido, sin verificar.** 71 de 90 historias *Must* y *Should* construidas a 23/10 (mapa de huecos de producto). [PENDIENTE: tarea 5 — recorrido completo con las 4 cuentas demo] |
-| OE‑5 | Representar el vehículo y el taller en 3D generados por código, con alternativa 2D y carga diferida | 9 carrocerías procedurales; three.js fuera del paquete inicial; un único lienzo WebGL por pantalla; respaldo SVG sin WebGL | **Construido.** [PENDIENTE: tarea 20 — medición de carga y fotogramas antes y después de optimizar] |
+| OE‑1 | Implementar una API REST versionada que cumpla un contrato escrito antes que el código | Todas las rutas del contrato v1 existen bajo `/api/v1` y cada forma JSON coincide clave a clave con `frontend/src/api/types.ts` | **Cumplido.** 72 rutas (`php artisan route:list --path=api`, ejecutado el 26/10; índice en el anexo A). La prueba `ContractShapeTest` compara cada respuesta con su tipo (capítulo 8) |
+| OE‑2 | Garantizar que ningún usuario accede a datos de un espacio al que no pertenece | Cada ruta con recurso responde 404 a un usuario ajeno; una prueba falla si aparece una ruta sin su caso de aislamiento | **Cumplido en la API.** `IsolationTest` con 226 casos sobre las 60 rutas con recurso (26/10). [PENDIENTE: tarea 7 — auditoría de seguridad independiente] |
+| OE‑3 | Proteger las reglas de negocio críticas: dinero exacto, gasto sin doble conteo, kilometraje coherente y numeración de órdenes sin huecos | Cada regla tiene pruebas automáticas que pasan sobre SQLite y sobre MariaDB | **Cumplido.** 511 pruebas y 7.864 aserciones en verde sobre SQLite (26/10). Sobre MariaDB pasó la batería anterior, de 462 pruebas (23/10). [PENDIENTE: tarea 11 — repetir sobre MariaDB] |
+| OE‑4 | Construir la aplicación de página única con los dos modos | Las historias *Must* del núcleo defendible del backlog funcionan contra la API real | **Construido, sin verificar.** 71 de 90 historias *Must* y *Should* construidas a 23/10 (mapa de huecos de producto); desde entonces se han añadido la analítica y "Mis órdenes" (capítulo 7, §7.8). [PENDIENTE: tarea 5 — recorrido completo con las 4 cuentas demo] |
+| OE‑5 | Representar el vehículo y el taller en 3D generados por código, con alternativa 2D y carga diferida | 9 carrocerías procedurales; three.js fuera del paquete inicial; un único lienzo WebGL por pantalla; respaldo SVG sin WebGL | **Parcial.** Las carrocerías, la alternativa 2D y un lienzo por pantalla existen, pero el *build* de producción todavía precarga three.js en todas las pantallas (capítulo 7, §7.6.4). [PENDIENTE: tarea 20 — corregirlo y medir carga y fotogramas] |
 | OE‑6 | Cumplir WCAG 2.2 nivel AA en todas las pantallas | 0 incidencias críticas o serias de axe; uso completo por teclado; sin desbordes a 360, 768 y 1280 px | **Pendiente.** [PENDIENTE: tareas 6 y 8 — auditoría axe y revisión manual] |
 | OE‑7 | Automatizar la verificación del sistema | Pruebas extremo a extremo de los recorridos principales e integración continua en cada envío al repositorio | **Pendiente.** [PENDIENTE: tareas 6 y 11 — E2E con Playwright y CI] |
-| OE‑8 | Documentar el sistema para su mantenimiento y su defensa | Contrato de API, decisiones de arquitectura, diagramas regenerables, memoria y manuales | **En curso.** Contrato y 6 ADR existen; este borrador; manuales en la tarea 10 |
+| OE‑8 | Documentar el sistema para su mantenimiento y su defensa | Contrato de API, decisiones de arquitectura, diagramas regenerables, memoria y manuales | **En curso.** Contrato y 7 ADR existen; este borrador; manual de usuario en la tarea 10 |
 | OE‑9 | Contrastar el producto con usuarios reales | Sesiones con 3‑5 particulares y 2‑3 talleres según un guion con umbrales fijados antes de las pruebas | **Pendiente.** El guion existe (`CarCare/06_investigacion/guion-prueba-usuarios.md`). [PENDIENTE: tarea 30 — sesiones con usuarios; depende de Alberto] |
 
 ## 1.4 Alcance
@@ -55,6 +57,8 @@ Cada objetivo tiene un criterio verificable. La columna *Estado* indica la situa
 - **3D:** coche procedural por carrocería y color, vista de rayos X rotulada como ilustración, taller en 3D, portada y miniaturas estáticas, con silueta 2D de respaldo.
 
 **Fuera del alcance**, con su motivo:
+
+*Tabla 1.2. Funciones fuera del alcance y motivo.*
 
 | Función | Motivo |
 |---------|--------|
@@ -73,5 +77,5 @@ Las funciones que se han decidido o empezado después de cerrar el alcance inici
 - Los **capítulos 4 y 5** recogen los requisitos y los casos de uso, trazados hasta las historias del backlog y las pruebas.
 - El **capítulo 6** describe el diseño (arquitectura, decisiones, modelo de datos, clases, secuencias e interfaz).
 - El **capítulo 7** describe la implementación, con fragmentos del código real.
-- Los **capítulos 8 a 12** cubren pruebas, despliegue, manuales y validación. Están en esqueleto porque dependen de tareas posteriores.
-- El **capítulo 13** recoge conclusiones y trabajo futuro, y el **14** la bibliografía.
+- Los **capítulos 8 a 12** cubren pruebas, despliegue, manuales y validación. Las pruebas del backend, el despliegue en local y el manual de instalación están redactados; el manual de usuario es un esqueleto que espera a la simplificación de la interfaz, y la validación con usuarios es solo un plan, porque no se ha hecho ninguna sesión.
+- El **capítulo 13** recoge conclusiones y trabajo futuro; el **14**, la bibliografía, y el **15**, los anexos (índice de la API, decisiones de arquitectura y glosario).
