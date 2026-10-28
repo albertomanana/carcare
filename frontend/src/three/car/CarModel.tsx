@@ -1,5 +1,5 @@
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { BodyType, Zone } from '@/api/types'
 import { getCarBuild } from './build'
@@ -91,12 +91,28 @@ export function CarModel({
   )
   useEffect(() => () => hl?.dispose(), [hl])
 
-  // Pulso del resaltado (solo si se permite animación)
+  // Pulso del resaltado (solo si se permite animación): dos latidos y se queda fijo, para que el lienzo
+  // ("demand") deje de pintarse en vez de quedarse a 60 fps mientras haya una zona seleccionada.
   const invalidate = useThree((s) => s.invalidate)
+  const pulseFrom = useRef<number | null>(null)
+  useEffect(() => {
+    pulseFrom.current = null
+  }, [hl])
   useFrame(({ clock }) => {
     if (!hl || !highlight?.pulse) return
     const t = clock.getElapsedTime()
-    ;(hl.uniforms.uOpacity as { value: number }).value = 0.72 + 0.28 * Math.sin(t * 3.2)
+    if (pulseFrom.current === null) pulseFrom.current = t
+    const e = t - pulseFrom.current
+    const u = hl.uniforms.uOpacity as { value: number }
+    if (e >= PULSE_SECONDS) {
+      // último fotograma: deja la opacidad en 1 (aunque un fotograma lento se haya saltado el final) y para
+      if (u.value !== 1) {
+        u.value = 1
+        invalidate()
+      }
+      return
+    }
+    u.value = 0.72 + 0.28 * Math.cos(e * PULSE_RATE)
     invalidate()
   })
 
@@ -146,13 +162,14 @@ export function CarModel({
         build.xrayParts.map((p) => (
           <mesh key={`i-${p.mat}`} geometry={p.geometry} material={clipGhost ? internalsMats[p.mat] : mats[p.mat]} raycast={noRaycast} />
         ))}
+      {/* invisibles: el raycaster de three.js no mira `visible`, así que reciben el clic sin gastar dos dibujados */}
       {onClick && (
         <>
-          <mesh position={proxy.lower.position} material={PROXY_MAT}>
+          <mesh position={proxy.lower.position} material={PROXY_MAT} visible={false}>
             <boxGeometry args={proxy.lower.size} />
           </mesh>
           {proxy.cabin && (
-            <mesh position={proxy.cabin.position} material={PROXY_MAT}>
+            <mesh position={proxy.cabin.position} material={PROXY_MAT} visible={false}>
               <boxGeometry args={proxy.cabin.size} />
             </mesh>
           )}
@@ -168,6 +185,9 @@ export function CarModel({
 }
 
 const PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+/** Pulso del resaltado: 2 latidos (~4 s; con coseno empieza y acaba en el máximo) y se queda a opacidad 1. */
+const PULSE_RATE = 3.2
+const PULSE_SECONDS = (2 * 2 * Math.PI) / PULSE_RATE
 
 function noRaycast() {
   /* las mallas visibles no participan en el raycasting (se usa una caja proxy) */

@@ -7,7 +7,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import type { BodyType, Zone } from '@/api/types'
 import { BODY_LABEL, ZONE_LABEL } from '@/lib/labels'
-import { CarPreview, CarSilhouette, CarThumbnail, CarViewer, HeroScene, WorkshopScene } from '../index'
+import { CarPreview, CarSilhouette, CarThumbnail, CarViewer, HeroImage, HeroScene, WorkshopScene } from '../index'
 import { BODY_TYPES } from '../car/specs'
 import { demoWorkshop, demoZones } from './demoData'
 
@@ -190,6 +190,12 @@ export function ThreeLab() {
 
       {tab === 'hero' && (
         <div className="grid gap-3">
+          {!full && (
+            <figure className="grid gap-1">
+              <HeroImage priority className="h-auto w-full max-w-3xl" />
+              <figcaption className="text-sm text-fg-muted">Imagen fija de la portada (WebP 1280/640, sin three.js). Debajo, la escena 3D.</figcaption>
+            </figure>
+          )}
           {!full && (
             <label className="flex items-center gap-3 text-sm">
               Progreso {progress.toFixed(2)}

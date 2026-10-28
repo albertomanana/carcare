@@ -1,8 +1,10 @@
 /**
  * Visor del vehículo (chunk diferido). Un único <Canvas>:
- *  - showcase: coche protagonista con autorrotación lenta (sin marcadores).
+ *  - showcase: coche protagonista con autorrotación lenta (sin marcadores) mientras se ve.
  *  - inspect: órbita + 10 marcadores HTML accesibles; al seleccionar, vuelo de cámara y resaltado de la pieza.
  *  - xray: carrocería "fantasma" con componentes internos simplificados (rótulo "Ilustrativo").
+ * Rendimiento: frameloop "demand" (solo se pinta cuando algo cambia: órbita, vuelo de cámara, pulso de la selección),
+ * salvo el giro del escaparate; "never" con la pestaña oculta; DPR ≤ 1,5; recursos liberados al desmontar.
  */
 import { Canvas, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
@@ -13,12 +15,13 @@ import { getCarLayout, type ZoneAnchor } from '../car/anchors'
 import { getCarBuild } from '../car/build'
 import { CarModel } from '../car/CarModel'
 import { resolveBody, resolveColor } from '../car/specs'
-import { useInView, usePrefersReducedMotion, useThemeTokens, type ThemeTokens } from '../env'
+import { useInView, usePageVisible, usePrefersReducedMotion, useThemeTokens, type ThemeTokens } from '../env'
 import { toneColor, ZONE_DISCLAIMER, ZoneMarkerButton, zoneTone } from '../markers/ZoneMarkerButton'
 import { OverlayItem, OverlayLayer, OverlayProjector, useOverlayStore, type OverlayAnchor, type OverlayStore } from './overlay'
 import { CameraRig, type Focus } from './CameraRig'
 import { CarShadow, StudioEnvironment, StudioFloor } from './Stage'
-import { XrayBadge } from './common'
+import { ReleaseOnUnmount, ResumeOnVisible, XrayBadge } from './common'
+import { canvasDpr } from './dpr'
 import { useCanvasLabel } from './useCanvasLabel'
 
 export default function CarViewerCanvas({
@@ -38,6 +41,8 @@ export default function CarViewerCanvas({
   const reduced = usePrefersReducedMotion()
   const wrap = useRef<HTMLDivElement>(null)
   const inView = useInView(wrap)
+  const pageVisible = usePageVisible()
+  const dpr = useMemo(canvasDpr, [])
   const inspect = mode === 'inspect'
   const night = lighting === 'night'
   const animate = mode === 'showcase' && !reduced && inView
@@ -50,8 +55,8 @@ export default function CarViewerCanvas({
   return (
     <div ref={wrap} className={['relative isolate overflow-hidden', className].filter(Boolean).join(' ')}>
       <Canvas
-        frameloop={animate ? 'always' : 'demand'}
-        dpr={[1, 2]}
+        frameloop={!pageVisible ? 'never' : animate ? 'always' : 'demand'}
+        dpr={dpr}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         camera={{ fov: 24, near: 0.1, far: 80, position: [7, 3, 7] }}
         onCreated={({ gl }) => {
@@ -62,6 +67,8 @@ export default function CarViewerCanvas({
         }}
         style={{ touchAction: inspect || finePointer ? 'none' : 'pan-y' }}
       >
+        <ReleaseOnUnmount />
+        <ResumeOnVisible visible={pageVisible} />
         <ViewerScene
           body={body}
           color={color}

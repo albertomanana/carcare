@@ -3,7 +3,7 @@
  * envoltorios) NO puede arrastrar three.js. Recorre el grafo de imports ESTÁTICOS desde src/three/index.tsx
  * (ignora `import type` e `import()` diferidos) y falla si alguno llega a 'three' o '@react-three/*'.
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -52,5 +52,13 @@ describe('módulo 3D: exports ligeros', () => {
     }
     expect(seen.size).toBeGreaterThan(5)
     expect(heavy).toEqual([])
+  })
+
+  it('la imagen fija de la portada existe en 1280 y 640 px y pesa menos de 150 KB', () => {
+    for (const w of [1280, 640]) {
+      const file = resolve(SRC, '..', 'public', 'img', `portada-coche-${w}.webp`)
+      expect(existsSync(file)).toBe(true)
+      expect(statSync(file).size).toBeLessThan(150 * 1024)
+    }
   })
 })

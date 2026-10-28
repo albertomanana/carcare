@@ -3,16 +3,18 @@
  * Más ligera que el visor: geometría de detalle bajo, sin suelo reflectante; giro lento si se permite animación.
  */
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type * as THREE from 'three'
 import type { CarPreviewProps } from '../types'
 import { getCarLayout } from '../car/anchors'
 import { getCarBuild } from '../car/build'
 import { CarModel } from '../car/CarModel'
 import { resolveBody, resolveColor } from '../car/specs'
-import { useInView, usePrefersReducedMotion, useThemeTokens } from '../env'
+import { useInView, usePageVisible, usePrefersReducedMotion, useThemeTokens } from '../env'
 import { describeCar } from '../silhouette/describe'
 import { CameraRig } from './CameraRig'
+import { ReleaseOnUnmount, ResumeOnVisible } from './common'
+import { canvasDpr } from './dpr'
 import { useCanvasLabel } from './useCanvasLabel'
 import { CarShadow, StudioEnvironment } from './Stage'
 
@@ -23,6 +25,8 @@ export default function CarPreviewCanvas({ appearance, className }: CarPreviewPr
   const reduced = usePrefersReducedMotion()
   const wrap = useRef<HTMLDivElement>(null)
   const inView = useInView(wrap)
+  const pageVisible = usePageVisible()
+  const dpr = useMemo(canvasDpr, [])
   const spin = !reduced && inView
   const layout = getCarLayout(body)
   const build = getCarBuild(body, 'low')
@@ -31,12 +35,14 @@ export default function CarPreviewCanvas({ appearance, className }: CarPreviewPr
   return (
     <div ref={wrap} className={['relative overflow-hidden', className].filter(Boolean).join(' ')}>
       <Canvas
-        frameloop={spin ? 'always' : 'demand'}
-        dpr={[1, 2]}
+        frameloop={!pageVisible ? 'never' : spin ? 'always' : 'demand'}
+        dpr={dpr}
         gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
         camera={{ fov: 24, near: 0.1, far: 60, position: [7, 3, 7] }}
         style={{ touchAction: 'pan-y', pointerEvents: 'none' }}
       >
+        <ReleaseOnUnmount />
+        <ResumeOnVisible visible={pageVisible} />
         <Label text={label} />
         <StudioEnvironment />
         <Turntable spin={spin}>

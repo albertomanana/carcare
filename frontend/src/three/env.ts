@@ -140,6 +140,42 @@ export function useThemeTokens(): ThemeTokens {
 
 // ───────────────────────── Visibilidad ─────────────────────────
 
+function subscribePageVisibility(cb: () => void) {
+  if (typeof document === 'undefined') return () => {}
+  document.addEventListener('visibilitychange', cb)
+  return () => document.removeEventListener('visibilitychange', cb)
+}
+
+/** false mientras la pestaña está oculta: los lienzos pasan a `frameloop="never"`. */
+export function usePageVisible(): boolean {
+  return useSyncExternalStore(
+    subscribePageVisibility,
+    () => typeof document === 'undefined' || !document.hidden,
+    () => true,
+  )
+}
+
+/**
+ * true desde la primera vez que el elemento entra (o casi) en pantalla, y ya no vuelve a false: sirve para no
+ * montar un lienzo (ni descargar three.js) hasta que su sección es visible. Sin IntersectionObserver ⇒ true.
+ */
+export function useSeenOnce(ref: RefObject<Element | null>, rootMargin = '200px'): boolean {
+  const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined')
+  useEffect(() => {
+    const el = ref.current
+    if (seen || !el) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setSeen(true)
+      },
+      { rootMargin },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ref, rootMargin, seen])
+  return seen
+}
+
 /** true mientras el elemento está (aprox.) en pantalla y la pestaña visible: para pausar animaciones. */
 export function useInView(ref: RefObject<Element | null>, rootMargin = '120px'): boolean {
   const [inView, setInView] = useState(true)

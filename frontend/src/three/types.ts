@@ -60,6 +60,20 @@ export interface WorkshopSceneProps {
   className?: string
 }
 
+/**
+ * Imagen fija de la portada: render propio del coche procedural (berlina azul, sin marca) en WebP con transparencia,
+ * 1280×720 y 640×360. No descarga three.js. La sombra está dentro de la imagen y funciona en tema claro y oscuro.
+ */
+export interface HeroImageProps {
+  className?: string
+  /** Texto alternativo. Pasa '' si la imagen acompaña a un titular que ya lo dice (decorativa). */
+  alt?: string
+  /** true si está en la primera pantalla: carga prioritaria (`fetchpriority="high"`), sin `loading="lazy"`. */
+  priority?: boolean
+  /** Atributo `sizes`: ancho con el que se muestra, para que el navegador elija la de 640 o la de 1280. */
+  sizes?: string
+}
+
 export interface HeroSceneProps {
   /** Progreso de scroll 0..1 para coreografiar cámara y color. */
   progress?: number

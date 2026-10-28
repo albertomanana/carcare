@@ -96,12 +96,16 @@ export function StudioFloor({ color, radius = 10, reflect = true, strength = 1, 
  * Sombra de contacto. Con `frames=1` se pinta una vez y, además, cada vez que este componente se vuelve a renderizar
  * (drei reinicia su contador en cada render): así la portada la actualiza al cambiar de coche sin pintarla siempre.
  * `scale` va memorizado: drei crea render targets nuevos cada vez que cambia la identidad del array.
+ *
+ * La altura TIENE que ser ≤ 0: drei desenfoca la sombra dibujando un plano suelto en y = 0 con la cámara de la sombra
+ * (que va dentro del grupo y mira hacia arriba). Con el grupo en y > 0 ese plano queda detrás de la cámara, el
+ * desenfoque no pinta nada y la sombra sale vacía (pasaba con y = 0,002: el render target quedaba con alfa 0).
  */
 export function CarShadow({ length, width, opacity = 0.75, frames = 1 }: { length: number; width: number; opacity?: number; frames?: number }) {
   const scale = useMemo(() => [length * 1.7, width * 2.6] as [number, number], [length, width])
   return (
     <ContactShadows
-      position={[0, 0.002, 0]}
+      position={[0, -0.0005, 0]}
       scale={scale}
       resolution={512}
       blur={2.4}
