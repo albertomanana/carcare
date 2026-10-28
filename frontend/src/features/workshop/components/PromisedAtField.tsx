@@ -3,7 +3,7 @@ import { useWatch, type FieldValues, type UseFormReturn } from 'react-hook-form'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/inputs'
 import { cn } from '@/lib/cn'
-import { formatWhen, fromDateTimeLocal, isPastLocal, promisedShortcuts } from './orderUtils'
+import { formatWhenInline, fromDateTimeLocal, isPastLocal, promisedShortcuts } from './orderUtils'
 
 type WithPromised = { promised_at: string }
 
@@ -20,7 +20,7 @@ export function PromisedAtField<T extends FieldValues & WithPromised>({ form, di
       <Field
         label="Fecha prometida"
         error={error}
-        hint={value && !error ? `Entrega prevista: ${formatWhen(fromDateTimeLocal(value))}.` : 'Cuándo le has dicho al cliente que estará. Si pasa sin terminar, la orden sale como «Tarde».'}
+        hint={value && !error ? `Entrega prevista: ${formatWhenInline(fromDateTimeLocal(value))}.` : 'Cuándo le has dicho al cliente que estará. Si pasa sin terminar, la orden sale como «Tarde».'}
       >
         <Input type="datetime-local" className="tabular" disabled={disabled} {...f.register('promised_at')} />
       </Field>

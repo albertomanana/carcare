@@ -13,7 +13,7 @@ import { ReminderItem } from '@/components/vehicles/ReminderItem'
 import { useAuth } from '@/features/auth/auth-context'
 import { PriorityBadge } from '@/features/workshop/components/OrderBadges'
 import { OrderRow, OrderRowSkeleton } from '@/features/workshop/components/OrderList'
-import { attentionOrders, controlCenterHeadline, formatWhen, waitingOrders } from '@/features/workshop/components/orderUtils'
+import { attentionOrders, controlCenterHeadline, formatWhen, formatWhenInline, shortOrderNumber, waitingOrders } from '@/features/workshop/components/orderUtils'
 import { type OrderActions, useOrderActions } from '@/features/workshop/components/useOrderActions'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -74,18 +74,21 @@ function ControlCenter({ data }: { data: WorkshopDashboardData }) {
   const orders = open.data?.data
   const actions = useOrderActions()
   const isMechanic = ctx.workspace.role === 'mechanic'
+  // El mecánico ve primero "Mis órdenes"; "Requiere atención" no repite las suyas (R14), pero solo
+  // cuando "Mis órdenes" ha cargado: si falla, ninguna orden urgente se queda sin mostrar.
+  const mineShown = isMechanic && open.isSuccess && user ? user.id : null
 
   return (
     <div className="space-y-10">
       {isMechanic && (
         <MyOrders
-          orders={orders?.filter((o) => o.assigned_to?.id === user?.id)}
+          orders={orders ? byUrgency(orders.filter((o) => o.assigned_to?.id === user?.id)) : undefined}
           loading={open.isPending}
           error={open.isError ? open.error : null}
           onRetry={() => void open.refetch()}
         />
       )}
-      <Attention data={data} />
+      <Attention data={data} excludeAssignedTo={mineShown} />
       <Bays bays={data.bays} orders={orders} loading={open.isPending} actions={actions} />
       <FleetAlerts data={data} />
       {actions.dialogs}
@@ -131,23 +134,47 @@ function Promised({ order }: { order: WorkOrder }) {
   return order.is_late ? (
     <span className="inline-flex items-center gap-1 text-danger tabular">
       <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
-      Tarde · {formatWhen(order.promised_at)}
+      Tarde · {formatWhenInline(order.promised_at)}
     </span>
   ) : (
     <span className="text-fg tabular">{formatWhen(order.promised_at)}</span>
   )
 }
 
-function Attention({ data }: { data: WorkshopDashboardData }) {
+/** Primero las que van tarde y después por fecha prometida (sin fecha, al final): lo urgente arriba. */
+function byUrgency(list: WorkOrder[]): WorkOrder[] {
+  const when = (o: WorkOrder) => (o.promised_at ? new Date(o.promised_at).getTime() : Infinity)
+  return [...list].sort((a, b) => Number(b.is_late) - Number(a.is_late) || when(a) - when(b))
+}
+
+/** Número corto ("0024") a la vista y el completo para el lector: el largo partía la columna en dos líneas. */
+function OrderNumber({ number }: { number: string }) {
+  return (
+    <>
+      <span aria-hidden>{shortOrderNumber(number)}</span>
+      <span className="sr-only">{number}</span>
+    </>
+  )
+}
+
+function Attention({ data, excludeAssignedTo = null }: { data: WorkshopDashboardData; excludeAssignedTo?: number | null }) {
   const ctx = useWorkspace()
-  const list = attentionOrders(data)
+  const all = attentionOrders(data)
+  const list = excludeAssignedTo == null ? all : all.filter((o) => o.assigned_to?.id !== excludeAssignedTo)
+  const allMine = all.length > 0 && list.length === 0
   const shown = list.slice(0, MAX_ROWS)
   const href = (o: WorkOrder) => `${ctx.base}/ordenes/${o.id}`
   return (
     <Section
       id="atencion"
       title="Requiere atención"
-      description={list.length ? 'Van tarde o tienen la entrega prometida para hoy.' : undefined}
+      description={
+        list.length
+          ? excludeAssignedTo == null
+            ? 'Van tarde o tienen la entrega prometida para hoy.'
+            : 'Otras órdenes que van tarde o tienen la entrega prometida para hoy. Las tuyas están en «Mis órdenes».'
+          : undefined
+      }
       action={
         list.length > 0 && (
           <Link to={`${ctx.base}/ordenes`} className="text-sm font-medium text-accent-ink hover:underline">
@@ -156,7 +183,11 @@ function Attention({ data }: { data: WorkshopDashboardData }) {
         )
       }
     >
-      {list.length === 0 ? (
+      {allMine ? (
+        <p className="text-sm text-fg-muted">
+          {all.length === 1 ? 'La única orden que va tarde o es para hoy es tuya: está' : `Las ${all.length} órdenes que van tarde o son para hoy son tuyas: están`} en «Mis órdenes».
+        </p>
+      ) : list.length === 0 ? (
         <EmptyState compact icon={<CircleCheck />} title="Nada va tarde ni hay entregas para hoy" description="Las órdenes con fecha prometida van en plazo." />
       ) : (
         <>
@@ -169,7 +200,7 @@ function Attention({ data }: { data: WorkshopDashboardData }) {
             <caption className="sr-only">Órdenes que van tarde o con entrega prometida para hoy</caption>
             <thead className="border-b border-line text-left text-xs text-fg-muted">
               <tr>
-                <th scope="col" className="w-[7rem] py-2.5 pr-3 font-medium">
+                <th scope="col" className="w-[4.5rem] py-2.5 pr-3 font-medium">
                   Nº
                 </th>
                 <th scope="col" className="py-2.5 pr-3 font-medium">
@@ -181,7 +212,7 @@ function Attention({ data }: { data: WorkshopDashboardData }) {
                 <th scope="col" className="w-[8.5rem] py-2.5 pr-3 font-medium">
                   Estado
                 </th>
-                <th scope="col" className="w-[11rem] py-2.5 font-medium">
+                <th scope="col" className="w-[12.5rem] py-2.5 font-medium">
                   Prometida
                 </th>
               </tr>
@@ -189,7 +220,9 @@ function Attention({ data }: { data: WorkshopDashboardData }) {
             <tbody className="divide-y divide-line">
               {shown.map((o) => (
                 <tr key={o.id} className="align-top transition-colors hover:bg-surface-2/50">
-                  <td className="py-2.5 pr-3 text-fg-muted tabular">{o.number}</td>
+                  <td className="py-2.5 pr-3 text-fg-muted tabular">
+                    <OrderNumber number={o.number} />
+                  </td>
                   <td className="py-2.5 pr-3">
                     <span className="flex min-w-0 flex-wrap items-center gap-2">
                       <Link to={href(o)} className="min-w-0 truncate font-medium text-fg hover:underline">
@@ -316,7 +349,10 @@ function Bays({ bays, orders, loading, actions }: { bays: Bay[]; orders: WorkOrd
                         <td className="truncate py-2.5 pr-3 text-fg">{vehicleText(o)}</td>
                         <td className="truncate py-2.5 pr-3">
                           <Link to={href(o)} className="text-fg hover:underline">
-                            <span className="text-fg-muted tabular">{o.number}</span> {o.title}
+                            <span className="text-fg-muted tabular">
+                              <OrderNumber number={o.number} />
+                            </span>{' '}
+                            {o.title}
                           </Link>
                         </td>
                         <td className="py-2.5 pr-3 text-fg">{WORK_ORDER_STATUS_LABEL[o.status]}</td>

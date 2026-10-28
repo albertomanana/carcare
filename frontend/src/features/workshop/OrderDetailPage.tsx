@@ -36,7 +36,7 @@ import { telHref } from './components/floor'
 import { ORDER_FIELD_NAMES, orderSchema, orderToValues, type OrderValues, valuesToInput } from './components/orderForm'
 import { OrderLinesTable } from './components/OrderLinesTable'
 import { LiveOrderTotals, OrderTotals } from './components/OrderTotals'
-import { formatWhen, isDeletableStatus, isFinalStatus, nextStep } from './components/orderUtils'
+import { formatWhenInline, isDeletableStatus, isFinalStatus, nextStep } from './components/orderUtils'
 import { PromisedAtField } from './components/PromisedAtField'
 import { StatusStepper } from './components/StatusStepper'
 import { serverTotals } from './components/totals'
@@ -361,10 +361,10 @@ function OrderMeta({ order }: { order: WorkOrder }) {
             order.is_late ? (
               <span className="font-medium text-danger">
                 <TriangleAlert aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
-                Tarde: prometida {formatWhen(order.promised_at)}
+                Tarde: prometida {formatWhenInline(order.promised_at)}
               </span>
             ) : (
-              <span className="tabular">prometida {formatWhen(order.promised_at)}</span>
+              <span className="tabular">prometida {formatWhenInline(order.promised_at)}</span>
             )
           ) : (
             'sin fecha prometida'

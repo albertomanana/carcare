@@ -103,6 +103,12 @@ export function formatWhen(value: ISODateTime | null | undefined, now: Date = ne
   return `${fmt.format(d).replace(/\./g, '').replace(',', '')}, ${time}`
 }
 
+/** Como `formatWhen`, pero para ir a mitad de frase: "prometida mañana, 13:00", "Tarde · ayer, 19:00". */
+export function formatWhenInline(value: ISODateTime | null | undefined, now: Date = new Date()): string {
+  const s = formatWhen(value, now)
+  return s.charAt(0).toLowerCase() + s.slice(1)
+}
+
 // ───────── Elevadores ─────────
 
 export interface BayOption {

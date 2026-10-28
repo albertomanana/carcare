@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn'
 import { formatPlate } from '@/lib/format'
 import { MoveToMenu } from './MoveToMenu'
 import { LateBadge, PriorityBadge } from './OrderBadges'
-import { formatWhen, shortOrderNumber } from './orderUtils'
+import { formatWhenInline, shortOrderNumber } from './orderUtils'
 
 export interface OrderCardProps {
   order: WorkOrder
@@ -74,7 +74,7 @@ export function OrderCard({ order, to, onRequest, busy, dragging, ghost, onPoint
             <>
               {' · '}
               <span className="sr-only">prometida para </span>
-              <span className="tabular">{formatWhen(order.promised_at)}</span>
+              <span className="tabular">{formatWhenInline(order.promised_at)}</span>
             </>
           )}
         </span>

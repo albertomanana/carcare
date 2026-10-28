@@ -2,20 +2,19 @@ import { ChevronRight } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import type { WorkOrder, WorkOrderStatus } from '@/api/types'
-import { Plate } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { formatDate, formatMoney, formatPlate } from '@/lib/format'
 import { WORK_ORDER_STATUS_LABEL } from '@/lib/labels'
 import { MoveToMenu } from './MoveToMenu'
 import { LateBadge, PriorityBadge, PromisedAt } from './OrderBadges'
-import { formatWhen, isFinalStatus, KANBAN_STATUSES } from './orderUtils'
+import { formatWhenInline, isFinalStatus, KANBAN_STATUSES, shortOrderNumber } from './orderUtils'
 
 /** Fecha más relevante según el estado: entrega, prometida o recepción. */
 function KeyDate({ order }: { order: WorkOrder }) {
   if (order.status === 'delivered') return <span className="text-fg-muted tabular">Entregada {formatDate(order.delivered_at)}</span>
   if (order.status === 'cancelled') return <span className="text-fg-subtle tabular">Recibida {formatDate(order.received_at)}</span>
   if (order.promised_at) return <PromisedAt order={order} />
-  return <span className="text-fg-subtle tabular">Recibida {formatWhen(order.received_at)}</span>
+  return <span className="text-fg-subtle tabular">Recibida {formatWhenInline(order.received_at)}</span>
 }
 
 export interface OrderRowProps {
@@ -96,46 +95,47 @@ export interface OrdersTableProps {
   groupByStatus?: boolean
 }
 
-/** Vista de lista: tabla sin caja en escritorio (R3/R4), filas en móvil. Píldora solo para "Tarde" y "Urgente" (R5). */
+/**
+ * Vista de lista: tabla sin caja en escritorio (R3/R4), filas por debajo de 1280 px. Píldora solo para "Tarde" y
+ * "Urgente" (R5). La tabla sale desde `xl`: a 1024 px, con la barra lateral, la columna "Trabajo" se quedaba sin
+ * ancho. El cliente va bajo la matrícula y el número en corto ("0024") por lo mismo.
+ */
 export function OrdersTable({ orders, orderHref, vehicleHref, onRequest, showTotal, caption, groupByStatus }: OrdersTableProps) {
   return (
     <>
       {groupByStatus ? (
-        <GroupedOrderRows orders={orders} orderHref={orderHref} showTotal={showTotal} className="lg:hidden" />
+        <GroupedOrderRows orders={orders} orderHref={orderHref} showTotal={showTotal} className="xl:hidden" />
       ) : (
-        <ul className="border-t border-line lg:hidden" aria-label={caption}>
+        <ul className="border-t border-line xl:hidden" aria-label={caption}>
           {orders.map((o) => (
             <OrderRow key={o.id} order={o} to={orderHref(o)} showTotal={showTotal} />
           ))}
         </ul>
       )}
-      <table className="hidden w-full table-fixed border-y border-line text-sm lg:table">
+      <table className="hidden w-full table-fixed border-y border-line text-sm xl:table">
         <caption className="sr-only">{caption}</caption>
         <thead className="border-b border-line text-left text-xs text-fg-muted">
           <tr>
-            <th scope="col" className="w-[6.5rem] py-2.5 pr-3 font-medium">
+            <th scope="col" className="w-[4.5rem] py-2.5 pr-3 font-medium">
               Nº
             </th>
             <th scope="col" className="py-2.5 pr-3 font-medium">
               Trabajo
             </th>
-            <th scope="col" className="w-[19%] py-2.5 pr-3 font-medium">
-              Vehículo
+            <th scope="col" className="w-[21%] py-2.5 pr-3 font-medium">
+              Vehículo y cliente
             </th>
-            <th scope="col" className="w-[13%] py-2.5 pr-3 font-medium">
-              Cliente
-            </th>
-            <th scope="col" className="w-[11%] py-2.5 pr-3 font-medium">
+            <th scope="col" className="w-[8.5rem] py-2.5 pr-3 font-medium">
               Estado
             </th>
-            <th scope="col" className="w-[11%] py-2.5 pr-3 font-medium">
+            <th scope="col" className="w-[10%] py-2.5 pr-3 font-medium">
               Mecánico
             </th>
-            <th scope="col" className="w-[10rem] py-2.5 pr-3 font-medium">
+            <th scope="col" className="w-[9.5rem] py-2.5 pr-3 font-medium">
               Fecha
             </th>
             {showTotal && (
-              <th scope="col" className="w-[7rem] py-2.5 pr-3 text-right font-medium">
+              <th scope="col" className="w-[6rem] py-2.5 pr-3 text-right font-medium">
                 Total
               </th>
             )}
@@ -147,7 +147,10 @@ export function OrdersTable({ orders, orderHref, vehicleHref, onRequest, showTot
         <tbody className="divide-y divide-line">
           {orders.map((o) => (
             <tr key={o.id} className="align-top transition-colors hover:bg-surface-2/50">
-              <td className="py-2.5 pr-3 text-fg-muted tabular">{o.number}</td>
+              <td className="py-2.5 pr-3 text-fg-muted tabular">
+                <span aria-hidden>{shortOrderNumber(o.number)}</span>
+                <span className="sr-only">{o.number}</span>
+              </td>
               <td className="py-2.5 pr-3">
                 <Link to={orderHref(o)} className="line-clamp-2 font-medium text-fg hover:underline">
                   {o.title}
@@ -160,12 +163,12 @@ export function OrdersTable({ orders, orderHref, vehicleHref, onRequest, showTot
                 )}
               </td>
               <td className="py-2.5 pr-3">
-                <Link to={vehicleHref(o)} className="block min-w-0 hover:underline">
-                  <span className="block truncate text-fg">{o.vehicle.display_name}</span>
-                  {o.vehicle.plate && <Plate value={o.vehicle.plate} className="block truncate text-xs" />}
+                <Link to={vehicleHref(o)} className="block min-w-0 truncate text-fg hover:underline">
+                  {o.vehicle.display_name}
+                  {o.vehicle.plate && <span className="text-fg-muted"> · {formatPlate(o.vehicle.plate)}</span>}
                 </Link>
+                <span className="block truncate text-xs text-fg-muted">{o.customer?.name ?? 'Sin cliente'}</span>
               </td>
-              <td className="truncate py-2.5 pr-3 text-fg-muted">{o.customer?.name ?? <span className="text-fg-subtle">Sin cliente</span>}</td>
               <td className="py-2.5 pr-3 text-fg">
                 {WORK_ORDER_STATUS_LABEL[o.status]}
                 {o.bay !== null && !isFinalStatus(o.status) && <span className="block text-xs text-fg-muted">Elevador {o.bay}</span>}

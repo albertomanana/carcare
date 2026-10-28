@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Bay, WorkOrder } from '@/api/types'
 import { nextBay } from '@/api/hooks/workshop'
-import { attentionOrders, bayOptions, baysSummary, controlCenterHeadline, dateTimeLocalAt, formatWhen, fromDateTimeLocal, isDeletableStatus, nextStep, ORDER_SUMMARY_LABEL, orderSummaryTitle, toDateTimeLocal, waitingOrders } from './orderUtils'
+import { attentionOrders, bayOptions, baysSummary, controlCenterHeadline, dateTimeLocalAt, formatWhen, formatWhenInline, fromDateTimeLocal, isDeletableStatus, nextStep, ORDER_SUMMARY_LABEL, orderSummaryTitle, toDateTimeLocal, waitingOrders } from './orderUtils'
 
 function order(partial: Partial<WorkOrder>): WorkOrder {
   return {
@@ -61,6 +61,14 @@ describe('fechas con hora', () => {
     expect(formatWhen(new Date(2026, 9, 21, 19, 0).toISOString(), now)).toBe('Ayer, 19:00')
     expect(formatWhen(new Date(2026, 9, 27, 9, 30).toISOString(), now)).toMatch(/27 oct, 09:30$/)
     expect(formatWhen(null, now)).toBe('—')
+  })
+
+  it('formato relativo a mitad de frase: en minúscula', () => {
+    const now = new Date(2026, 9, 22, 10, 0)
+    expect(formatWhenInline(new Date(2026, 9, 23, 13, 0).toISOString(), now)).toBe('mañana, 13:00')
+    expect(formatWhenInline(new Date(2026, 9, 21, 19, 0).toISOString(), now)).toBe('ayer, 19:00')
+    expect(formatWhenInline(new Date(2026, 9, 27, 9, 30).toISOString(), now)).toMatch(/27 oct, 09:30$/)
+    expect(formatWhenInline(null, now)).toBe('—')
   })
 })
 
