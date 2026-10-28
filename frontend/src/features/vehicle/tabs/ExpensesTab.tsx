@@ -6,22 +6,23 @@ import { errorMessage } from '@/api/client'
 import { useDeleteExpense, useExpenses } from '@/api/hooks/records'
 import { flattenPages, totalFromPages } from '@/api/hooks/shared'
 import { useVehicleSummary } from '@/api/hooks/vehicles'
-import type { Expense, ExpenseCategory } from '@/api/types'
-import { CategoryBreakdown } from '@/components/charts/Charts'
+import type { Expense, ExpenseCategory, Vehicle, VehicleSummary } from '@/api/types'
+import { CategoryBreakdown, MonthlyBars } from '@/components/charts/Charts'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { Select } from '@/components/ui/inputs'
 import { LoadMore } from '@/components/ui/LoadMore'
+import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StatCard } from '@/components/ui/StatCard'
 import { EmptyState, ErrorState, NoResults } from '@/components/ui/States'
+import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useHashTarget, useRevealHashTarget } from '@/hooks/useHashTarget'
 import { useSearchParam } from '@/hooks/useSearchParam'
 import { cn } from '@/lib/cn'
-import { formatDate, formatDecimal, formatKm, formatMoney } from '@/lib/format'
+import { formatDate, formatDecimal, formatKm, formatMoney, formatMonth, toNumber } from '@/lib/format'
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL, FUEL_UNIT_SHORT } from '@/lib/labels'
 import { PERIOD_LABEL, presetPeriod } from '@/lib/period'
 import { useVehicleOutlet } from '../vehicle-outlet'
@@ -31,6 +32,11 @@ const ExpenseDialog = lazy(() => import('../dialogs/ExpenseDialog'))
 const PRESETS = ['this_year', 'last_12', 'last_year'] as const
 type Preset = (typeof PRESETS)[number]
 
+/**
+ * Gastos de la ficha (5.2 del informe de UX): aquí viven las cifras que salieron del Resumen.
+ * Periodo (afecta a todo) · 3 cifras sin caja · por mes y por categoría · movimientos. El filtro de categoría solo
+ * afecta a la lista, por eso va junto a ella y no arriba: así ninguna cifra cambia de ámbito sin decirlo (C3).
+ */
 export default function ExpensesTab() {
   const { vehicle } = useVehicleOutlet()
   const ctx = useWorkspace()
@@ -42,6 +48,7 @@ export default function ExpensesTab() {
     yearParam === thisYear ? 'this_year' : yearParam === thisYear - 1 ? 'last_year' : yearParam ? 'year' : (PRESETS as readonly string[]).includes(presetParam) ? (presetParam as Preset) : 'this_year'
   const [category, setCategory] = useSearchParam('categoria')
   const period = useMemo(() => (preset === 'year' ? { from: `${yearParam}-01-01`, to: `${yearParam}-12-31` } : presetPeriod(preset)), [preset, yearParam])
+  const periodLabel = preset === 'year' ? `año ${yearParam}` : PERIOD_LABEL[preset].toLowerCase()
   const summary = useVehicleSummary(vehicle.id, { from: period.from, to: period.to }, ctx.canExpenses)
   const list = useExpenses(vehicle.id, { from: period.from, to: period.to, category, per_page: 25 }, ctx.canExpenses)
   const remove = useDeleteExpense(vehicle.id)
@@ -65,70 +72,65 @@ export default function ExpensesTab() {
 
   const s = summary.data
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Select aria-label="Periodo" value={preset === 'year' ? String(yearParam) : preset} onChange={(e) => setPreset(e.target.value)} className="sm:w-52">
-          {preset === 'year' && <option value={String(yearParam)}>Año {yearParam}</option>}
-          {PRESETS.map((p) => (
-            <option key={p} value={p}>
-              {PERIOD_LABEL[p]}
-            </option>
-          ))}
-        </Select>
-        <Select aria-label="Categoría" value={category} onChange={(e) => setCategory(e.target.value)} className="sm:w-52">
-          <option value="">Todas las categorías</option>
-          {EXPENSE_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {EXPENSE_CATEGORY_LABEL[c]}
-            </option>
-          ))}
-        </Select>
-        {canWrite && (
-          <Button icon={<Plus aria-hidden />} onClick={() => setCreating(true)} className="sm:ml-auto">
-            Añadir gasto
-          </Button>
-        )}
+    <div className="space-y-10">
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Select aria-label="Periodo" value={preset === 'year' ? String(yearParam) : preset} onChange={(e) => setPreset(e.target.value)} className="sm:w-52">
+            {preset === 'year' && <option value={String(yearParam)}>Año {yearParam}</option>}
+            {PRESETS.map((p) => (
+              <option key={p} value={p}>
+                {PERIOD_LABEL[p]}
+              </option>
+            ))}
+          </Select>
+          {canWrite && (
+            <Button icon={<Plus aria-hidden />} onClick={() => setCreating(true)} className="sm:ml-auto">
+              Añadir gasto
+            </Button>
+          )}
+        </div>
+
+        {summary.isPending ? (
+          <div role="status" aria-live="polite" className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+            <span className="sr-only">Cargando las cifras del periodo…</span>
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} aria-hidden className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+            ))}
+          </div>
+        ) : summary.isError ? (
+          <ErrorState compact error={summary.error} title="No se pudieron cargar las cifras" onRetry={() => void summary.refetch()} />
+        ) : s ? (
+          <Figures summary={s} periodLabel={periodLabel} vehicle={vehicle} canWrite={canWrite} onAddFuel={() => setCreating(true)} />
+        ) : null}
       </div>
 
-      {summary.isPending ? (
-        <Skeleton className="h-56 w-full rounded-card" />
-      ) : summary.isError ? (
-        <ErrorState compact error={summary.error} onRetry={() => void summary.refetch()} />
-      ) : s ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-            <StatCard label={`Total · ${preset === 'year' ? `año ${yearParam}` : PERIOD_LABEL[preset].toLowerCase()}`} value={formatMoney(s.totals.period)} change={s.totals.change_pct} upIsGood={false} />
-            <StatCard
-              label="Coste por km"
-              value={s.cost_per_km.value ? formatMoney(s.cost_per_km.value) : '—'}
-              hint={s.cost_per_km.km !== null ? `Sobre ${formatKm(s.cost_per_km.km)}` : undefined}
-              unavailable={!s.cost_per_km.available ? { reason: s.cost_per_km.reason } : undefined}
-            />
-            <StatCard
-              label="Consumo medio"
-              value={s.consumption.value ? formatDecimal(s.consumption.value, 1) : '—'}
-              unit={s.consumption.unit?.replace('100km', '100 km') ?? undefined}
-              hint={s.consumption.available ? `Método lleno a lleno · ${s.consumption.fills} repostajes` : undefined}
-              unavailable={!s.consumption.available ? { reason: s.consumption.reason } : undefined}
-              className="col-span-2 lg:col-span-1"
-            />
-          </div>
-          <Card className="p-4 sm:p-5">
-            <h2 className="mb-4 font-display text-base font-semibold text-fg-warm">Por categoría</h2>
-            {s.by_category.length ? <CategoryBreakdown data={s.by_category} /> : <p className="py-10 text-center text-sm text-fg-muted">Sin gastos en este periodo.</p>}
-          </Card>
-        </div>
-      ) : null}
+      {s && <Charts summary={s} />}
 
-      <section aria-labelledby="gastos-lista">
-        <h2 id="gastos-lista" className="mb-3 font-display text-lg font-semibold text-fg-warm">
-          Movimientos
-        </h2>
+      <Section
+        id="gastos-lista"
+        title="Movimientos"
+        action={
+          <Select aria-label="Categoría de los movimientos" value={category} onChange={(e) => setCategory(e.target.value)} className="w-44 sm:w-52">
+            <option value="">Categoría: todas</option>
+            {EXPENSE_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {EXPENSE_CATEGORY_LABEL[c]}
+              </option>
+            ))}
+          </Select>
+        }
+      >
         {list.isPending ? (
-          <div role="status" className="space-y-2">
+          <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
             <span className="sr-only">Cargando gastos…</span>
             {Array.from({ length: 5 }, (_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-card" />
+              <div key={i} aria-hidden className="space-y-2 py-3">
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
             ))}
           </div>
         ) : list.isError ? (
@@ -138,9 +140,10 @@ export default function ExpensesTab() {
             <NoResults what="gastos" onReset={() => setCategory(null)} />
           ) : (
             <EmptyState
+              compact
               icon={<Receipt />}
               title="Sin gastos en este periodo"
-              description="Repostajes, seguro, impuestos, parking… Las intervenciones con coste aparecen aquí automáticamente."
+              description="Repostajes, seguro, impuestos, parking… Las intervenciones con coste aparecen aquí solas."
               action={canWrite && <Button onClick={() => setCreating(true)}>Añadir gasto</Button>}
             />
           )
@@ -154,7 +157,7 @@ export default function ExpensesTab() {
             <LoadMore hasNextPage={!!list.hasNextPage} isFetchingNextPage={list.isFetchingNextPage} fetchNextPage={list.fetchNextPage} shown={expenses.length} total={totalFromPages(list.data)} what="gastos" />
           </>
         )}
-      </section>
+      </Section>
 
       <Suspense fallback={null}>
         {(creating || editing) && (
@@ -189,6 +192,72 @@ export default function ExpensesTab() {
           })
         }
       />
+    </div>
+  )
+}
+
+/**
+ * Botón con aspecto de enlace para la acción que resuelve un dato que falta. `purpose` completa el nombre accesible
+ * ("Anotar km para calcular el coste por km"): empieza por el texto visible (WCAG 2.5.3) y no se confunde con el
+ * "Anotar km" de la cabecera de la ficha.
+ */
+function FixAction({ onClick, purpose, children }: { onClick: () => void; purpose: string; children: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={`${children} ${purpose}`} className="-my-1 self-start py-1 text-sm font-medium text-accent-ink underline-offset-4 hover:underline">
+      {children}
+    </button>
+  )
+}
+
+/**
+ * Las 3 cifras del periodo (R2: como mucho 3 grandes). Si la API dice `available: false` se muestra su `reason` y la
+ * acción que lo resuelve: anotar km para el coste por km y un repostaje para el consumo.
+ */
+function Figures({ summary: s, periodLabel, vehicle, canWrite, onAddFuel }: { summary: VehicleSummary; periodLabel: string; vehicle: Vehicle; canWrite: boolean; onAddFuel: () => void }) {
+  const ctx = useWorkspace()
+  const quick = useQuickActions()
+  const canLogKm = ctx.can('operate') && !vehicle.archived_at
+  return (
+    <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+      <StatCard label={`Total · ${periodLabel}`} value={formatMoney(s.totals.period)} change={s.totals.change_pct} upIsGood={false} />
+      <StatCard
+        label="Coste por km"
+        value={s.cost_per_km.value ? formatMoney(s.cost_per_km.value) : '—'}
+        hint={s.cost_per_km.km !== null ? `Sobre ${formatKm(s.cost_per_km.km)}` : undefined}
+        unavailable={
+          !s.cost_per_km.available
+            ? { reason: s.cost_per_km.reason, action: canLogKm && <FixAction onClick={() => quick.run('mileage', vehicle.id)} purpose="para calcular el coste por km">Anotar km</FixAction> }
+            : undefined
+        }
+      />
+      <StatCard
+        label="Consumo medio"
+        value={s.consumption.value ? formatDecimal(s.consumption.value, 1) : '—'}
+        unit={s.consumption.unit?.replace('100km', '100 km') ?? undefined}
+        hint={s.consumption.available ? `Lleno a lleno · ${s.consumption.fills} repostajes` : undefined}
+        unavailable={!s.consumption.available ? { reason: s.consumption.reason, action: canWrite && <FixAction onClick={onAddFuel} purpose="para calcular el consumo">Añadir repostaje</FixAction> } : undefined}
+        className="col-span-2 sm:col-span-1"
+      />
+    </div>
+  )
+}
+
+/** Por mes y por categoría, sin caja (R3). Las barras por mes son el gráfico que estaba en el Resumen. */
+function Charts({ summary: s }: { summary: VehicleSummary }) {
+  const last = s.by_month[s.by_month.length - 1]?.month
+  const anySpend = s.by_month.some((m) => (toNumber(m.total) ?? 0) > 0)
+  return (
+    <div className="grid gap-10 lg:grid-cols-2">
+      <Section title="Por mes" description={last ? `12 meses hasta ${formatMonth(last, 'long')}, todas las categorías.` : undefined}>
+        {anySpend ? (
+          <MonthlyBars data={s.by_month} label="Gasto por mes" height={200} />
+        ) : (
+          <p className="border-y border-line py-3 text-sm text-fg-muted">Sin gastos en estos 12 meses.</p>
+        )}
+      </Section>
+      <Section title="Por categoría" description="En el periodo elegido.">
+        {s.by_category.length ? <CategoryBreakdown data={s.by_category} /> : <p className="border-y border-line py-3 text-sm text-fg-muted">Sin gastos en este periodo.</p>}
+      </Section>
     </div>
   )
 }

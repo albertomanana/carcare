@@ -55,15 +55,16 @@ export function Field({ label, children, hint, error, required, hideLabel, label
   )
 }
 
-/** Agrupa campos relacionados con leyenda accesible. */
+/**
+ * Agrupa campos relacionados con leyenda accesible. La `<legend>` va como primer hijo del `<fieldset>`: solo así da
+ * nombre al grupo para los lectores de pantalla.
+ */
 export function Fieldset({ legend, description, children, className }: { legend: ReactNode; description?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <fieldset className={cn('min-w-0 space-y-4', className)}>
-      <div>
-        <legend className="font-display text-base font-semibold text-fg-warm">{legend}</legend>
-        {description && <p className="mt-0.5 text-sm text-fg-muted">{description}</p>}
-      </div>
-      {children}
+    <fieldset className={cn('min-w-0', className)}>
+      <legend className="p-0 font-display text-base font-semibold text-fg-warm">{legend}</legend>
+      {description && <p className="mt-0.5 text-sm text-fg-muted">{description}</p>}
+      <div className="mt-4 space-y-4">{children}</div>
     </fieldset>
   )
 }

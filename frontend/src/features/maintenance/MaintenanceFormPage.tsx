@@ -1,23 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Archive,
-  Battery,
-  Calculator,
-  Check,
-  CircleDot,
-  CircleEllipsis,
-  ClipboardCheck,
-  Cog,
-  Disc3,
-  Droplets,
-  Filter,
-  Info,
-  Lock,
-  type LucideIcon,
-  Snowflake,
-  TriangleAlert,
-  Wrench,
-} from 'lucide-react'
+import { Archive, Check, Lock, TriangleAlert } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useForm, useWatch, type UseFormReturn } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
@@ -29,15 +11,13 @@ import { useVehicle } from '@/api/hooks/vehicles'
 import type { MaintenanceInput, MaintenanceRecord, RecordType, ServiceKind, Vehicle, Zone } from '@/api/types'
 import { LineItemsEditor, lineItemSchema, lineToForm, formToLine, MAX_ITEMS } from '@/components/forms/LineItemsEditor'
 import { FormErrors, MileageConflictNotice } from '@/components/forms/MileageConflictNotice'
-import { Plate } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
+import { Disclosure } from '@/components/ui/Disclosure'
 import { Field, Fieldset } from '@/components/ui/Field'
 import { DateInput, Input, MileageInput, MoneyInput, Select, Textarea } from '@/components/ui/inputs'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
-import { VehicleThumb } from '@/components/vehicles/VehicleVisuals'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
@@ -55,19 +35,12 @@ import { amountError, isFutureDate, mileageError } from '@/lib/validation'
 const RECORD_TYPES = Object.keys(RECORD_TYPE_LABEL) as RecordType[]
 const SERVICE_KINDS = Object.keys(SERVICE_KIND_LABEL) as ServiceKind[]
 
-const QUICK_ICON: Record<string, LucideIcon> = {
-  oil: Droplets,
-  service: Wrench,
-  itv: ClipboardCheck,
-  tyres: CircleDot,
-  brakes: Disc3,
-  battery: Battery,
-  timing: Cog,
-  filters: Filter,
-  ac: Snowflake,
-  breakdown: TriangleAlert,
-  other: CircleEllipsis,
-}
+/**
+ * Chips de "¿Qué se hizo?" (5.5 del informe de UX): los 6 más habituales y sin icono. Batería, distribución, filtros,
+ * aire acondicionado y el resto se eligen en "Más detalles" (tipo, zona y servicio concreto).
+ */
+const QUICK_CHIPS = ['oil', 'service', 'itv', 'tyres', 'brakes', 'breakdown']
+const CHIPS = QUICK_SERVICES.filter((q) => QUICK_CHIPS.includes(q.id))
 
 const moneyField = z.string().superRefine((v, ctx) => {
   const e = amountError(v)
@@ -274,96 +247,79 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
     })
   })
 
+  // Secciones con título y separador, sin cajas ni columna de resumen (5.5 del informe de UX). El separador va en un
+  // contenedor y no en el <fieldset>: con borde, el navegador pinta la <legend> encima de la línea
+  const section = 'border-t border-line pt-6'
+
   return (
     <>
-      <PageHeader
-        back={{ to: `${base}/historial`, label: vehicle.display_name }}
-        title={isEdit ? 'Editar intervención' : 'Nueva intervención'}
-        description={isEdit ? record.title : 'Mantenimiento, reparación, avería, ITV… con sus piezas, mano de obra y coste.'}
-      />
+      <PageHeader back={{ to: `${base}/historial`, label: vehicle.display_name }} title={isEdit ? 'Editar intervención' : 'Nueva intervención'} description={isEdit ? record.title : undefined} />
 
-      <form onSubmit={onSubmit} noValidate className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start xl:gap-8">
-        <div className="min-w-0 space-y-5">
-          <Card className="p-5 md:p-6">
-            <WhatSection form={form} onQuick={applyQuick} />
-          </Card>
+      <form onSubmit={onSubmit} noValidate className="max-w-3xl space-y-6">
+        <WhatSection form={form} onQuick={applyQuick} />
 
-          <Card className="p-5 md:p-6">
-            <Fieldset legend="Cuándo y dónde">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Fecha" required error={e.service_date?.message}>
-                  <DateInput allowFuture={false} {...register('service_date')} />
-                </Field>
-                <Field
-                  label="Kilómetros"
-                  error={e.mileage?.message}
-                  hint={
-                    vehicle.current_mileage !== null
-                      ? `Último registro: ${formatKm(vehicle.current_mileage)}${vehicle.mileage_updated_at ? ` (${formatDate(vehicle.mileage_updated_at)})` : ''}. Se guarda también como lectura.`
-                      : 'Opcional. Se guarda también como lectura de kilometraje.'
-                  }
-                  labelAside={
-                    !isEdit &&
-                    vehicle.current_mileage !== null && (
-                      <button
-                        type="button"
-                        className="-my-2 rounded-control px-1 py-2 text-xs font-medium text-accent-ink hover:underline"
-                        onClick={() => {
-                          setValue('mileage', formatNumber(vehicle.current_mileage), { shouldDirty: true, shouldValidate: true })
-                          clearConflict()
-                        }}
-                      >
-                        Usar {formatKm(vehicle.current_mileage)}
-                      </button>
-                    )
-                  }
-                >
-                  <MileageInput {...register('mileage', { onChange: clearConflict })} />
-                </Field>
-              </div>
-              <WorkshopField form={form} vehicleId={vehicle.id} />
-            </Fieldset>
-          </Card>
-
-          <Card className="p-5 md:p-6">
-            <Fieldset legend="Piezas y mano de obra" description={showPrices ? 'Opcional. Con precios, CarCare suma el total por ti.' : 'Opcional. Los importes solo los ven propietarios y gerentes.'}>
-              <LineItemsEditor form={form} showPrices={showPrices} />
-              {e.items?.message && <p className="text-xs font-medium text-danger">{e.items.message}</p>}
-            </Fieldset>
-          </Card>
-
-          {showPrices && (
-            <Card className="p-5 md:p-6">
-              <CostSection form={form} />
-            </Card>
-          )}
-
-          <Card className="p-5 md:p-6">
-            <Fieldset legend="Notas">
-              <Field label="Descripción" hideLabel error={e.description?.message} hint="Síntomas, qué se revisó, garantía, recomendaciones del taller…">
-                <Textarea rows={4} maxLength={5000} placeholder="Opcional" {...register('description')} />
+        <div className={section}>
+          <Fieldset legend="Cuándo y dónde">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Fecha" required error={e.service_date?.message}>
+                <DateInput allowFuture={false} {...register('service_date')} />
               </Field>
-            </Fieldset>
-          </Card>
-
-          {conflict && (
-            <div ref={conflictRef}>
-              <MileageConflictNotice message={conflict} checked={confirmDrop} onCheckedChange={setConfirmDrop} />
+              <Field
+                label="Kilómetros"
+                error={e.mileage?.message}
+                hint={
+                  vehicle.current_mileage !== null
+                    ? `Último registro: ${formatKm(vehicle.current_mileage)}${vehicle.mileage_updated_at ? ` (${formatDate(vehicle.mileage_updated_at)})` : ''}. Se guarda también como lectura.`
+                    : 'Opcional. Se guarda también como lectura de kilometraje.'
+                }
+                labelAside={
+                  !isEdit &&
+                  vehicle.current_mileage !== null && (
+                    <button
+                      type="button"
+                      className="-my-2 rounded-control px-1 py-2 text-xs font-medium text-accent-ink hover:underline"
+                      onClick={() => {
+                        setValue('mileage', formatNumber(vehicle.current_mileage), { shouldDirty: true, shouldValidate: true })
+                        clearConflict()
+                      }}
+                    >
+                      Usar {formatKm(vehicle.current_mileage)}
+                    </button>
+                  )
+                }
+              >
+                <MileageInput {...register('mileage', { onChange: clearConflict })} />
+              </Field>
             </div>
-          )}
-          <FormErrors messages={orphans} />
-
-          <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
-            <Link to={`${base}/historial`} className="inline-flex min-h-11 items-center justify-center px-3 text-sm text-fg-muted hover:text-fg">
-              Cancelar
-            </Link>
-            <Button type="submit" variant="primary" loading={save.isPending} disabled={!!conflict && !confirmDrop} icon={<Check aria-hidden />}>
-              {isEdit ? 'Guardar cambios' : 'Guardar intervención'}
-            </Button>
-          </div>
+            <WorkshopField form={form} vehicleId={vehicle.id} />
+          </Fieldset>
         </div>
 
-        <Summary form={form} vehicle={vehicle} showPrices={showPrices} />
+        <CostSection form={form} showPrices={showPrices} className={section} />
+
+        <div className={section}>
+          <Fieldset legend="Notas">
+            <Field label="Descripción" hideLabel error={e.description?.message} hint="Síntomas, qué se revisó, garantía, recomendaciones del taller…">
+              <Textarea rows={3} maxLength={5000} placeholder="Opcional" {...register('description')} />
+            </Field>
+          </Fieldset>
+        </div>
+
+        {conflict && (
+          <div ref={conflictRef}>
+            <MileageConflictNotice message={conflict} checked={confirmDrop} onCheckedChange={setConfirmDrop} />
+          </div>
+        )}
+        <FormErrors messages={orphans} />
+
+        <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
+          <Link to={`${base}/historial`} className="inline-flex min-h-11 items-center justify-center px-3 text-sm text-fg-muted hover:text-fg">
+            Cancelar
+          </Link>
+          <Button type="submit" variant="primary" loading={save.isPending} disabled={!!conflict && !confirmDrop} icon={<Check aria-hidden />}>
+            {isEdit ? 'Guardar cambios' : 'Guardar intervención'}
+          </Button>
+        </div>
       </form>
       {guard}
     </>
@@ -375,11 +331,14 @@ function WhatSection({ form, onQuick }: { form: UseFormReturn<Values>; onQuick: 
   const [type, zone, serviceKind] = useWatch({ control: form.control, name: ['type', 'zone', 'service_kind'] })
   const active = matchQuickService({ type, zone, service_kind: serviceKind })
   const e = formState.errors
+  const detailErrors = !!(e.type || e.zone || e.service_kind)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  // Cerrado, "Más detalles" dice lo que ha rellenado el chip: nada se guarda sin verse
+  const summary = [RECORD_TYPE_LABEL[type], ZONE_LABEL[zone], serviceKind ? SERVICE_KIND_LABEL[serviceKind as ServiceKind] : null].filter(Boolean).join(' · ')
   return (
-    <Fieldset legend="¿Qué se hizo?" description="Elige uno para rellenar tipo, zona y título. Puedes cambiarlos después.">
+    <Fieldset legend="¿Qué se hizo?" description="Elige uno para rellenar el título, el tipo y la zona, o escribe el título.">
       <div role="group" aria-label="Rellenar rápido" className="flex flex-wrap gap-2">
-        {QUICK_SERVICES.map((q) => {
-          const Icon = QUICK_ICON[q.id] ?? Wrench
+        {CHIPS.map((q) => {
           const pressed = active?.id === q.id
           return (
             <button
@@ -388,13 +347,12 @@ function WhatSection({ form, onQuick }: { form: UseFormReturn<Values>; onQuick: 
               aria-pressed={pressed}
               onClick={() => onQuick(q)}
               className={cn(
-                'inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 md:min-h-10',
+                'inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 md:min-h-10',
                 pressed ? 'border-accent bg-accent-soft text-fg' : 'border-line bg-surface-2 text-fg-muted hover:border-line-strong hover:text-fg',
               )}
             >
-              <Icon aria-hidden className={cn('size-4', pressed && 'text-accent-ink')} />
-              {q.label}
               {pressed && <Check aria-hidden className="size-3.5 text-accent-ink" />}
+              {q.label}
             </button>
           )
         })}
@@ -402,36 +360,38 @@ function WhatSection({ form, onQuick }: { form: UseFormReturn<Values>; onQuick: 
       <Field label="Título" required error={e.title?.message}>
         <Input autoComplete="off" maxLength={120} placeholder="P. ej. Cambio de aceite y filtro" {...register('title')} />
       </Field>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Tipo" required>
-          <Select {...register('type')}>
-            {RECORD_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {RECORD_TYPE_LABEL[t]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Zona del vehículo" required hint="La que se marca en el modelo 3D.">
-          <Select {...register('zone')}>
-            {ZONES.map((z) => (
-              <option key={z} value={z}>
-                {ZONE_LABEL[z]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Servicio concreto" hint="Para «desde el último cambio de aceite…».">
-          <Select {...register('service_kind')}>
-            <option value="">Ninguno</option>
-            {SERVICE_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {SERVICE_KIND_LABEL[k]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </div>
+      <Disclosure label="Más detalles" summary={summary} open={detailsOpen || detailErrors} onOpenChange={setDetailsOpen}>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Tipo" required error={e.type?.message}>
+            <Select {...register('type')}>
+              {RECORD_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {RECORD_TYPE_LABEL[t]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Zona del vehículo" required error={e.zone?.message} hint="La que se marca en el mapa de zonas.">
+            <Select {...register('zone')}>
+              {ZONES.map((z) => (
+                <option key={z} value={z}>
+                  {ZONE_LABEL[z]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Servicio concreto" error={e.service_kind?.message} hint="Para «desde el último cambio de aceite…».">
+            <Select {...register('service_kind')}>
+              <option value="">Ninguno</option>
+              {SERVICE_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {SERVICE_KIND_LABEL[k]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+      </Disclosure>
     </Fieldset>
   )
 }
@@ -454,10 +414,19 @@ function WorkshopField({ form, vehicleId }: { form: UseFormReturn<Values>; vehic
   )
 }
 
-function CostSection({ form }: { form: UseFormReturn<Values> }) {
-  const { register, formState, setValue } = form
+/**
+ * Coste (5.5 del informe de UX): a la vista solo el total. Las líneas de piezas y mano de obra y su desglose van en
+ * "Desglosar en piezas y mano de obra", abierto si ya hay algo o si hay un error dentro. Sin permiso para ver importes
+ * (mecánico de un taller) solo quedan las líneas, sin precios.
+ */
+function CostSection({ form, showPrices, className }: { form: UseFormReturn<Values>; showPrices: boolean; className?: string }) {
+  const { register, formState, setValue, getValues } = form
   const ctx = useWorkspace()
   const [items, parts, labor, total, type] = useWatch({ control: form.control, name: ['items', 'parts_cost', 'labor_cost', 'total_cost', 'type'] })
+  const [open, setOpen] = useState(() => {
+    const v = getValues()
+    return v.items.length > 0 || !!v.parts_cost.trim() || !!v.labor_cost.trim()
+  })
   const lines = items ?? []
   const split = splitLines(lines)
   const { subtotalCents, unpricedCount } = sumLines(lines)
@@ -471,6 +440,8 @@ function CostSection({ form }: { form: UseFormReturn<Values> }) {
   if (totalCents !== null && (partsCents !== null || laborCents !== null) && totalCents !== (partsCents ?? 0) + (laborCents ?? 0))
     warnings.push(`Piezas + mano de obra suman ${formatMoney(centsToMoney((partsCents ?? 0) + (laborCents ?? 0)))}, distinto del total.`)
   const e = formState.errors
+  const innerErrors = !!(e.items || e.parts_cost || e.labor_cost)
+  const lineCount = lines.length ? plural(lines.length, 'línea', 'líneas') : undefined
 
   const fillFromLines = () => {
     const opts = { shouldDirty: true, shouldValidate: true }
@@ -479,127 +450,85 @@ function CostSection({ form }: { form: UseFormReturn<Values> }) {
     setValue('total_cost', moneyToInput(centsToMoney(subtotalCents)), opts)
   }
 
+  const editor = (
+    <>
+      <LineItemsEditor form={form} showPrices={showPrices} />
+      {e.items?.message && <p className="text-xs font-medium text-danger">{e.items.message}</p>}
+    </>
+  )
+
+  if (!showPrices)
+    return (
+      <div className={className}>
+        <Fieldset legend="Piezas y mano de obra" description="Opcional. Los importes solo los ven propietarios y gerentes.">
+          <Disclosure label={lines.length ? 'Ver las líneas' : 'Añadir líneas'} summary={lineCount} open={open || innerErrors} onOpenChange={setOpen}>
+            {editor}
+          </Disclosure>
+        </Fieldset>
+      </div>
+    )
+
   const totalHint =
     totalCents !== null
-      ? 'El importe que pagaste.'
+      ? 'El importe que pagaste, con IVA.'
       : effective.source === 'breakdown'
         ? `Si lo dejas vacío: piezas + mano de obra (${formatMoney(centsToMoney(effective.cents ?? 0))}).`
         : effective.source === 'lines'
           ? `Si lo dejas vacío: la suma de las líneas (${formatMoney(centsToMoney(effective.cents ?? 0))}).`
-          : 'Si lo dejas vacío, la intervención queda sin coste.'
+          : 'Con IVA. Si lo dejas vacío, la intervención queda sin coste.'
 
   return (
-    <Fieldset legend="Coste" description="Importes con IVA, tal como figuran en la factura.">
-      {split.pricedCount > 0 && (
-        <div className="flex flex-col gap-3 rounded-card border border-line bg-surface-2/50 p-3 sm:flex-row sm:items-center">
-          <Calculator aria-hidden className="hidden size-5 shrink-0 text-fg-subtle sm:block" />
-          <p className="flex-1 text-sm text-fg-muted">
-            Las líneas suman <span className="font-medium text-fg tabular">{formatMoney(centsToMoney(subtotalCents))}</span>
-            <span className="tabular">
-              {' '}
-              (piezas {formatMoney(centsToMoney(split.partsCents))} · mano de obra {formatMoney(centsToMoney(split.laborCents))})
-            </span>
-            {unpricedCount > 0 && `. ${plural(unpricedCount, 'línea sin precio no suma', 'líneas sin precio no suman')}`}.
-          </p>
-          <Button size="sm" onClick={fillFromLines}>
-            Usar estos importes
-          </Button>
-        </div>
-      )}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Piezas" error={e.parts_cost?.message}>
-          <MoneyInput {...register('parts_cost')} />
-        </Field>
-        <Field label="Mano de obra" error={e.labor_cost?.message}>
-          <MoneyInput {...register('labor_cost')} />
-        </Field>
-        <Field label="Total" error={e.total_cost?.message} hint={totalHint}>
+    <div className={className}>
+      <Fieldset legend="Coste">
+        <Field label="Total" error={e.total_cost?.message} hint={totalHint} className="sm:max-w-xs">
           <MoneyInput {...register('total_cost')} />
         </Field>
-      </div>
-      <div aria-live="polite" className="space-y-2">
-        {warnings.length > 0 && (
-          <div className="flex items-start gap-2 rounded-card border border-warning/40 bg-warning-soft p-3 text-sm text-fg">
-            <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
-            <div>
-              {warnings.map((w) => (
-                <p key={w}>{w}</p>
-              ))}
-              <p className="mt-1 text-fg-muted">Se guardará el total que has escrito. Revísalo si no es intencionado (descuentos, tasas…).</p>
-            </div>
-          </div>
-        )}
-      </div>
-      {ctx.isPersonal && (
-        <p className="flex items-start gap-2 text-sm text-fg-muted">
-          <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-fg-subtle" />
-          <span>
-            Con coste, cuenta como un gasto de «{EXPENSE_CATEGORY_LABEL[linkedExpenseCategory(type)]}» en Gastos y en la analítica, una sola vez. Se gestiona desde aquí, no desde Gastos.
-          </span>
-        </p>
-      )}
-    </Fieldset>
-  )
-}
-
-function Summary({ form, vehicle, showPrices }: { form: UseFormReturn<Values>; vehicle: Vehicle; showPrices: boolean }) {
-  const [type, zone, serviceKind, title, date, mileage, items, parts, labor, total] = useWatch({
-    control: form.control,
-    name: ['type', 'zone', 'service_kind', 'title', 'service_date', 'mileage', 'items', 'parts_cost', 'labor_cost', 'total_cost'],
-  })
-  const effective = effectiveTotalCents({ total, parts, labor }, items ?? [])
-  const km = parseIntegerInput(mileage)
-  const rows: [string, string][] = [
-    ['Tipo', RECORD_TYPE_LABEL[type]],
-    ['Zona', ZONE_LABEL[zone]],
-    ['Servicio', serviceKind ? SERVICE_KIND_LABEL[serviceKind as ServiceKind] : 'Ninguno'],
-    ['Fecha', date ? formatDate(date) : 'Sin fecha'],
-    ['Kilómetros', km !== null ? formatKm(km) : 'Sin indicar'],
-    ['Líneas', (items ?? []).length ? plural((items ?? []).length, 'línea', 'líneas') : 'Ninguna'],
-  ]
-  return (
-    <aside aria-label="Resumen de la intervención" className="hidden lg:sticky lg:top-24 lg:block">
-      <Card className="overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-line p-4">
-          <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-control bg-surface-2">
-            <VehicleThumb vehicle={vehicle} className="absolute inset-0 h-full w-full min-h-0 rounded-none border-0 bg-transparent p-1" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate font-medium text-fg">{vehicle.display_name}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
-              <Plate value={vehicle.plate} />
-              <span className="tabular">{formatKm(vehicle.current_mileage, { empty: 'Sin km' })}</span>
-            </div>
-          </div>
-        </div>
-        <div className="p-4">
-          <p className="line-clamp-2 font-display text-base font-semibold text-fg-warm">{title.trim() || 'Sin título'}</p>
-          <dl className="mt-3 space-y-1.5 text-sm">
-            {rows.map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-3">
-                <dt className="text-fg-subtle">{k}</dt>
-                <dd className="truncate text-right text-fg tabular">{v}</dd>
+        <div aria-live="polite">
+          {warnings.length > 0 && (
+            <div className="flex items-start gap-2 border-l-2 border-warning pl-3 text-sm text-fg">
+              <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+              <div>
+                {warnings.map((w) => (
+                  <p key={w}>{w}</p>
+                ))}
+                <p className="mt-1 text-fg-muted">Se guardará el total que has escrito. Revísalo si no es intencionado (descuentos, tasas…).</p>
               </div>
-            ))}
-          </dl>
-          {showPrices && (
-            <div className="mt-4 border-t border-line pt-3">
-              <p className="text-sm text-fg-muted">Total que se guardará</p>
-              <p className="mt-0.5 font-display text-2xl font-semibold text-fg-warm tabular">{effective.cents !== null ? formatMoney(centsToMoney(effective.cents)) : 'Sin coste'}</p>
-              <p className="text-xs text-fg-muted">
-                {effective.source === 'manual'
-                  ? 'Importe escrito a mano.'
-                  : effective.source === 'breakdown'
-                    ? 'Piezas + mano de obra.'
-                    : effective.source === 'lines'
-                      ? 'Suma de las líneas con precio.'
-                      : 'Añade un total o líneas con precio.'}
-              </p>
             </div>
           )}
         </div>
-      </Card>
-    </aside>
+        <Disclosure label="Desglosar en piezas y mano de obra" summary={lineCount} open={open || innerErrors} onOpenChange={setOpen}>
+          {editor}
+          {split.pricedCount > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <p className="flex-1 text-sm text-fg-muted">
+                Las líneas suman <span className="font-medium text-fg tabular">{formatMoney(centsToMoney(subtotalCents))}</span>
+                <span className="tabular">
+                  {' '}
+                  (piezas {formatMoney(centsToMoney(split.partsCents))} · mano de obra {formatMoney(centsToMoney(split.laborCents))})
+                </span>
+                {unpricedCount > 0 && `. ${plural(unpricedCount, 'línea sin precio no suma', 'líneas sin precio no suman')}`}.
+              </p>
+              <Button size="sm" onClick={fillFromLines}>
+                Usar estos importes
+              </Button>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Piezas" error={e.parts_cost?.message}>
+              <MoneyInput {...register('parts_cost')} />
+            </Field>
+            <Field label="Mano de obra" error={e.labor_cost?.message}>
+              <MoneyInput {...register('labor_cost')} />
+            </Field>
+          </div>
+        </Disclosure>
+        {ctx.isPersonal && (
+          <p className="text-sm text-fg-muted">
+            Con coste, cuenta como un gasto de «{EXPENSE_CATEGORY_LABEL[linkedExpenseCategory(type)]}» en Gastos y en la analítica, una sola vez. Se cambia desde aquí, no desde Gastos.
+          </p>
+        )}
+      </Fieldset>
+    </div>
   )
 }
 
@@ -607,17 +536,12 @@ function FormSkeleton() {
   return (
     <div role="status" aria-live="polite">
       <span className="sr-only">Cargando formulario…</span>
-      <div aria-hidden className="space-y-5">
+      <div aria-hidden className="max-w-3xl space-y-5">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-9 w-72 max-w-full" />
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="space-y-5">
-            <Skeleton className="h-64 w-full rounded-card" />
-            <Skeleton className="h-44 w-full rounded-card" />
-            <Skeleton className="h-32 w-full rounded-card" />
-          </div>
-          <Skeleton className="hidden h-80 rounded-card lg:block" />
-        </div>
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-24 w-full" />
       </div>
     </div>
   )

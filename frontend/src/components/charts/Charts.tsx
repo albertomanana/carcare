@@ -8,7 +8,7 @@ import type { ExpenseCategory, ISODate, Money, YearMonth } from '@/api/types'
 import { useCssVars } from '@/hooks/useCssVars'
 import { cn } from '@/lib/cn'
 import { formatDate, formatKm, formatMoney, formatMonth, formatPercent, toNumber } from '@/lib/format'
-import { EXPENSE_CATEGORY_ICON, EXPENSE_CATEGORY_LABEL } from '@/lib/labels'
+import { EXPENSE_CATEGORY_LABEL } from '@/lib/labels'
 
 const VARS = ['chart-1', 'chart-2', 'fg-subtle', 'fg-muted', 'line', 'surface-3', 'cat-1', 'cat-2', 'cat-3', 'cat-4', 'cat-5', 'cat-other', 'accent'] as const
 
@@ -178,8 +178,8 @@ export function CategoryBreakdown({ data, className }: { data: { category: Expen
   const restCount = sorted.slice(5).reduce((s, d) => s + d.count, 0)
   const total = sorted.reduce((s, d) => s + d.value, 0)
   const slices = [
-    ...top.map((d, i) => ({ key: d.category as string, label: EXPENSE_CATEGORY_LABEL[d.category], value: d.value, count: d.count, color: c[CAT_KEYS[i]], icon: EXPENSE_CATEGORY_ICON[d.category] })),
-    ...(restValue > 0 ? [{ key: 'rest', label: 'Resto de categorías', value: restValue, count: restCount, color: c['cat-other'], icon: null }] : []),
+    ...top.map((d, i) => ({ key: d.category as string, label: EXPENSE_CATEGORY_LABEL[d.category], value: d.value, count: d.count, color: c[CAT_KEYS[i]] })),
+    ...(restValue > 0 ? [{ key: 'rest', label: 'Resto de categorías', value: restValue, count: restCount, color: c['cat-other'] }] : []),
   ]
 
   return (
@@ -201,21 +201,18 @@ export function CategoryBreakdown({ data, className }: { data: { category: Expen
           </div>
         </div>
       </div>
+      {/* Sin icono (R7: el punto de color ya identifica la categoría) y sin recortar el nombre: puede ir en dos líneas */}
       <ul className="min-w-0 divide-y divide-line" aria-label="Gasto por categoría">
-        {slices.map((s) => {
-          const Icon = s.icon
-          return (
-            <li key={s.key} className="flex items-center gap-3 py-2.5">
-              <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-              {Icon && <Icon aria-hidden className="size-4 shrink-0 text-fg-subtle" />}
-              <span className="min-w-0 flex-1 truncate text-sm text-fg">
-                {s.label} <span className="text-xs text-fg-subtle">· {s.count} {s.count === 1 ? 'gasto' : 'gastos'}</span>
-              </span>
-              <span className="text-xs text-fg-muted tabular">{formatPercent(total ? (s.value / total) * 100 : 0, { digits: 0 })}</span>
-              <span className="w-24 text-right text-sm font-medium text-fg tabular">{formatMoney(s.value)}</span>
-            </li>
-          )
-        })}
+        {slices.map((s) => (
+          <li key={s.key} className="flex items-baseline gap-3 py-2.5">
+            <span aria-hidden className="size-2.5 shrink-0 translate-y-px rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="min-w-0 flex-1 text-sm text-fg">
+              {s.label} <span className="whitespace-nowrap text-xs text-fg-subtle">· {s.count} {s.count === 1 ? 'gasto' : 'gastos'}</span>
+            </span>
+            <span className="text-xs text-fg-muted tabular">{formatPercent(total ? (s.value / total) * 100 : 0, { digits: 0 })}</span>
+            <span className="w-24 text-right text-sm font-medium text-fg tabular">{formatMoney(s.value)}</span>
+          </li>
+        ))}
       </ul>
     </div>
   )

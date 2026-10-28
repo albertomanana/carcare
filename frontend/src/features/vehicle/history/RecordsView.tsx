@@ -133,7 +133,7 @@ export function RecordsView({ vehicle }: { vehicle: Vehicle }) {
             onChange={(e) => setType(e.target.value)}
             className="lg:w-36"
           >
-            <option value="">Todos los tipos</option>
+            <option value="">Tipo: todos</option>
             {TYPES.map((t) => (
               <option key={t} value={t}>
                 {RECORD_TYPE_LABEL[t]}
@@ -146,7 +146,7 @@ export function RecordsView({ vehicle }: { vehicle: Vehicle }) {
             onChange={(e) => setZone(e.target.value)}
             className="lg:w-40"
           >
-            <option value="">Todas las zonas</option>
+            <option value="">Zona: todas</option>
             {ZONES.map((z) => (
               <option key={z} value={z}>
                 {ZONE_LABEL[z]}
@@ -159,7 +159,7 @@ export function RecordsView({ vehicle }: { vehicle: Vehicle }) {
             onChange={(e) => setYear(e.target.value)}
             className="lg:w-32"
           >
-            <option value="">Todos los años</option>
+            <option value="">Año: todos</option>
             {years.map((y) => (
               <option key={y} value={y}>
                 {y}

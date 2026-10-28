@@ -1,5 +1,5 @@
 import { Archive, ArchiveRestore, ArrowLeft, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Trash2, Wrench } from 'lucide-react'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { errorMessage } from '@/api/client'
@@ -16,6 +16,7 @@ import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { cn } from '@/lib/cn'
+import { fitTabs } from '@/lib/tabs'
 import { formatDate, formatKm, formatRelativeDate } from '@/lib/format'
 import { FUEL_LABEL, TRANSMISSION_LABEL } from '@/lib/labels'
 import { plural } from '@/lib/text'
@@ -67,35 +68,78 @@ export default function VehicleDetailPage() {
   )
 }
 
-/** En el móvil caben 5 pestañas cortas; si hay más (taller), las últimas pasan a "Más ▾" en lugar de esconderse. */
-const MOBILE_TABS = 5
+const tabLinkClass = (active: boolean) =>
+  cn(
+    // A 360 px, 13 px de letra y 4 px de margen bastan para que quepan las 5 pestañas del particular (5.2)
+    'inline-flex min-h-12 items-center whitespace-nowrap border-b-2 px-1 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm',
+    active ? 'border-fg text-fg' : 'border-transparent text-fg-muted hover:text-fg',
+  )
 
+/**
+ * Pestañas de la ficha. Las que no caben (5 a 360 px con la letra grande, o las 6 del taller) pasan a "Más ▾" en
+ * lugar de salirse de la pantalla o esconderse en un desplazamiento lateral (hallazgo I4). Una fila invisible mide el
+ * ancho real de cada pestaña.
+ */
 function VehicleTabs({ tabs }: { tabs: Tab[] }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const listRef = useRef<HTMLUListElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(tabs.length)
   const isActive = (t: Tab) => (t.end ? location.pathname.replace(/\/$/, '') === t.to : location.pathname.startsWith(t.to))
-  const overflow = tabs.length > MOBILE_TABS ? tabs.slice(MOBILE_TABS - 1) : []
+  const activeIndex = tabs.findIndex(isActive)
+  const shown = Math.min(visible, tabs.length)
+  const overflow = tabs.slice(shown)
   const activeOverflow = overflow.find(isActive)
-  const linkClass = (active: boolean) =>
-    cn(
-      'inline-flex min-h-12 items-center whitespace-nowrap border-b-2 px-2 text-sm font-medium transition-colors sm:px-3',
-      active ? 'border-fg text-fg' : 'border-transparent text-fg-muted hover:text-fg',
-    )
+  const labels = tabs.map((t) => t.label).join('|')
+
+  useLayoutEffect(() => {
+    const list = listRef.current
+    const measure = measureRef.current
+    if (!list || !measure) return
+    const compute = () => {
+      const items = [...measure.children] as HTMLElement[]
+      const n = labels.split('|').length
+      const widths = items.slice(0, n).map((el) => el.offsetWidth)
+      // Muestras del botón: una con el nombre de cada pestaña y la última con "Más"
+      const triggers = items.slice(n).map((el) => el.offsetWidth)
+      const trigger = (firstHidden: number) => (activeIndex >= firstHidden ? triggers[activeIndex] : triggers[n])
+      setVisible(fitTabs(widths, trigger, list.clientWidth))
+    }
+    compute()
+    const ro = new ResizeObserver(compute)
+    ro.observe(list)
+    ro.observe(measure)
+    return () => ro.disconnect()
+  }, [labels, activeIndex])
 
   return (
     <nav aria-label="Secciones del vehículo" className="no-print sticky top-16 z-10 mb-6 border-b border-line bg-canvas">
-      <ul className="-mb-px flex justify-between sm:justify-start sm:gap-1">
-        {tabs.map((t, i) => (
-          <li key={t.to} className={cn('shrink-0', overflow.length > 0 && i >= MOBILE_TABS - 1 && 'max-sm:hidden')}>
-            <NavLink to={t.to} end={t.end} className={({ isActive: active }) => linkClass(active)}>
+      <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute left-0 top-0 flex h-0 w-max overflow-hidden whitespace-nowrap">
+        {tabs.map((t) => (
+          <span key={t.to} className={tabLinkClass(false)}>
+            {t.label}
+          </span>
+        ))}
+        {[...tabs.map((t) => t.label), 'Más'].map((label, i) => (
+          <span key={i} className={cn(tabLinkClass(false), 'gap-1')}>
+            {label}
+            <ChevronDown className="size-4" />
+          </span>
+        ))}
+      </div>
+      <ul ref={listRef} className="-mb-px flex min-w-0 max-sm:justify-between">
+        {tabs.slice(0, shown).map((t) => (
+          <li key={t.to} className="shrink-0">
+            <NavLink to={t.to} end={t.end} className={({ isActive: active }) => tabLinkClass(active)}>
               {t.label}
             </NavLink>
           </li>
         ))}
         {overflow.length > 0 && (
-          <li className="shrink-0 sm:hidden">
+          <li className="shrink-0">
             <DropdownMenu>
-              <DropdownMenuTrigger className={cn(linkClass(!!activeOverflow), 'gap-1')} aria-label={activeOverflow ? `${activeOverflow.label} (más secciones)` : 'Más secciones'}>
+              <DropdownMenuTrigger className={cn(tabLinkClass(!!activeOverflow), 'gap-1')} aria-label={activeOverflow ? `${activeOverflow.label} (más secciones)` : 'Más secciones'}>
                 {activeOverflow?.label ?? 'Más'}
                 <ChevronDown aria-hidden className="size-4" />
               </DropdownMenuTrigger>

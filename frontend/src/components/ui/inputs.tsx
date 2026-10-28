@@ -44,10 +44,26 @@ export interface SelectProps extends ComponentProps<'select'> {
 }
 
 /** Select nativo con estilo: accesible y cómodo en móvil. */
+/**
+ * Clases que deciden si el control se ve y dónde se coloca. Van al contenedor (que lleva el icono) y no al `<select>`:
+ * con `md:hidden` en el `<select>` la flecha se quedaba sola en la pantalla, y `sm:col-span-2` o `sm:ml-auto` no
+ * hacían nada porque el elemento de la rejilla o de la fila flexible es el contenedor. El ancho sigue en el `<select>`.
+ */
+const WRAPPER_CLASS = /^([\w@[\]-]+:)*(hidden|block|inline-block|col-span-\S+|row-start-\S+|-?m[trblxy]?-\S+|self-\S+|order-\S+)$/
+
+function splitSelectClasses(className: string | undefined): [string, string] {
+  const wrapper: string[] = []
+  const own: string[] = []
+  for (const token of (className ?? '').split(/\s+/).filter(Boolean)) (WRAPPER_CLASS.test(token) ? wrapper : own).push(token)
+  return [wrapper.join(' '), own.join(' ')]
+}
+
 export function Select({ className, id, 'aria-describedby': describedBy, children, placeholder, ...props }: SelectProps) {
   const a11y = useControlA11y(id, undefined, describedBy)
+  const [wrapperClass, ownClass] = splitSelectClasses(className)
+  className = ownClass
   return (
-    <div className="relative">
+    <div className={cn('relative', wrapperClass)}>
       <select className={cn(inputClasses, 'appearance-none pr-9', className)} {...a11y} {...props}>
         {placeholder !== undefined && <option value="">{placeholder}</option>}
         {children}
