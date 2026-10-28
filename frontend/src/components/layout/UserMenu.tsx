@@ -24,8 +24,10 @@ export function ThemeToggle() {
   )
 }
 
+/** Menú del avatar: ajustes, tema y salir. El tema ya no está en la barra superior (5.6). */
 export function UserMenu() {
   const { user } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const logout = useLogout()
   const navigate = useNavigate()
 
@@ -43,11 +45,11 @@ export function UserMenu() {
         className="grid size-11 place-items-center rounded-full transition-colors hover:bg-surface-2 data-[state=open]:bg-surface-2 md:size-10"
         aria-label={`Menú de usuario de ${user?.name ?? ''}`}
       >
-        <Avatar name={user?.name} size="sm" highlight />
+        <Avatar name={user?.name} size="sm" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64">
         <div className="flex items-center gap-3 px-2.5 py-2">
-          <Avatar name={user?.name} highlight />
+          <Avatar name={user?.name} />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-fg">{user?.name}</p>
             <p className="truncate text-xs text-fg-subtle">{user?.email}</p>
@@ -56,6 +58,9 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem icon={<Settings aria-hidden />} onSelect={() => navigate('/app/ajustes')}>
           Ajustes de la cuenta
+        </DropdownMenuItem>
+        <DropdownMenuItem icon={theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />} onSelect={toggleTheme}>
+          {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem icon={<LogOut aria-hidden />} onSelect={handleLogout} disabled={logout.isPending}>

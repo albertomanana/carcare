@@ -177,7 +177,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               return (
                 <div key={cmd.id}>
                   {header && (
-                    <div role="presentation" className="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.12em] text-fg-subtle first:pt-1">
+                    <div role="presentation" className="px-3 pb-1 pt-3 text-xs font-medium text-fg-subtle first:pt-1">
                       {header}
                     </div>
                   )}

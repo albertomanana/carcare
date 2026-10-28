@@ -1,4 +1,4 @@
-import { Check, ClipboardList, List, Plus, SquareKanban, TriangleAlert, UserRound } from 'lucide-react'
+import { Check, ChevronDown, ClipboardList, List, Plus, SquareKanban, TriangleAlert, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { flattenPages, totalFromPages } from '@/api/hooks/shared'
@@ -43,7 +43,9 @@ export default function OrdersPage() {
   useDocumentTitle('Órdenes')
   const [params] = useSearchParams()
   const patchParams = useSearchParamsPatch()
-  const storedView = readStorage(STORAGE_KEYS.ordersView) === 'lista' ? 'lista' : 'tablero'
+  // Sin preferencia guardada, el móvil abre la lista (el tablero horizontal sigue a un toque) y el escritorio el tablero.
+  const saved = readStorage(STORAGE_KEYS.ordersView)
+  const storedView = saved === 'lista' || saved === 'tablero' ? saved : window.matchMedia('(max-width: 767px)').matches ? 'lista' : 'tablero'
   const [viewParam, setView] = useSearchParam('vista', storedView)
   const view: View = viewParam === 'lista' ? 'lista' : 'tablero'
   const [q, setQ] = useSearchParam('q')
@@ -52,6 +54,7 @@ export default function OrdersPage() {
   const status = STATUS_FILTERS.some((s) => s.value === statusParam) ? statusParam : 'open'
   const onlyLate = lateParam === '1'
   const [term, setTerm] = useState(q)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const debounced = useDebouncedValue(term)
   const canOperate = ctx.can('operate')
   const canManage = ctx.can('manage')
@@ -91,6 +94,8 @@ export default function OrdersPage() {
   // «Mis órdenes» no cuenta como filtro: si no hay nada, se explica aparte y se ofrece ver todas
   const otherMechanic = assignee.assignedTo !== null && !assignee.mine
   const filtering = !!q || otherMechanic || (view === 'tablero' ? onlyLate : status !== 'open')
+  // Lo que hay aplicado dentro de "Filtros" (móvil): mecánico concreto y "Solo tarde" o un estado distinto de "Abiertas"
+  const activeFilters = [assignee.assignedTo !== null, view === 'tablero' ? onlyLate : status !== 'open'].filter(Boolean).length
   const resetFilters = () => {
     setTerm('')
     appliedSearch.current = ''
@@ -119,41 +124,52 @@ export default function OrdersPage() {
     <>
       <PageHeader title="Órdenes de trabajo" description={description} actions={createAction} />
 
-      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-        <SegmentedControl
-          label="Vista"
-          value={view}
-          onValueChange={changeView}
-          options={[
-            { value: 'tablero', label: 'Tablero', icon: <SquareKanban aria-hidden /> },
-            { value: 'lista', label: 'Lista', icon: <List aria-hidden /> },
-          ]}
-        />
+      <div className="mb-5 flex flex-wrap items-center gap-2">
         <SearchInput
           value={term}
           onValueChange={setTerm}
           aria-label="Buscar por número, título, matrícula o cliente"
-          placeholder="Número, título, matrícula o cliente…"
-          className="lg:ml-auto lg:w-80"
+          placeholder="Número, matrícula o cliente…"
+          className="min-w-0 flex-1 md:order-2 md:max-w-80"
         />
-        <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          aria-expanded={filtersOpen}
+          aria-controls="filtros-ordenes"
+          onClick={() => setFiltersOpen((o) => !o)}
+          iconRight={<ChevronDown aria-hidden className={cn('transition-transform duration-150 motion-reduce:transition-none', filtersOpen && 'rotate-180')} />}
+          className="h-11 md:hidden"
+        >
+          Filtros{activeFilters ? <span className="tabular text-fg-muted">({activeFilters})</span> : null}
+        </Button>
+        <div id="filtros-ordenes" className={cn('w-full flex-wrap items-center gap-2 md:contents', filtersOpen ? 'flex' : 'hidden')}>
+          <SegmentedControl
+            label="Vista"
+            value={view}
+            onValueChange={changeView}
+            className="md:order-1"
+            options={[
+              { value: 'tablero', label: 'Tablero', icon: <SquareKanban aria-hidden /> },
+              { value: 'lista', label: 'Lista', icon: <List aria-hidden /> },
+            ]}
+          />
           <Button
             size="sm"
             aria-pressed={assignee.mine}
             disabled={!user}
             onClick={() => chooseAssignee(assignee.mine ? 'all' : 'mine')}
             icon={assignee.mine ? <Check aria-hidden /> : <UserRound aria-hidden />}
-            className={cn('h-11 md:h-10', assignee.mine && 'border-accent/60 bg-accent-soft text-fg')}
+            className={cn('h-11 md:order-3 md:ml-auto md:h-10', assignee.mine && 'border-accent/60 bg-accent-soft text-fg')}
           >
             Mis órdenes
           </Button>
           {canManage && (
-            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none">
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none md:order-4">
               <span className="shrink-0">Mecánico</span>
               <Select
                 value={assignee.assignedTo !== null ? String(assignee.assignedTo) : ''}
                 onChange={(e) => chooseAssignee(e.target.value ? Number(e.target.value) : 'all')}
-                className="sm:w-44"
+                className="sm:w-40"
                 disabled={!members.data}
               >
                 <option value="">Todos</option>
@@ -169,9 +185,9 @@ export default function OrdersPage() {
             </label>
           )}
           {view === 'lista' ? (
-            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none">
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none md:order-5">
               <span className="shrink-0">Estado</span>
-              <Select value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-44">
+              <Select value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-40">
                 {STATUS_FILTERS.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
@@ -185,7 +201,7 @@ export default function OrdersPage() {
               aria-pressed={onlyLate}
               onClick={() => setLate(onlyLate ? null : '1')}
               icon={<TriangleAlert aria-hidden />}
-              className={cn('h-11 md:h-10', onlyLate && 'border-danger/60 bg-danger-soft text-fg')}
+              className={cn('h-11 md:order-5 md:h-10', onlyLate && 'border-danger/60 bg-danger-soft text-fg')}
             >
               Solo tarde{lateCount ? <span className="tabular text-fg-muted">({lateCount})</span> : null}
             </Button>
@@ -225,10 +241,7 @@ export default function OrdersPage() {
           )
         ) : (
           <>
-            <p className="mb-3 text-xs text-fg-subtle">
-              <span className="pointer-coarse:hidden">Arrastra una tarjeta a otra columna (Escape cancela) o usa el botón «Mover a…» de cada tarjeta.</span>
-              <span className="hidden pointer-coarse:inline">Arrastra desde el asa de la tarjeta o usa el botón «Mover a…».</span> Entregar y cancelar piden confirmación.
-            </p>
+            <p className="sr-only">Cada tarjeta tiene un botón «Mover a…» para cambiarla de columna. Entregar y cancelar piden confirmación.</p>
             <KanbanBoard orders={boardOrders} orderHref={orderHref} onRequest={onRequest} busyId={actions.busyId} />
           </>
         )
@@ -263,6 +276,7 @@ export default function OrdersPage() {
             onRequest={onRequest}
             showTotal={showTotal}
             caption={`Órdenes de trabajo${assignee.mine ? ' asignadas a ti' : ''} (${STATUS_FILTERS.find((s) => s.value === status)?.label.toLowerCase()})`}
+            groupByStatus={status === 'open' && !list.hasNextPage}
           />
           <LoadMore hasNextPage={!!list.hasNextPage} isFetchingNextPage={list.isFetchingNextPage} fetchNextPage={list.fetchNextPage} shown={listOrders.length} total={listTotal} what="órdenes" />
         </>

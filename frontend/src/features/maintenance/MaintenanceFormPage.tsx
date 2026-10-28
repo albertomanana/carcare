@@ -256,7 +256,7 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
           description: counted ? `Cuenta como gasto de «${EXPENSE_CATEGORY_LABEL[linkedExpenseCategory(saved.type)]}», una sola vez.` : undefined,
           action: {
             label: 'Adjuntar factura',
-            onClick: () => navigate(`${base}/documentos?subir=1&intervencion=${saved.id}`),
+            onClick: () => navigate(`${base}/datos?subir=1&intervencion=${saved.id}#documentos`),
           },
         })
         navigate(`${base}/historial#intervencion-${saved.id}`, { replace: true, state: AFTER_SAVE })
@@ -584,7 +584,7 @@ function Summary({ form, vehicle, showPrices }: { form: UseFormReturn<Values>; v
           </dl>
           {showPrices && (
             <div className="mt-4 border-t border-line pt-3">
-              <p className="text-xs uppercase tracking-wider text-fg-subtle">Total que se guardará</p>
+              <p className="text-sm text-fg-muted">Total que se guardará</p>
               <p className="mt-0.5 font-display text-2xl font-semibold text-fg-warm tabular">{effective.cents !== null ? formatMoney(centsToMoney(effective.cents)) : 'Sin coste'}</p>
               <p className="text-xs text-fg-muted">
                 {effective.source === 'manual'

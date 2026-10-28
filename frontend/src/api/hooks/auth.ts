@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { api, ensureCsrfCookie, isApiError } from '../client'
 import { qk } from '../keys'
-import type { LoginInput, Me, RegisterInput, Resource, User } from '../types'
+import type { ForgotPasswordInput, LoginInput, Me, RegisterInput, ResetPasswordInput, Resource, User } from '../types'
 
 /** Sesión actual. null = sin sesión (401). */
 export function useMeQuery() {
@@ -50,6 +50,26 @@ export function useRegister() {
     },
     onSuccess: (me) => {
       qc.setQueryData(qk.me, me)
+    },
+  })
+}
+
+/** POST /auth/forgot-password: 204 siempre, exista o no la cuenta (contrato §3.1.1). */
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (input: ForgotPasswordInput) => {
+      await ensureCsrfCookie()
+      await api.post<void>('/auth/forgot-password', input)
+    },
+  })
+}
+
+/** POST /auth/reset-password: 204, cierra todas las sesiones y no inicia sesión (contrato §3.1.1). */
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async (input: ResetPasswordInput) => {
+      await ensureCsrfCookie()
+      await api.post<void>('/auth/reset-password', input)
     },
   })
 }

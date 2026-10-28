@@ -1,16 +1,15 @@
-import { AlarmClockPlus, CalendarDays, CircleCheck, EllipsisVertical, Gauge, Pencil, Repeat, Trash2, X } from 'lucide-react'
+import { AlarmClockPlus, CircleCheck, EllipsisVertical, Pencil, Trash2, X } from 'lucide-react'
+import type { ComponentProps } from 'react'
 import { Link } from 'react-router'
 import type { Reminder } from '@/api/types'
-import { Badge, StatusPill } from '@/components/ui/Badge'
+import { StatusPill } from '@/components/ui/Badge'
 import { Button, IconButton } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
-import { Progress } from '@/components/ui/Progress'
 import { cn } from '@/lib/cn'
-import { formatDate, formatKm } from '@/lib/format'
-import { REMINDER_KIND_ICON, REMINDER_STATUS_LABEL, ZONE_LABEL } from '@/lib/labels'
-import { dueByDate, dueByMileage, INTERVAL_DISCLAIMER, recurrenceText } from '@/lib/reminders'
-import { REMINDER_STATE } from '@/lib/status'
-import { VehicleSwatch } from './VehicleVisuals'
+import { formatDate, formatKm, formatPlate } from '@/lib/format'
+import { REMINDER_STATUS_LABEL } from '@/lib/labels'
+import { dueShort, recurrenceText } from '@/lib/reminders'
+import { REMINDER_STATE, TONE_CLASSES } from '@/lib/status'
 
 export interface ReminderActions {
   onComplete?: (r: Reminder) => void
@@ -21,130 +20,99 @@ export interface ReminderActions {
   onDelete?: (r: Reminder) => void
 }
 
-/** Fila de recordatorio: estado con icono + texto, vencimientos y progreso según los intervalos del usuario. */
+/** Lista de recordatorios: filas con separador fino, sin cajas (reglas R3 y R4 del informe de UX). */
+export function ReminderList({ className, ...props }: ComponentProps<'ul'>) {
+  return <ul className={cn('divide-y divide-line border-y border-line', className)} {...props} />
+}
+
+/**
+ * Fila de recordatorio: estado · título · vehículo · cuándo · "Marcar hecho" · menú.
+ * - Píldora solo para lo que pide atención (Vencido, Próximo); "En plazo" y "Sin datos" van como texto (R5).
+ * - Cuando está vencido, la causa va primero ("pasado en 443 km", hallazgo C4).
+ * - El aviso "Según tus intervalos, no medido" lo pone la sección una vez, no cada fila (R9).
+ * `compact` quita el progreso y la repetición.
+ */
 export function ReminderItem({
   reminder,
   vehicleLink,
   actions = {},
   compact,
+  highlighted,
 }: {
   reminder: Reminder
-  /** Si se indica, muestra el vehículo enlazado (agenda, dashboards). */
+  /** Si se indica, muestra el vehículo enlazado (agenda, inicio). */
   vehicleLink?: string
   actions?: ReminderActions
   compact?: boolean
+  /** Destino de un enlace `#recordatorio-{id}`: se resalta y puede recibir el foco. */
+  highlighted?: boolean
 }) {
-  const Icon = REMINDER_KIND_ICON[reminder.kind]
   const state = reminder.state ? REMINDER_STATE[reminder.state] : null
-  const byDate = dueByDate(reminder)
-  const byKm = dueByMileage(reminder)
-  // Lo vencido primero; si no, fecha y después km
-  const dueParts = [
-    byDate && { key: 'date', term: 'Por fecha', Icon: CalendarDays, part: byDate },
-    byKm && { key: 'km', term: 'Por kilómetros', Icon: Gauge, part: byKm },
-  ]
-    .filter((p): p is NonNullable<typeof p> => !!p)
-    .sort((a, b) => Number(b.part.overdue) - Number(a.part.overdue))
-  const recurrence = recurrenceText(reminder)
   const pending = reminder.status === 'pending'
+  const attention = pending && (reminder.state === 'overdue' || reminder.state === 'soon')
   const hasMenu = pending && !!(actions.onEdit || actions.onPostpone || actions.onDismiss || actions.onDelete)
-  const progressTone = state?.tone === 'danger' ? 'danger' : state?.tone === 'warning' ? 'warning' : state?.tone === 'ok' ? 'ok' : 'neutral'
   const pct = reminder.progress === null ? null : Math.round(reminder.progress * 100)
+  const recurrence = recurrenceText(reminder)
+  const StateIcon = state?.icon
+
+  const when =
+    reminder.status === 'done'
+      ? `Hecho el ${formatDate(reminder.completed_at)}${reminder.completed_mileage !== null ? ` a ${formatKm(reminder.completed_mileage)}` : ''}`
+      : dueShort(reminder)
+  const extra = pending && !compact ? [pct !== null ? `${pct} % del intervalo` : null, recurrence].filter(Boolean).join(' · ') : ''
 
   return (
-    <li className={cn('flex gap-3 rounded-card border border-line bg-surface', compact ? 'p-3' : 'p-4')}>
-      <span
-        aria-hidden
-        className={cn(
-          'mt-0.5 grid shrink-0 place-items-center rounded-control bg-surface-2 text-fg-muted',
-          compact ? 'size-9 [&_svg]:size-4' : 'size-10 [&_svg]:size-5',
-          state?.tone === 'danger' && 'bg-danger-soft text-danger',
-          state?.tone === 'warning' && 'bg-warning-soft text-warning',
-        )}
-      >
-        <Icon />
-      </span>
+    <li
+      id={`recordatorio-${reminder.id}`}
+      tabIndex={highlighted ? -1 : undefined}
+      className={cn(
+        'flex scroll-mt-32 items-start gap-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:gap-3',
+        highlighted && 'rounded-control bg-surface-2 px-2',
+      )}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="min-w-0 truncate font-medium text-fg">{reminder.title}</h3>
-          {pending && state ? <StatusPill status={state} size="sm" /> : <Badge size="sm">{REMINDER_STATUS_LABEL[reminder.status]}</Badge>}
-        </div>
-        {vehicleLink && reminder.vehicle && (
-          <Link to={vehicleLink} className="mt-1 inline-flex max-w-full items-center gap-1.5 text-sm text-fg-muted hover:text-fg">
-            <VehicleSwatch vehicle={reminder.vehicle} size="sm" className="size-5 [&_svg]:size-3" />
-            <span className="truncate">
-              {reminder.vehicle.display_name}
-              {reminder.vehicle.plate ? ` · ${reminder.vehicle.plate}` : ''}
+          {attention && state ? (
+            <StatusPill status={state} size="sm" />
+          ) : pending && state && StateIcon ? (
+            <span className={cn('inline-flex items-center gap-1 text-xs', TONE_CLASSES[state.tone].text)}>
+              <StateIcon aria-hidden className="size-3.5" />
+              {state.label}
             </span>
-          </Link>
-        )}
-        <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          {dueParts.map(({ key, term, Icon: DueIcon, part }) => (
-            <div key={key} className="flex items-center gap-1.5">
-              <dt className="sr-only">{term}</dt>
-              <DueIcon aria-hidden className="size-4 shrink-0 text-fg-subtle" />
-              <dd className="tabular">
-                {/* Si ya venció, la causa va primero (hallazgo C4): «superado por 443 km · A los 81.127 km» */}
-                {part.overdue && part.relative ? (
-                  <>
-                    <span className="text-danger">{part.relative}</span>
-                    <span className="ml-1 text-fg-muted">· {part.label}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-fg">{part.label}</span>
-                    {part.relative && <span className="ml-1 text-fg-muted">· {part.relative}</span>}
-                  </>
-                )}
-              </dd>
-            </div>
-          ))}
-          {reminder.status === 'done' && (
-            <div className="flex items-center gap-1.5 text-fg-muted">
-              <dt className="sr-only">Completado</dt>
-              <CircleCheck aria-hidden className="size-4 text-ok" />
-              <dd className="tabular">
-                Hecho el {formatDate(reminder.completed_at)}
-                {reminder.completed_mileage !== null ? ` a ${formatKm(reminder.completed_mileage)}` : ''}
-              </dd>
-            </div>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+              {reminder.status === 'done' && <CircleCheck aria-hidden className="size-3.5 text-ok" />}
+              {REMINDER_STATUS_LABEL[reminder.status]}
+            </span>
           )}
-        </dl>
-        {pending && !compact && (
-          <div className="mt-3 max-w-md">
-            <Progress
-              value={reminder.progress}
-              tone={progressTone}
-              label={`Intervalo transcurrido de ${reminder.title}`}
-              valueText={pct === null ? 'Sin datos suficientes' : `${pct} % del intervalo`}
-            />
-            <p className="mt-1 flex flex-wrap justify-between gap-x-3 text-[11px] text-fg-subtle">
-              <span>{INTERVAL_DISCLAIMER}</span>
-              <span>
-                {pct === null ? 'Progreso no calculable' : `${pct} % del intervalo`} · {ZONE_LABEL[reminder.zone]}
-              </span>
-            </p>
-          </div>
-        )}
-        {recurrence && !compact && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-fg-muted">
-            <Repeat aria-hidden className="size-3.5" />
-            {recurrence}
-          </p>
-        )}
+          <h3 className="min-w-0 break-words font-medium text-fg">{reminder.title}</h3>
+        </div>
+        <p className="mt-0.5 text-sm text-fg-muted tabular">
+          {vehicleLink && reminder.vehicle && (
+            <>
+              <Link to={vehicleLink} className="text-fg underline-offset-4 hover:underline">
+                {reminder.vehicle.display_name}
+                {reminder.vehicle.plate ? ` · ${formatPlate(reminder.vehicle.plate)}` : ''}
+              </Link>
+              {' · '}
+            </>
+          )}
+          <span className={cn(pending && reminder.state === 'overdue' && 'text-danger')}>{when}</span>
+        </p>
+        {extra && <p className="mt-0.5 text-xs text-fg-subtle">{extra}</p>}
       </div>
       {pending && (actions.onComplete || hasMenu) && (
-        <div className="flex shrink-0 items-start gap-1">
-          {actions.onComplete &&
-            (compact ? (
-              <IconButton label={`Marcar como hecho: ${reminder.title}`} variant="secondary" size="sm" onClick={() => actions.onComplete?.(reminder)}>
+        <div className="flex shrink-0 items-center gap-1">
+          {actions.onComplete && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => actions.onComplete?.(reminder)} className="max-sm:hidden" aria-label={`Marcar como hecho: ${reminder.title}`}>
+                Marcar hecho
+              </Button>
+              <IconButton label={`Marcar como hecho: ${reminder.title}`} size="sm" onClick={() => actions.onComplete?.(reminder)} className="sm:hidden">
                 <CircleCheck aria-hidden />
               </IconButton>
-            ) : (
-              <Button size="sm" onClick={() => actions.onComplete?.(reminder)} icon={<CircleCheck aria-hidden />} className="max-sm:px-2.5" aria-label={`Marcar como hecho: ${reminder.title}`}>
-                <span className="max-sm:sr-only">Hecho</span>
-              </Button>
-            ))}
+            </>
+          )}
           {hasMenu && (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -153,7 +121,7 @@ export function ReminderItem({
               >
                 <EllipsisVertical aria-hidden className="size-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent align="end">
                 {actions.onEdit && (
                   <DropdownMenuItem icon={<Pencil aria-hidden />} onSelect={() => actions.onEdit?.(reminder)}>
                     Editar
@@ -188,16 +156,12 @@ export function ReminderItem({
 
 export function ReminderListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <div role="status" aria-live="polite" className="space-y-3">
+    <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
       <span className="sr-only">Cargando recordatorios…</span>
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} aria-hidden className="flex gap-3 rounded-card border border-line bg-surface p-4">
-          <div className="skeleton size-10 rounded-control" />
-          <div className="flex-1 space-y-2">
-            <div className="skeleton h-4 w-1/2 rounded" />
-            <div className="skeleton h-3 w-2/3 rounded" />
-            <div className="skeleton h-1.5 w-full max-w-md rounded" />
-          </div>
+        <div key={i} aria-hidden className="space-y-2 py-3">
+          <div className="skeleton h-4 w-1/2 rounded" />
+          <div className="skeleton h-3 w-2/3 rounded" />
         </div>
       ))}
     </div>

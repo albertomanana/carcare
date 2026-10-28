@@ -10,8 +10,8 @@ const BASE =
   '[&_svg]:size-4 [&_svg]:shrink-0'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    'bg-accent text-on-accent shadow-[0_1px_0_0_rgb(255_255_255/0.25)_inset,0_8px_24px_-12px_var(--glow)] hover:brightness-[0.96] active:brightness-90',
+  // Plano: sin brillo ni sombra de color (regla R8 del informe de UX)
+  primary: 'bg-accent text-on-accent hover:brightness-[0.96] active:brightness-90',
   secondary: 'border border-line bg-surface-2 text-fg hover:border-line-strong hover:bg-surface-3',
   outline: 'border border-line-strong bg-transparent text-fg hover:bg-surface-2',
   ghost: 'text-fg-muted hover:bg-surface-2 hover:text-fg',

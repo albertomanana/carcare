@@ -1,10 +1,9 @@
-import { Car, ChevronRight, ClipboardList, Mail, Phone, UserPlus, UsersRound } from 'lucide-react'
+import { ChevronRight, Phone, ShieldOff, UserPlus, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { flattenPages, totalFromPages } from '@/api/hooks/shared'
 import { useCustomers } from '@/api/hooks/workshop'
 import type { Customer } from '@/api/types'
-import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/inputs'
@@ -113,128 +112,124 @@ export default function CustomersPage() {
   )
 }
 
-function Counts({ customer }: { customer: Customer }) {
+function AnonymizedBadge() {
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      <Badge tone="neutral" size="sm" icon={<Car aria-hidden />}>
-        {plural(customer.vehicles_count, 'vehículo', 'vehículos')}
-      </Badge>
-      {customer.open_orders_count > 0 && (
-        <Badge tone="info" size="sm" icon={<ClipboardList aria-hidden />}>
-          {plural(customer.open_orders_count, 'orden abierta', 'órdenes abiertas')}
-        </Badge>
-      )}
-    </span>
+    <Badge tone="neutral" size="sm" icon={<ShieldOff aria-hidden />}>
+      Anonimizado
+    </Badge>
   )
 }
 
-/** Tabla en escritorio, tarjetas en móvil. El nombre enlaza a la ficha; teléfono y email abren la app correspondiente. */
+/** Tabla en escritorio (R4: Cliente · Teléfono · Email · NIF · Vehículos · Órdenes abiertas) y lista de 2 líneas en móvil. */
 function CustomerList({ customers }: { customers: Customer[] }) {
   const ctx = useWorkspace()
   const href = (c: Customer) => `${ctx.base}/clientes/${c.id}`
+  const counts = (c: Customer) =>
+    [plural(c.vehicles_count, 'vehículo', 'vehículos'), c.open_orders_count > 0 ? plural(c.open_orders_count, 'orden abierta', 'órdenes abiertas') : null].filter(Boolean).join(' · ')
   return (
     <>
-      <ul className="space-y-2 lg:hidden" aria-label="Clientes">
+      <ul className="border-t border-line lg:hidden" aria-label="Clientes">
         {customers.map((c) => (
-          <li key={c.id} className="relative rounded-card border border-line bg-surface p-3 transition-colors hover:border-line-strong has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-accent">
-            <div className="flex items-start gap-3">
-              <Avatar name={c.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <Link to={href(c)} className="stretched block truncate font-medium text-fg outline-none after:absolute after:inset-0 after:content-['']">
+          <li
+            key={c.id}
+            className="relative flex items-center gap-3 border-b border-line px-1 py-2.5 transition-colors hover:bg-surface-2/60 has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-accent"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <Link to={href(c)} className="stretched min-w-0 truncate font-medium text-fg outline-none after:absolute after:inset-0 after:content-['']">
                   {c.name}
                 </Link>
-                {(c.phone || c.email) && <p className="truncate text-xs text-fg-muted">{[c.phone, c.email].filter(Boolean).join(' · ')}</p>}
-                <div className="mt-2">
-                  <Counts customer={c} />
-                </div>
+                {c.anonymized_at && <AnonymizedBadge />}
               </div>
-              {c.phone ? (
-                <a
-                  href={telHref(c.phone)}
-                  className="relative z-10 grid size-11 shrink-0 place-items-center rounded-control border border-line text-fg-muted hover:text-fg"
-                  aria-label={`Llamar a ${c.name}`}
-                >
-                  <Phone aria-hidden className="size-4" />
-                </a>
-              ) : (
-                <ChevronRight aria-hidden className="mt-2 size-4 shrink-0 text-fg-subtle" />
-              )}
+              <p className="truncate text-xs text-fg-muted">
+                <span className="tabular">{[c.phone, counts(c)].filter(Boolean).join(' · ')}</span>
+              </p>
             </div>
+            {c.phone ? (
+              <a href={telHref(c.phone)} className="relative z-10 grid size-11 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg" aria-label={`Llamar a ${c.name}`}>
+                <Phone aria-hidden className="size-4" />
+              </a>
+            ) : (
+              <ChevronRight aria-hidden className="size-4 shrink-0 text-fg-subtle" />
+            )}
           </li>
         ))}
       </ul>
 
-      <div className="hidden overflow-hidden rounded-card border border-line bg-surface lg:block">
-        <table className="w-full table-fixed text-sm">
-          <caption className="sr-only">Clientes del taller</caption>
-          <thead className="border-b border-line bg-surface-2/60 text-left text-xs text-fg-subtle">
-            <tr>
-              <th scope="col" className="w-[30%] px-4 py-3 font-medium">
-                Cliente
-              </th>
-              <th scope="col" className="w-[30%] px-3 py-3 font-medium">
-                Contacto
-              </th>
-              <th scope="col" className="w-[14%] px-3 py-3 font-medium">
-                NIF / CIF
-              </th>
-              <th scope="col" className="w-[26%] px-3 py-3 font-medium">
-                Vehículos y órdenes
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {customers.map((c) => (
-              <tr key={c.id} className="transition-colors hover:bg-surface-2/50">
-                <td className="px-4 py-3">
-                  <Link to={href(c)} className="flex min-w-0 items-center gap-3 font-medium text-fg hover:underline">
-                    <Avatar name={c.name} size="sm" />
-                    <span className="truncate">{c.name}</span>
+      <table className="hidden w-full table-fixed border-y border-line text-sm lg:table">
+        <caption className="sr-only">Clientes del taller</caption>
+        <thead className="border-b border-line text-left text-xs text-fg-muted">
+          <tr>
+            <th scope="col" className="w-[27%] py-2.5 pr-3 font-medium">
+              Cliente
+            </th>
+            <th scope="col" className="w-[15%] px-3 py-2.5 font-medium">
+              Teléfono
+            </th>
+            <th scope="col" className="w-[25%] px-3 py-2.5 font-medium">
+              Email
+            </th>
+            <th scope="col" className="w-[12%] px-3 py-2.5 font-medium">
+              NIF / CIF
+            </th>
+            <th scope="col" className="w-[10%] px-3 py-2.5 text-right font-medium">
+              Vehículos
+            </th>
+            <th scope="col" className="w-[11%] py-2.5 pl-3 text-right font-medium">
+              Órdenes abiertas
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {customers.map((c) => (
+            <tr key={c.id} className="transition-colors hover:bg-surface-2/50">
+              <td className="py-2.5 pr-3">
+                <span className="flex min-w-0 items-center gap-2">
+                  <Link to={href(c)} className="min-w-0 truncate font-medium text-fg hover:underline">
+                    {c.name}
                   </Link>
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    {c.phone && (
-                      <a href={telHref(c.phone)} className="inline-flex w-fit items-center gap-1.5 text-fg-muted hover:text-fg">
-                        <Phone aria-hidden className="size-3.5 shrink-0" />
-                        <span className="sr-only">Llamar al </span>
-                        <span className="tabular">{c.phone}</span>
-                      </a>
-                    )}
-                    {c.email && (
-                      <a href={mailHref(c.email)} className="inline-flex min-w-0 items-center gap-1.5 text-fg-muted hover:text-fg">
-                        <Mail aria-hidden className="size-3.5 shrink-0" />
-                        <span className="sr-only">Escribir a </span>
-                        <span className="truncate">{c.email}</span>
-                      </a>
-                    )}
-                    {!c.phone && !c.email && <span className="text-fg-subtle">Sin datos de contacto</span>}
-                  </div>
-                </td>
-                <td className="truncate px-3 py-3 font-mono text-xs text-fg-muted">{c.tax_id ?? <span className="font-sans text-fg-subtle">—</span>}</td>
-                <td className="px-3 py-3">
-                  <Counts customer={c} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  {c.anonymized_at && <AnonymizedBadge />}
+                </span>
+              </td>
+              <td className="truncate px-3 py-2.5">
+                {c.phone ? (
+                  <a href={telHref(c.phone)} className="text-fg-muted hover:text-fg hover:underline tabular">
+                    <span className="sr-only">Llamar al </span>
+                    {c.phone}
+                  </a>
+                ) : (
+                  <span className="text-fg-subtle">—</span>
+                )}
+              </td>
+              <td className="truncate px-3 py-2.5">
+                {c.email ? (
+                  <a href={mailHref(c.email)} className="text-fg-muted hover:text-fg hover:underline">
+                    <span className="sr-only">Escribir a </span>
+                    {c.email}
+                  </a>
+                ) : (
+                  <span className="text-fg-subtle">—</span>
+                )}
+              </td>
+              <td className="truncate px-3 py-2.5 text-fg-muted">{c.tax_id ?? <span className="text-fg-subtle">—</span>}</td>
+              <td className="px-3 py-2.5 text-right text-fg tabular">{c.vehicles_count}</td>
+              <td className="py-2.5 pl-3 text-right tabular">{c.open_orders_count > 0 ? <span className="text-fg">{c.open_orders_count}</span> : <span className="text-fg-subtle">0</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </>
   )
 }
 
 function CustomersSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="space-y-2">
+    <div role="status" aria-live="polite" className="border-t border-line">
       <span className="sr-only">Cargando clientes…</span>
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} aria-hidden className="flex items-center gap-3 rounded-card border border-line bg-surface p-3">
-          <Skeleton className="size-8 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-3 w-64 max-w-full" />
-          </div>
+        <div key={i} aria-hidden className="space-y-2 border-b border-line px-1 py-3">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-3 w-64 max-w-full" />
         </div>
       ))}
     </div>

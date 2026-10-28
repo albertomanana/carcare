@@ -20,8 +20,8 @@ import { invalidateVehicle, useInfiniteList } from './shared'
 
 // ───────── Intervenciones ─────────
 
-export function useMaintenanceList(vehicleId: ID, params: QueryParams = {}) {
-  return useInfiniteList<MaintenanceRecord>(qk.maintenance(vehicleId, params), `/vehicles/${vehicleId}/maintenance`, params)
+export function useMaintenanceList(vehicleId: ID, params: QueryParams = {}, enabled = true) {
+  return useInfiniteList<MaintenanceRecord>(qk.maintenance(vehicleId, params), `/vehicles/${vehicleId}/maintenance`, params, enabled)
 }
 
 export function useRecord(id: ID | undefined) {

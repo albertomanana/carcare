@@ -8,14 +8,14 @@ function qty(value: string): string {
   return formatDecimal(n, Number.isInteger(n) ? 0 : 2)
 }
 
-/** Líneas de una orden en solo lectura (entregada o cancelada). Tabla en escritorio, lista en móvil. */
+/** Líneas de una orden en solo lectura (entregada o cancelada). Tabla en escritorio, lista en móvil; sin caja (R3). */
 export function OrderLinesTable({ items, showPrices }: { items: LineItem[]; showPrices: boolean }) {
   if (!items.length) return <p className="text-sm text-fg-muted">Esta orden no tiene líneas.</p>
   return (
     <>
-      <ul className="divide-y divide-line rounded-card border border-line md:hidden">
+      <ul className="divide-y divide-line border-y border-line md:hidden">
         {items.map((it, i) => (
-          <li key={it.id ?? i} className="flex items-start justify-between gap-3 px-3 py-2.5 text-sm">
+          <li key={it.id ?? i} className="flex items-start justify-between gap-3 px-1 py-2.5 text-sm">
             <div className="min-w-0">
               <p className="font-medium text-fg">{it.name}</p>
               <p className="text-xs text-fg-muted">
@@ -27,29 +27,29 @@ export function OrderLinesTable({ items, showPrices }: { items: LineItem[]; show
           </li>
         ))}
       </ul>
-      <div className="hidden overflow-hidden rounded-card border border-line md:block">
-        <table className="w-full text-sm">
+      <div className="hidden md:block">
+        <table className="w-full border-y border-line text-sm">
           <caption className="sr-only">Líneas de la orden</caption>
-          <thead className="border-b border-line bg-surface-2/60 text-left text-xs text-fg-subtle">
+          <thead className="border-b border-line text-left text-xs text-fg-muted">
             <tr>
-              <th scope="col" className="px-3 py-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Tipo
               </th>
-              <th scope="col" className="px-3 py-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Concepto
               </th>
-              <th scope="col" className="px-3 py-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Referencia
               </th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">
+              <th scope="col" className="px-2 py-2 text-right font-medium">
                 Cant.
               </th>
               {showPrices && (
                 <>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">
+                  <th scope="col" className="px-2 py-2 text-right font-medium">
                     Precio/u
                   </th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">
+                  <th scope="col" className="px-2 py-2 text-right font-medium">
                     Total
                   </th>
                 </>
@@ -59,14 +59,14 @@ export function OrderLinesTable({ items, showPrices }: { items: LineItem[]; show
           <tbody className="divide-y divide-line">
             {items.map((it, i) => (
               <tr key={it.id ?? i}>
-                <td className="px-3 py-2 text-fg-muted">{ITEM_KIND_LABEL[it.kind]}</td>
-                <td className="px-3 py-2 text-fg">{it.name}</td>
-                <td className="px-3 py-2 font-mono text-xs text-fg-muted">{it.part_number ?? '—'}</td>
-                <td className="px-3 py-2 text-right text-fg tabular">{qty(it.quantity)}</td>
+                <td className="px-2 py-2 text-fg-muted">{ITEM_KIND_LABEL[it.kind]}</td>
+                <td className="px-2 py-2 text-fg">{it.name}</td>
+                <td className="px-2 py-2 font-mono text-xs text-fg-muted">{it.part_number ?? '—'}</td>
+                <td className="px-2 py-2 text-right text-fg tabular">{qty(it.quantity)}</td>
                 {showPrices && (
                   <>
-                    <td className="px-3 py-2 text-right text-fg-muted tabular">{it.unit_price ? formatMoney(it.unit_price) : '—'}</td>
-                    <td className="px-3 py-2 text-right font-medium text-fg tabular">{it.total ? formatMoney(it.total) : 'Sin precio'}</td>
+                    <td className="px-2 py-2 text-right text-fg-muted tabular">{it.unit_price ? formatMoney(it.unit_price) : '—'}</td>
+                    <td className="px-2 py-2 text-right font-medium text-fg tabular">{it.total ? formatMoney(it.total) : 'Sin precio'}</td>
                   </>
                 )}
               </tr>

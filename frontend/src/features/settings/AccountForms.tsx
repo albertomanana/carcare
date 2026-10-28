@@ -1,6 +1,6 @@
 /** Perfil y contraseña de la cuenta (PATCH /me · PUT /me/password). */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, KeyRound, UserRound } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -48,7 +48,7 @@ export function ProfileCard({ user }: { user: User }) {
 
   return (
     <Card id="perfil" className="scroll-mt-24">
-      <CardHeader icon={<UserRound />} title="Perfil" description={`Cuenta creada el ${formatDate(user.created_at, 'long')}.`} />
+      <CardHeader title="Perfil" description={`Cuenta creada el ${formatDate(user.created_at, 'long')}.`} />
       <CardBody>
         <form onSubmit={onSubmit} noValidate className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -113,7 +113,6 @@ export function PasswordCard() {
   return (
     <Card id="contrasena" className="scroll-mt-24">
       <CardHeader
-        icon={<KeyRound />}
         title="Contraseña"
         description="Mínimo 8 caracteres y distinta de la actual."
         action={

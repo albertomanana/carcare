@@ -5,8 +5,9 @@ import type { ReminderStatus } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { EmptyState, ErrorState } from '@/components/ui/States'
-import { ReminderItem, ReminderListSkeleton } from '@/components/vehicles/ReminderItem'
+import { ReminderItem, ReminderList, ReminderListSkeleton } from '@/components/vehicles/ReminderItem'
 import { useWorkspace } from '@/features/workspace/workspace-context'
+import { useHashTarget, useRevealHashTarget } from '@/hooks/useHashTarget'
 import { useSearchParam } from '@/hooks/useSearchParam'
 import { formatKm } from '@/lib/format'
 import { INTERVAL_DISCLAIMER } from '@/lib/reminders'
@@ -32,6 +33,8 @@ export default function RemindersTab() {
   const canOperate = ctx.can('operate') && !vehicle.archived_at
   const { actions, dialogs } = useReminderActions({ canOperate, currentMileage: vehicle.current_mileage })
   const reminders = query.data ?? []
+  const hashId = useHashTarget('recordatorio')
+  useRevealHashTarget({ id: hashId, prefix: 'recordatorio', ready: !query.isPending, found: !!hashId && reminders.some((r) => String(r.id) === hashId) })
 
   return (
     <div className="space-y-5">
@@ -69,11 +72,11 @@ export default function RemindersTab() {
           }
         />
       ) : (
-        <ul className="space-y-3" aria-labelledby="recordatorios-lista">
+        <ReminderList aria-labelledby="recordatorios-lista">
           {reminders.map((r) => (
-            <ReminderItem key={r.id} reminder={r} actions={actions} />
+            <ReminderItem key={r.id} reminder={r} actions={actions} highlighted={hashId === String(r.id)} />
           ))}
-        </ul>
+        </ReminderList>
       )}
 
       <Suspense fallback={null}>{creating && <ReminderDialog vehicle={vehicle} open onOpenChange={(o) => !o && setCreating(false)} />}</Suspense>

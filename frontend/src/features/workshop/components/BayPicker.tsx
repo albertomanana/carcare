@@ -1,10 +1,14 @@
-import { CircleAlert, SquareParking, Warehouse } from 'lucide-react'
+import { ChevronDown, CircleAlert } from 'lucide-react'
 import { useId } from 'react'
 import type { Bay } from '@/api/types'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
+import { Select } from '@/components/ui/inputs'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { Spinner } from '@/components/ui/Spinner'
+import { buttonClasses } from '@/components/ui/variants'
 import { cn } from '@/lib/cn'
 import { WORK_ORDER_STATUS } from '@/lib/status'
-import { bayOptions } from './orderUtils'
+import { bayOptions, shortOrderNumber } from './orderUtils'
 
 export interface BayPickerProps {
   bays: Bay[] | undefined
@@ -15,124 +19,124 @@ export interface BayPickerProps {
   value: number | null
   onChange: (bay: number | null) => void
   /**
-   * select: grupo de radios para formularios (las flechas cambian la selección, sin efectos).
-   * action: botones que aplican el cambio al pulsarlos (detalle de la orden).
+   * select: desplegable nativo para formularios (no aplica nada hasta guardar).
+   * action: menú que aplica el cambio al elegir (detalle de la orden); con el teclado, las flechas solo recorren
+   * las opciones y Intro elige, así que no se mueve el coche por accidente.
    */
   mode: 'select' | 'action'
   label: string
   description?: string
   disabled?: boolean
+  /** Muestra un indicador de carga en el botón (modo action). */
+  busy?: boolean
   error?: string | null
   className?: string
 }
 
+interface Item {
+  key: string
+  bay: number | null
+  label: string
+  occupied: boolean
+}
+
 /**
- * Elevadores del taller con su ocupación. Los ocupados por otra orden se muestran pero no se pueden
- * elegir; si los datos estaban desfasados, el servidor responde 409 y el error se muestra aquí.
+ * Elevador del taller con un selector (plan UX 5.4): "Sin elevador" o "Elevador n", con los ocupados por otra orden
+ * a la vista pero deshabilitados. Si los datos estaban desfasados, el servidor responde 409 y el error sale aquí.
  */
-export function BayPicker({ bays, loading, currentOrderId, value, onChange, mode, label, description, disabled, error, className }: BayPickerProps) {
-  const name = useId()
-  const errorId = `${name}-error`
-  const options = bayOptions(bays, currentOrderId)
+export function BayPicker({ bays, loading, currentOrderId, value, onChange, mode, label, description, disabled, busy, error, className }: BayPickerProps) {
+  const id = useId()
+  const errorId = `${id}-error`
+  const descId = `${id}-desc`
 
   if (loading || !bays) {
     return (
-      <div className={cn('space-y-2', className)} role="status" aria-live="polite">
+      <div className={cn('space-y-1.5', className)} role="status" aria-live="polite">
         <span className="sr-only">Cargando elevadores…</span>
-        <div aria-hidden className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-16 rounded-card" />
-          ))}
+        <div aria-hidden className="space-y-1.5">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-10 w-56 max-w-full" />
         </div>
       </div>
     )
   }
 
-  const items: { key: string; bay: number | null; title: string; detail: string; occupied: boolean }[] = [
-    { key: 'none', bay: null, title: 'Sin elevador', detail: 'Zona de espera', occupied: false },
-    ...options.map((o) => {
-      const own = currentOrderId != null && bays.find((b) => b.number === o.number)?.work_order?.id === currentOrderId
-      return {
-        key: String(o.number),
-        bay: o.number,
-        title: `Elevador ${o.number}`,
-        detail: o.occupiedBy
-          ? `${o.occupiedBy.number.replace(/^OT-\d{4}-/, 'OT ')} · ${WORK_ORDER_STATUS[o.occupiedBy.status].label}`
-          : own
-            ? 'Aquí está este coche'
-            : 'Libre',
-        occupied: !!o.occupiedBy,
-      }
-    }),
+  const items: Item[] = [
+    { key: 'none', bay: null, label: 'Sin elevador (en espera)', occupied: false },
+    ...bayOptions(bays, currentOrderId).map((o) => ({
+      key: String(o.number),
+      bay: o.number,
+      label: o.occupiedBy
+        ? `Elevador ${o.number} · ocupado por ${shortOrderNumber(o.occupiedBy.number)} (${WORK_ORDER_STATUS[o.occupiedBy.status].label.toLowerCase()})`
+        : `Elevador ${o.number} · libre`,
+      occupied: !!o.occupiedBy,
+    })),
   ]
+  const describedBy = [description ? descId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined
+  const current = value === null ? 'Sin elevador' : `Elevador ${value}`
 
   return (
-    <fieldset className={cn('@container min-w-0', className)} aria-describedby={error ? errorId : undefined}>
-      <legend className="text-sm font-medium text-fg">{label}</legend>
-      {description && <p className="mt-0.5 text-xs text-fg-subtle">{description}</p>}
-      <div className="mt-2 grid grid-cols-2 gap-2 @lg:grid-cols-3" role={mode === 'action' ? 'group' : undefined}>
-        {items.map((it) => {
-          const selected = value === it.bay
-          const Icon = it.bay === null ? SquareParking : Warehouse
-          const blocked = it.occupied || disabled
-          const body = (
-            <>
-              <span className="flex items-center gap-1.5 text-sm font-medium text-fg">
-                <Icon aria-hidden className={cn('size-4 shrink-0', selected ? 'text-accent-ink' : 'text-fg-subtle')} />
-                <span className="truncate">{it.title}</span>
-              </span>
-              <span className={cn('mt-0.5 block truncate text-xs', it.occupied ? 'text-warning' : 'text-fg-muted')}>
-                {it.occupied && <span className="sr-only">Ocupado por </span>}
-                {it.occupied && <span aria-hidden>Ocupado · </span>}
-                {it.detail}
-                {selected && mode === 'action' && <span className="sr-only"> (actual)</span>}
-              </span>
-            </>
-          )
-          const cls = cn(
-            'block min-h-16 w-full min-w-0 rounded-card border px-3 py-2.5 text-left transition-colors duration-150',
-            selected ? 'border-accent bg-accent-soft' : 'border-line bg-surface',
-            !selected && !blocked && 'cursor-pointer hover:border-line-strong hover:bg-surface-2/60',
-            it.occupied && 'border-dashed bg-surface-2/40',
-            blocked && !selected && 'cursor-not-allowed opacity-70',
-          )
-          if (mode === 'action') {
-            return (
-              <button
-                key={it.key}
-                type="button"
-                aria-pressed={selected}
-                disabled={blocked || selected}
-                onClick={() => onChange(it.bay)}
-                className={cn(cls, selected && 'disabled:opacity-100')}
-                title={it.occupied ? `Ocupado por ${it.detail}` : undefined}
-              >
-                {body}
-              </button>
-            )
-          }
-          return (
-            <label key={it.key} className={cn(cls, 'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent')}>
-              <input
-                type="radio"
-                name={name}
-                className="sr-only"
-                checked={selected}
-                disabled={blocked}
-                onChange={() => onChange(it.bay)}
-                aria-invalid={error && selected ? true : undefined}
-              />
-              {body}
-            </label>
-          )
-        })}
-      </div>
+    <div className={cn('min-w-0 space-y-1.5', className)}>
+      {mode === 'select' ? (
+        <>
+          <label htmlFor={id} className="block text-sm font-medium text-fg">
+            {label}
+          </label>
+          <Select
+            id={id}
+            value={value === null ? '' : String(value)}
+            onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+            disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
+          >
+            {items.map((it) => (
+              <option key={it.key} value={it.bay === null ? '' : String(it.bay)} disabled={it.occupied}>
+                {it.label}
+              </option>
+            ))}
+          </Select>
+        </>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span id={`${id}-label`} className="text-sm text-fg-muted">
+            {label}
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={disabled}
+              aria-labelledby={`${id}-label ${id}`}
+              aria-describedby={describedBy}
+              className={buttonClasses({ size: 'sm' })}
+            >
+              {busy && <Spinner className="size-3.5" />}
+              <span id={id}>{current}</span>
+              <ChevronDown aria-hidden />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-80 max-w-[calc(100vw-2rem)]">
+              <DropdownMenuLabel>Mover el coche a</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={value === null ? 'none' : String(value)} onValueChange={(v) => onChange(v === 'none' ? null : Number(v))}>
+                {items.map((it) => (
+                  <DropdownMenuRadioItem key={it.key} value={it.key} disabled={it.occupied}>
+                    {it.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+      {description && (
+        <p id={descId} className="text-xs text-fg-subtle">
+          {description}
+        </p>
+      )}
       {error && (
-        <p id={errorId} role="alert" className="mt-2 flex items-start gap-1.5 text-xs font-medium text-danger">
+        <p id={errorId} role="alert" className="flex items-start gap-1.5 text-xs font-medium text-danger">
           <CircleAlert aria-hidden className="mt-px size-3.5 shrink-0" />
           {error}
         </p>
       )}
-    </fieldset>
+    </div>
   )
 }

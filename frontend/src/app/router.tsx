@@ -3,6 +3,7 @@ import { createBrowserRouter, Outlet, type RouteObject } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageSpinner } from '@/components/ui/Spinner'
 import { AppIndexRedirect, GuestOnly, RequireAuth } from '@/features/auth/guards'
+import { LegacyTabRedirect } from '@/features/vehicle/LegacyTabRedirect'
 import { NotFoundPage } from '@/features/errors/NotFoundPage'
 import { RouteError } from '@/features/errors/RouteError'
 import { DefaultWorkspaceRoute, WorkspaceRoute } from '@/features/workspace/WorkspaceRoute'
@@ -11,16 +12,16 @@ import { DefaultWorkspaceRoute, WorkspaceRoute } from '@/features/workspace/Work
 const Landing = lazy(() => import('@/features/landing/LandingPage'))
 const Login = lazy(() => import('@/features/auth/LoginPage'))
 const Register = lazy(() => import('@/features/auth/RegisterPage'))
+const ForgotPassword = lazy(() => import('@/features/auth/ForgotPasswordPage'))
+const ResetPassword = lazy(() => import('@/features/auth/ResetPasswordPage'))
 const Dashboard = lazy(() => import('@/features/dashboard/DashboardPage'))
 const Garage = lazy(() => import('@/features/garage/GaragePage'))
 const VehicleForm = lazy(() => import('@/features/vehicle/VehicleFormPage'))
 const VehicleDetail = lazy(() => import('@/features/vehicle/VehicleDetailPage'))
 const OverviewTab = lazy(() => import('@/features/vehicle/tabs/OverviewTab'))
-const JournalTab = lazy(() => import('@/features/vehicle/tabs/JournalTab'))
 const HistoryTab = lazy(() => import('@/features/vehicle/tabs/HistoryTab'))
 const ExpensesTab = lazy(() => import('@/features/vehicle/tabs/ExpensesTab'))
 const RemindersTab = lazy(() => import('@/features/vehicle/tabs/RemindersTab'))
-const DocumentsTab = lazy(() => import('@/features/vehicle/tabs/DocumentsTab'))
 const DataTab = lazy(() => import('@/features/vehicle/tabs/DataTab'))
 const VehicleOrdersTab = lazy(() => import('@/features/vehicle/tabs/OrdersTab'))
 const MaintenanceForm = lazy(() => import('@/features/maintenance/MaintenanceFormPage'))
@@ -67,6 +68,8 @@ export const routes: RouteObject[] = [
       { path: '/', element: page(Landing) },
       { path: '/entrar', element: <GuestOnly>{page(Login)}</GuestOnly> },
       { path: '/registro', element: <GuestOnly>{page(Register)}</GuestOnly> },
+      { path: '/recuperar', element: <GuestOnly>{page(ForgotPassword)}</GuestOnly> },
+      { path: '/restablecer', element: <GuestOnly>{page(ResetPassword)}</GuestOnly> },
       {
         path: '/app',
         element: <RequireAuth />,
@@ -97,11 +100,12 @@ export const routes: RouteObject[] = [
                     element: page(VehicleDetail),
                     children: [
                       { index: true, element: page(OverviewTab) },
-                      { path: 'diario', element: page(JournalTab) },
+                      // Diario y Documentos se juntaron con Historial y Datos (5.2): los enlaces antiguos redirigen
+                      { path: 'diario', element: <LegacyTabRedirect to="historial" /> },
                       { path: 'historial', element: page(HistoryTab) },
                       { path: 'gastos', element: page(ExpensesTab) },
                       { path: 'recordatorios', element: page(RemindersTab) },
-                      { path: 'documentos', element: page(DocumentsTab) },
+                      { path: 'documentos', element: <LegacyTabRedirect to="datos" /> },
                       { path: 'datos', element: page(DataTab) },
                       { path: 'ordenes', element: page(VehicleOrdersTab) },
                     ],

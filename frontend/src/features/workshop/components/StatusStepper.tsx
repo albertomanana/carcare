@@ -29,13 +29,12 @@ export interface StatusStepperProps {
 export function StatusStepper({ order, onRequest, busy, className }: StatusStepperProps) {
   if (order.status === 'cancelled') {
     return (
-      <div role="status" className={cn('flex items-start gap-3 rounded-card border border-line bg-surface-2/60 px-4 py-3', className)}>
-        <Ban aria-hidden className="mt-0.5 size-5 shrink-0 text-fg-muted" />
-        <div className="text-sm">
-          <p className="font-medium text-fg">Orden cancelada</p>
-          <p className="text-fg-muted">Queda en solo lectura y no se ha añadido nada al historial del vehículo.</p>
-        </div>
-      </div>
+      <p role="status" className={cn('flex items-start gap-2 text-sm', className)}>
+        <Ban aria-hidden className="mt-0.5 size-4 shrink-0 text-fg-muted" />
+        <span>
+          <span className="font-medium text-fg">Orden cancelada.</span> <span className="text-fg-muted">Queda en solo lectura y no se ha añadido nada al historial del vehículo.</span>
+        </span>
+      </p>
     )
   }
 
@@ -56,8 +55,8 @@ export function StatusStepper({ order, onRequest, busy, className }: StatusStepp
               <span
                 aria-hidden
                 className={cn(
-                  'h-1 w-full rounded-full transition-colors duration-200',
-                  state === 'done' || current ? 'bg-accent' : state === 'optional' ? 'bg-[repeating-linear-gradient(90deg,var(--line-strong)_0_4px,transparent_4px_8px)]' : 'bg-surface-3',
+                  'w-full transition-colors duration-200 motion-reduce:transition-none',
+                  state === 'done' || current ? 'h-1 rounded-full bg-accent-ink' : state === 'optional' ? 'mt-px h-0.5 border-t-2 border-dashed border-line-strong' : 'h-1 rounded-full bg-surface-3',
                 )}
               />
               <span className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-2">
@@ -66,7 +65,7 @@ export function StatusStepper({ order, onRequest, busy, className }: StatusStepp
                   className={cn(
                     'grid size-7 shrink-0 place-items-center rounded-full border [&_svg]:size-3.5',
                     current
-                      ? 'border-accent bg-accent text-on-accent'
+                      ? 'border-2 border-accent-ink bg-surface text-fg'
                       : state === 'done'
                         ? 'border-accent/50 bg-accent-soft text-accent-ink'
                         : state === 'optional'

@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import type { WorkOrder, WorkOrderStatus } from '@/api/types'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
-import { TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
+import { WORK_ORDER_STATUS } from '@/lib/status'
 import { OrderCard } from './OrderCard'
-import { KANBAN_STATUSES } from './orderUtils'
+import { KANBAN_SHORT_LABEL, KANBAN_STATUSES } from './orderUtils'
 
 interface DragSession {
   id: number
@@ -190,7 +190,6 @@ export function KanbanBoard({ orders, orderHref, onRequest, busyId }: KanbanBoar
         {KANBAN_STATUSES.map((status) => {
           const list = byStatus.get(status) ?? []
           const st = WORK_ORDER_STATUS[status]
-          const Icon = st.icon
           const over = view?.over === status
           const headingId = `kanban-${status}`
           return (
@@ -199,24 +198,23 @@ export function KanbanBoard({ orders, orderHref, onRequest, busyId }: KanbanBoar
               aria-labelledby={headingId}
               data-kanban-column={status}
               className={cn(
-                'flex w-[82vw] max-w-[300px] shrink-0 snap-start flex-col rounded-card border bg-surface-2/40 transition-colors duration-150 sm:w-[268px]',
+                'flex w-[82vw] max-w-[300px] shrink-0 snap-start flex-col rounded-card border transition-colors duration-150 sm:w-[268px]',
                 'xl:w-auto xl:min-w-0 xl:max-w-none xl:flex-1 xl:basis-0',
-                over ? 'border-accent bg-accent-soft' : 'border-line',
+                over ? 'border-accent bg-accent-soft' : 'border-transparent',
               )}
             >
-              <header className="flex items-center gap-2 px-3 pb-2 pt-3">
-                <span aria-hidden className={cn('grid size-6 shrink-0 place-items-center rounded-full [&_svg]:size-3.5', TONE_CLASSES[st.tone].soft)}>
-                  <Icon />
-                </span>
-                <h2 id={headingId} className="min-w-0 truncate text-sm font-semibold text-fg">
-                  {st.label}
-                  <span className="sr-only">, {list.length === 1 ? '1 orden' : `${list.length} órdenes`}</span>
+              <header className="flex items-baseline gap-2 border-b border-line px-1 pb-2 pt-1">
+                <h2 id={headingId} className="min-w-0 truncate text-sm font-semibold text-fg" title={st.label}>
+                  <span aria-hidden>{KANBAN_SHORT_LABEL[status] ?? st.label}</span>
+                  <span className="sr-only">
+                    {st.label}, {list.length === 1 ? '1 orden' : `${list.length} órdenes`}
+                  </span>
                 </h2>
-                <span aria-hidden className="ml-auto rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-fg-muted tabular">
+                <span aria-hidden className="text-sm text-fg-muted tabular">
                   {list.length}
                 </span>
               </header>
-              <ol className="flex min-h-28 flex-1 flex-col gap-2 px-2 pb-2">
+              <ol className="flex min-h-28 flex-1 flex-col gap-2 pt-2">
                 {list.map((o) => (
                   <li key={o.id}>
                     <OrderCard
@@ -257,10 +255,10 @@ export function KanbanSkeleton() {
     <div role="status" aria-live="polite" className="-mx-4 flex gap-3 overflow-hidden px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:mx-0 xl:px-0">
       <span className="sr-only">Cargando tablero…</span>
       {KANBAN_STATUSES.map((s, i) => (
-        <div key={s} aria-hidden className="flex w-[82vw] max-w-[300px] shrink-0 flex-col gap-2 rounded-card border border-line bg-surface-2/40 p-2 sm:w-[268px] xl:w-auto xl:max-w-none xl:flex-1 xl:basis-0">
+        <div key={s} aria-hidden className="flex w-[82vw] max-w-[300px] shrink-0 flex-col gap-2 sm:w-[268px] xl:w-auto xl:max-w-none xl:flex-1 xl:basis-0">
           <Skeleton className="m-1 h-5 w-28" />
           {Array.from({ length: 3 - (i % 2) }, (_, j) => (
-            <Skeleton key={j} className="h-36 w-full rounded-card" />
+            <Skeleton key={j} className="h-24 w-full rounded-card" />
           ))}
         </div>
       ))}

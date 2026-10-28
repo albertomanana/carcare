@@ -1,4 +1,4 @@
-import { Monitor, Moon, Palette, ShieldAlert, Sun, Trash2 } from 'lucide-react'
+import { Moon, Sun, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -49,7 +49,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Ajustes" description="Tu cuenta, la apariencia de CarCare y los espacios a los que perteneces." />
+      <PageHeader title="Ajustes" />
       {status === 'loading' ? (
         <LoadingBlock label="Cargando tus ajustes…" className="max-w-3xl" />
       ) : !user ? (
@@ -91,7 +91,7 @@ function AppearanceCard() {
   const { theme, setTheme } = useTheme()
   return (
     <Card id="apariencia" className="scroll-mt-24">
-      <CardHeader icon={<Palette />} title="Apariencia" description="El tema se guarda en este navegador." />
+      <CardHeader title="Apariencia" description="El tema se guarda en este navegador." />
       <CardBody className="space-y-4">
         <SegmentedControl
           label="Tema"
@@ -102,10 +102,7 @@ function AppearanceCard() {
             { value: 'light', label: 'Claro', icon: <Sun aria-hidden /> },
           ]}
         />
-        <p className="flex items-start gap-2 text-sm text-fg-muted">
-          <Monitor aria-hidden className="mt-0.5 size-4 shrink-0 text-fg-subtle" />
-          <span>Si tu sistema pide reducir el movimiento, CarCare acorta las animaciones y detiene el giro automático del modelo 3D.</span>
-        </p>
+        <p className="text-sm text-fg-muted">Si tu sistema pide reducir el movimiento, CarCare acorta las animaciones y no gira el modelo 3D.</p>
       </CardBody>
     </Card>
   )
@@ -154,7 +151,7 @@ function DeleteAccountCard({ workspaces }: { workspaces: Workspace[] }) {
 
   return (
     <Card id="cuenta" className="scroll-mt-24 border-danger/40">
-      <CardHeader icon={<ShieldAlert />} title="Eliminar cuenta" description="Borra tu cuenta y tus datos de forma definitiva." />
+      <CardHeader title="Eliminar cuenta" description="Borra tu cuenta y tus datos de forma definitiva." />
       <CardBody className="space-y-4">
         <ul className="list-inside list-disc space-y-1 text-sm text-fg-muted">
           <li>

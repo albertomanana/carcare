@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
+import { formatPlate } from '@/lib/format'
 import { type StatusDescriptor, type Tone, TONE_CLASSES } from '@/lib/status'
 
 export interface BadgeProps extends ComponentProps<'span'> {
@@ -35,19 +36,13 @@ export function StatusPill({ status, size, className, label }: { status: StatusD
   )
 }
 
-/** Matrícula con aspecto de placa. */
+/** Matrícula como texto ("4821 KTB"), sin imitar una placa (regla R6 del informe de UX). */
 export function Plate({ value, className }: { value: string | null | undefined; className?: string }) {
   if (!value) return null
   return (
-    <span
-      className={cn(
-        'inline-flex h-6 items-center rounded-[5px] border border-line-strong bg-surface-2 px-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-fg',
-        className,
-      )}
-    >
-      <span className="mr-1.5 h-full w-1 rounded-l-[3px] bg-info/70" aria-hidden />
+    <span className={cn('whitespace-nowrap text-fg-muted tabular', className)}>
       <span className="sr-only">Matrícula </span>
-      {value}
+      {formatPlate(value)}
     </span>
   )
 }

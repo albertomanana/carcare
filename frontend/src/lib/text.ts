@@ -28,3 +28,8 @@ export function joinList(items: string[]): string {
   if (list.length <= 1) return list[0] ?? ''
   return `${list.slice(0, -1).join(', ')} y ${list[list.length - 1]}`
 }
+
+/** Primera letra en mayúscula y el resto igual: "viernes, 23 de octubre" → "Viernes, 23 de octubre". */
+export function capitalize(text: string): string {
+  return text ? text.charAt(0).toLocaleUpperCase('es-ES') + text.slice(1) : text
+}

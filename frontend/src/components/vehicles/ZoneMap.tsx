@@ -1,15 +1,14 @@
-import { ArrowLeft, BellPlus, Box, History, List, ScanEye, Wrench } from 'lucide-react'
+import { ArrowLeft, BellPlus, Box, History, List, Wrench } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { Vehicle, Zone, ZoneStatus } from '@/api/types'
-import { StatusPill } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Checkbox'
 import { Progress } from '@/components/ui/Progress'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/cn'
 import { formatDate, formatKm, formatMoney } from '@/lib/format'
-import { RECORD_TYPE_LABEL, ZONE_ICON } from '@/lib/labels'
+import { RECORD_TYPE_LABEL } from '@/lib/labels'
 import { dueByDate, dueByMileage, INTERVAL_DISCLAIMER } from '@/lib/reminders'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { TONE_CLASSES, zoneDescriptor } from '@/lib/status'
@@ -31,7 +30,13 @@ type View = '3d' | '2d'
 /** Mapa de zonas: visor 3D (o silueta 2D) + lista HTML equivalente + panel de detalle. */
 export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHref, historyHref }: ZoneMapProps) {
   const webgl = useWebGLAvailable()
-  const [view, setView] = useState<View>(() => (readStorage(STORAGE_KEYS.zoneView) === '2d' ? '2d' : '3d'))
+  // Petición 19 (5.7): si no hay nada guardado, en pantallas de menos de 640 px se abre en "Lista" (se lee mejor,
+  // ahorra batería y no descarga three.js); en las demás, en 3D
+  const [view, setView] = useState<View>(() => {
+    const stored = readStorage(STORAGE_KEYS.zoneView)
+    if (stored === '2d' || stored === '3d') return stored
+    return typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches ? '2d' : '3d'
+  })
   const [selected, setSelected] = useState<Zone | null>(null)
   const [xray, setXray] = useState(false)
   const effectiveView: View = webgl ? view : '2d'
@@ -54,19 +59,15 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
   }
 
   return (
-    <section aria-labelledby="zonas-title" className="overflow-hidden rounded-hero border border-line bg-surface">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
+    <section aria-labelledby="zonas-title" className="min-w-0">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 id="zonas-title" className="font-display text-lg font-semibold tracking-tight text-fg-warm">
-            Mapa de zonas
+            Zonas
           </h2>
-          <p className="flex items-center gap-1.5 text-xs text-fg-muted">
-            <ScanEye aria-hidden className="size-3.5 text-accent-ink" />
-            {INTERVAL_DISCLAIMER}: el estado sale de tus recordatorios.
-          </p>
+          <p className="mt-0.5 text-sm text-fg-muted">{INTERVAL_DISCLAIMER}: el estado sale de tus recordatorios.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {effectiveView === '3d' && <Switch checked={xray} onCheckedChange={setXray} label="Rayos X" description="Ilustrativo" className="min-h-0" />}
           {webgl && (
             <SegmentedControl
               label="Tipo de vista"
@@ -82,8 +83,9 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
-        <div className="relative min-h-[260px] border-b border-line bg-gradient-to-b from-surface-2/60 to-surface sm:min-h-[340px] lg:min-h-[460px] lg:border-b-0 lg:border-r">
+      {/* La caja solo rodea el visor (R3); la lista y el detalle van al lado, sin caja */}
+      <div className="grid gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+        <div className={cn('relative overflow-hidden rounded-card border border-line bg-surface', effectiveView === '3d' ? 'min-h-[300px] sm:min-h-[340px] lg:min-h-[400px]' : 'min-h-[180px] sm:min-h-[260px] lg:min-h-[400px]')}>
           {effectiveView === '3d' ? (
             <CarViewer
               appearance={appearance}
@@ -100,12 +102,17 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
               <CarSilhouette appearance={appearance} title={`Silueta de ${vehicle.display_name}`} className="h-auto w-full max-w-lg" />
             </div>
           )}
+          {effectiveView === '3d' && (
+            <div className="absolute left-3 top-3 rounded-control border border-line bg-surface px-2">
+              <Switch checked={xray} onCheckedChange={setXray} label="Rayos X" description="Ilustrativo" className="min-h-10" />
+            </div>
+          )}
           {!webgl && (
             <p className="absolute inset-x-4 bottom-3 text-center text-xs text-fg-subtle">Tu navegador no permite 3D: te mostramos la silueta y la lista de zonas.</p>
           )}
         </div>
 
-        <div className="min-w-0 p-3 sm:p-4">
+        <div className="min-w-0">
           {selectedZone ? (
             <ZoneDetail
               zone={selectedZone}
@@ -127,14 +134,14 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
 function ZoneList({ zones, selected, onSelect }: { zones: ZoneStatus[]; selected: Zone | null; onSelect: (z: Zone) => void }) {
   return (
     <div>
-      <h3 className="px-1 pb-2 text-sm text-fg-muted">Zonas ({zones.length})</h3>
+      <h3 className="sr-only">Estado de las {zones.length} zonas</h3>
       {/* Filas de texto: el estado con icono + texto y sin píldora, para que quepa a 360 px (hallazgo I4) */}
-      <ul className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-1">
+      <ul className="grid gap-x-6 border-t border-line sm:grid-cols-2 lg:grid-cols-1">
         {zones.map((z) => {
           const d = zoneDescriptor(z)
           const StateIcon = d.icon
           return (
-            <li key={z.zone} className="min-w-0 border-b border-line last:border-b-0">
+            <li key={z.zone} className="min-w-0 border-b border-line">
               <button
                 type="button"
                 onClick={() => onSelect(z.zone)}
@@ -171,8 +178,8 @@ function ZoneDetail({
   recordHref: string
   historyHref: string
 }) {
-  const Icon = ZONE_ICON[zone.zone]
   const d = zoneDescriptor(zone)
+  const StateIcon = d.icon
   const next = zone.next_reminder
   const byDate = next ? dueByDate(next) : null
   const byKm = next ? dueByMileage(next) : null
@@ -182,22 +189,17 @@ function ZoneDetail({
       <button type="button" onClick={onBack} className="mb-3 inline-flex min-h-10 items-center gap-1.5 rounded-control px-1 text-sm text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden className="size-4" />
         Todas las zonas
-        <kbd className="ml-1 hidden rounded border border-line px-1 text-[10px] text-fg-subtle sm:inline">Esc</kbd>
       </button>
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-card bg-surface-2 text-accent-ink">
-          <Icon aria-hidden className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <h3 className="font-display text-xl font-semibold text-fg-warm">{zone.label}</h3>
-          <StatusPill status={d} className="mt-1" />
-        </div>
-      </div>
+      <h3 className="font-display text-xl font-semibold text-fg-warm">{zone.label}</h3>
+      <p className={cn('mt-1 inline-flex items-center gap-1 text-sm', TONE_CLASSES[d.tone].text)}>
+        <StateIcon aria-hidden className="size-4" />
+        {d.label}
+      </p>
 
       <div className="mt-4 space-y-3 text-sm">
         {zone.basis === 'reminders' && next && (
-          <div className="rounded-card border border-line bg-surface-2/50 p-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">Próximo recordatorio</p>
+          <div className="border-t border-line pt-3">
+            <h4 className="text-sm text-fg-muted">Próximo recordatorio</h4>
             <p className="mt-1 font-medium text-fg">{next.title}</p>
             <ul className="mt-1 space-y-0.5 text-fg-muted tabular">
               {byDate && (
@@ -219,15 +221,14 @@ function ZoneDetail({
               tone={d.tone === 'danger' ? 'danger' : d.tone === 'warning' ? 'warning' : 'ok'}
               label={`Intervalo transcurrido de ${next.title}`}
             />
-            <p className="mt-1 text-[11px] text-fg-subtle">{INTERVAL_DISCLAIMER}</p>
           </div>
         )}
         {zone.basis === 'records' && <p className="text-fg-muted">Hay historial, pero no tienes recordatorios para esta zona. Crea uno para saber cuándo toca.</p>}
         {zone.basis === 'none' && <p className="text-fg-muted">Sin datos: no hay intervenciones ni recordatorios en esta zona.</p>}
 
         {zone.last_record ? (
-          <div className="rounded-card border border-line p-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">Última intervención</p>
+          <div className="border-t border-line pt-3">
+            <h4 className="text-sm text-fg-muted">Última intervención</h4>
             <p className="mt-1 font-medium text-fg">{zone.last_record.title}</p>
             <p className="text-fg-muted tabular">
               {[RECORD_TYPE_LABEL[zone.last_record.type], formatDate(zone.last_record.service_date), zone.last_record.mileage !== null ? formatKm(zone.last_record.mileage) : null, zone.last_record.total_cost ? formatMoney(zone.last_record.total_cost) : null]

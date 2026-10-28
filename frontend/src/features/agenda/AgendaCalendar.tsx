@@ -3,7 +3,7 @@ import { type KeyboardEvent, useEffect, useMemo, useRef } from 'react'
 import type { ISODate, Reminder } from '@/api/types'
 import { Button, IconButton } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/States'
-import { ReminderItem, type ReminderActions } from '@/components/vehicles/ReminderItem'
+import { ReminderItem, ReminderList, type ReminderActions } from '@/components/vehicles/ReminderItem'
 import { groupByDueDate, monthGrid, monthKey, nextDueDate, parseMonthKey, shiftMonth, worstState } from '@/lib/agenda'
 import { cn } from '@/lib/cn'
 import { addDays, formatDate, formatMonth, parseISODate, toISODate, todayISO } from '@/lib/format'
@@ -135,7 +135,7 @@ export function AgendaCalendar({ reminders, selected, onSelect, actions, vehicle
           <thead>
             <tr>
               {WEEKDAYS.map((w) => (
-                <th key={w.short} scope="col" abbr={w.long} className="pb-2 text-center text-xs font-medium uppercase tracking-wider text-fg-subtle">
+                <th key={w.short} scope="col" abbr={w.long} className="pb-2 text-center text-xs font-medium text-fg-subtle">
                   {w.short}
                 </th>
               ))}
@@ -209,11 +209,11 @@ export function AgendaCalendar({ reminders, selected, onSelect, actions, vehicle
           {selected === today && <span className="ml-2 text-sm font-normal text-fg-muted">(hoy)</span>}
         </h2>
         {selectedItems.length ? (
-          <ul className="space-y-2" aria-label={`Vencimientos del ${formatDate(selected, 'long')}`}>
+          <ReminderList aria-label={`Vencimientos del ${formatDate(selected, 'long')}`}>
             {selectedItems.map((r) => (
               <ReminderItem key={r.id} reminder={r} compact actions={actions} vehicleLink={vehicleLink(r)} />
             ))}
-          </ul>
+          </ReminderList>
         ) : (
           <EmptyState
             compact

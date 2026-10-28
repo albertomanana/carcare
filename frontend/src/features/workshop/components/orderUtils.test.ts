@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Bay, WorkOrder } from '@/api/types'
 import { nextBay } from '@/api/hooks/workshop'
-import { bayOptions, baysSummary, dateTimeLocalAt, formatWhen, fromDateTimeLocal, isDeletableStatus, nextStep, ORDER_SUMMARY_LABEL, orderSummaryTitle, toDateTimeLocal, waitingOrders } from './orderUtils'
+import { attentionOrders, bayOptions, baysSummary, controlCenterHeadline, dateTimeLocalAt, formatWhen, fromDateTimeLocal, isDeletableStatus, nextStep, ORDER_SUMMARY_LABEL, orderSummaryTitle, toDateTimeLocal, waitingOrders } from './orderUtils'
 
 function order(partial: Partial<WorkOrder>): WorkOrder {
   return {
@@ -130,5 +130,25 @@ describe('resumen imprimible', () => {
   it('propone un nombre de archivo con número, matrícula y fecha', () => {
     expect(orderSummaryTitle('OT-2026-0024', '4470LJD', '2026-10-24')).toBe('Resumen OT-2026-0024 4470LJD 2026-10-24')
     expect(orderSummaryTitle('OT-2026-0024', null, '2026-10-24')).toBe('Resumen OT-2026-0024 2026-10-24')
+  })
+})
+
+describe('centro de control', () => {
+  const bays = [
+    { number: 1, work_order: order({ id: 1 }) },
+    { number: 2, work_order: null },
+  ]
+
+  it('resume en una línea las abiertas, las que van tarde, las de hoy y los elevadores libres', () => {
+    const d = { counts: { vehicles: 0, customers: 0, open_orders: 14, late_orders: 7, overdue_reminders: 0 }, due_today: [order({ id: 3 }), order({ id: 4 })], bays }
+    expect(controlCenterHeadline(d)).toBe('14 abiertas · 7 tarde · 2 para hoy · 1 de 2 elevadores libre.')
+    expect(controlCenterHeadline({ ...d, counts: { ...d.counts, open_orders: 1, late_orders: 0 }, due_today: [] })).toBe('1 abierta · 1 de 2 elevadores libre.')
+  })
+
+  it('junta "tarde" y "para hoy" sin repetir y pone primero las que van tarde', () => {
+    const late = order({ id: 1, is_late: true, promised_at: '2026-10-20T18:00:00+02:00' })
+    const today = order({ id: 2, is_late: false, promised_at: '2026-10-26T13:00:00+01:00' })
+    const both = order({ id: 3, is_late: true, promised_at: '2026-10-26T09:00:00+01:00' })
+    expect(attentionOrders({ late: [both, late], due_today: [today, both] }).map((o) => o.id)).toEqual([1, 3, 2])
   })
 })

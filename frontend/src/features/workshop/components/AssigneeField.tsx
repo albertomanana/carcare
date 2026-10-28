@@ -34,7 +34,6 @@ export function AssigneeField<T extends FieldValues & WithAssignee>({
     <Field
       label="Mecánico"
       error={f.formState.errors.assigned_to?.message}
-      hint="Quién se encarga del coche. Puedes cambiarlo en cualquier momento."
       labelAside={
         isMember &&
         !mine &&

@@ -51,7 +51,7 @@ export function DropdownMenuRadioItem({ className, children, ...props }: Compone
 }
 
 export function DropdownMenuLabel({ className, ...props }: ComponentProps<typeof DM.Label>) {
-  return <DM.Label className={cn('px-2.5 pb-1 pt-2 text-xs font-medium uppercase tracking-wider text-fg-subtle', className)} {...props} />
+  return <DM.Label className={cn('px-2.5 pb-1 pt-2 text-xs font-medium text-fg-subtle', className)} {...props} />
 }
 
 export function DropdownMenuSeparator({ className, ...props }: ComponentProps<typeof DM.Separator>) {

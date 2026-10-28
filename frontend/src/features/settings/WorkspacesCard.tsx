@@ -1,7 +1,7 @@
 /** Espacios de la cuenta: abrir, ajustes del taller, salir, eliminar y crear un taller nuevo. */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { Car, DoorOpen, EllipsisVertical, Layers, Plus, Settings2, Trash2, Warehouse } from 'lucide-react'
+import { DoorOpen, EllipsisVertical, Plus, Settings2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
@@ -12,7 +12,6 @@ import { useCreateWorkspace, useDeleteWorkspace, useRemoveMember, useUpdateWorks
 import { qk } from '@/api/keys'
 import type { User, Workspace } from '@/api/types'
 import { FormErrors } from '@/components/forms/MileageConflictNotice'
-import { Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -20,12 +19,11 @@ import { Dialog, DialogBody, DialogClose, DialogContent, DialogFooter } from '@/
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/inputs'
-import { cn } from '@/lib/cn'
 import { formatDate, normalizeDecimalInput } from '@/lib/format'
 import { handleFormError } from '@/lib/forms'
 import { can } from '@/lib/permissions'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
-import { ROLE_DESCRIPTION, ROLE_LABEL } from '@/lib/labels'
+import { ROLE_LABEL } from '@/lib/labels'
 import { plural } from '@/lib/text'
 
 function workspaceName(w: Workspace) {
@@ -46,9 +44,9 @@ export function WorkspacesCard({ user, workspaces }: { user: User; workspaces: W
 
   return (
     <Card id="espacios" className="scroll-mt-24">
-      <CardHeader icon={<Layers />} title="Espacios" description="Tu garaje personal y los talleres a los que perteneces." />
+      <CardHeader title="Espacios" description="Tu garaje personal y los talleres a los que perteneces." />
       <CardBody className="space-y-6">
-        <ul className="divide-y divide-line rounded-card border border-line">
+        <ul className="divide-y divide-line border-y border-line">
           {sorted.map((w) => (
             <WorkspaceRow key={w.id} workspace={w} onEdit={setEditing} onLeave={setLeaving} onDelete={setDeleting} />
           ))}
@@ -74,7 +72,6 @@ function WorkspaceRow({
   onDelete: (w: Workspace) => void
 }) {
   const workshop = w.type === 'workshop'
-  const Icon = workshop ? Warehouse : Car
   const canManage = can(w, 'manage')
   const isOwner = can(w, 'own')
   const meta = [
@@ -84,19 +81,11 @@ function WorkspaceRow({
   ].filter(Boolean)
 
   return (
-    <li className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className={cn('grid size-10 shrink-0 place-items-center rounded-control', workshop ? 'bg-info-soft text-info' : 'bg-accent-soft text-accent-ink')}>
-          <Icon aria-hidden className="size-5" />
-        </span>
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2">
             <span className="truncate font-medium text-fg">{workspaceName(w)}</span>
-            {workshop && (
-              <Badge size="sm" title={ROLE_DESCRIPTION[w.role]}>
-                {ROLE_LABEL[w.role]}
-              </Badge>
-            )}
           </p>
           <p className="truncate text-sm text-fg-muted">{meta.join(' · ')}</p>
           {workshop && (
@@ -172,7 +161,7 @@ function CreateWorkshopForm() {
   })
 
   return (
-    <form onSubmit={onSubmit} noValidate className="rounded-card border border-dashed border-line-strong p-4">
+    <form onSubmit={onSubmit} noValidate>
       <h3 className="font-display text-base font-semibold text-fg-warm">Crear un taller</h3>
       <p className="mt-0.5 text-sm text-fg-muted">Para gestionar clientes, órdenes de trabajo y elevadores. Serás su propietario; tu garaje personal no cambia.</p>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">

@@ -196,7 +196,7 @@ export function CategoryBreakdown({ data, className }: { data: { category: Expen
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-fg-subtle">Total</p>
+            <p className="text-xs text-fg-subtle">Total</p>
             <p className="font-display text-lg font-semibold text-fg-warm tabular">{formatMoney(total, { round: total >= 10000 })}</p>
           </div>
         </div>

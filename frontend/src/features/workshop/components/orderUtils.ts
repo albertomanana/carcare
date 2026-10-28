@@ -1,11 +1,27 @@
 /**
  * Utilidades puras del modo taller (sin React): fechas prometidas, elevadores y flujo de estados.
  */
-import type { Bay, ISODateTime, WorkOrder, WorkOrderStatus } from '@/api/types'
+import type { Bay, ISODateTime, WorkOrder, WorkOrderStatus, WorkshopDashboard } from '@/api/types'
 import { daysBetween, LOCALE } from '@/lib/format'
 import { OPEN_WORK_ORDER_STATUSES, WORK_ORDER_STATUS_LABEL } from '@/lib/labels'
+import { plural } from '@/lib/text'
 
 export const KANBAN_STATUSES: WorkOrderStatus[] = OPEN_WORK_ORDER_STATUSES
+
+/** Rótulo corto de cada columna del tablero, para que quepa a 1280 px (I4). El nombre completo queda para el lector de pantalla. */
+export const KANBAN_SHORT_LABEL: Partial<Record<WorkOrderStatus, string>> = {
+  received: 'Recibido',
+  diagnosing: 'Diagnóstico',
+  waiting_parts: 'Piezas',
+  in_progress: 'Reparación',
+  ready: 'Listo',
+}
+
+/** Número corto de la orden para la tarjeta del tablero: 'OT-2026-0024' ⇒ '0024'. */
+export function shortOrderNumber(number: string): string {
+  const m = /(\d+)$/.exec(number)
+  return m ? m[1] : number
+}
 
 export function isFinalStatus(status: WorkOrderStatus): boolean {
   return status === 'delivered' || status === 'cancelled'
@@ -179,4 +195,29 @@ export const ORDER_SUMMARY_LABEL = 'Resumen de la orden — no es una factura'
 /** Título del documento, que el navegador propone como nombre del PDF: 'Resumen OT-2026-0024 4470LJD 2026-10-24'. */
 export function orderSummaryTitle(number: string, plate: string | null, date: string): string {
   return ['Resumen', number, plate, date].filter(Boolean).join(' ')
+}
+
+// ───────── Centro de control ─────────
+
+/** Línea de resumen del centro de control: "14 abiertas · 7 tarde · 2 para hoy · 1 de 4 elevadores libre." */
+export function controlCenterHeadline(d: Pick<WorkshopDashboard, 'counts' | 'due_today' | 'bays'>): string {
+  const parts = [plural(d.counts.open_orders, 'abierta', 'abiertas')]
+  if (d.counts.late_orders) parts.push(`${d.counts.late_orders} tarde`)
+  if (d.due_today.length) parts.push(`${d.due_today.length} para hoy`)
+  const { total, free } = baysSummary(d.bays)
+  if (total) parts.push(`${free} de ${total} ${total === 1 ? 'elevador libre' : free === 1 ? 'elevadores libre' : 'elevadores libres'}`)
+  return `${parts.join(' · ')}.`
+}
+
+/** Tarde o para hoy, sin repetir (una orden tarde y para hoy salía antes en dos listas): primero las que van tarde. */
+export function attentionOrders(d: Pick<WorkshopDashboard, 'late' | 'due_today'>): WorkOrder[] {
+  const seen = new Set<number>()
+  const out: WorkOrder[] = []
+  for (const o of [...d.late, ...d.due_today]) {
+    if (seen.has(o.id)) continue
+    seen.add(o.id)
+    out.push(o)
+  }
+  const when = (o: WorkOrder) => (o.promised_at ? new Date(o.promised_at).getTime() : Infinity)
+  return out.sort((a, b) => Number(b.is_late) - Number(a.is_late) || when(a) - when(b))
 }

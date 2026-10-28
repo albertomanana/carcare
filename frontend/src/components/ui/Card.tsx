@@ -9,6 +9,7 @@ export interface CardHeaderProps {
   title: ReactNode
   description?: ReactNode
   action?: ReactNode
+  /** @deprecated Regla R7: sin icono en los títulos. Se ignora. */
   icon?: ReactNode
   className?: string
   /** Nivel del encabezado (h2 por defecto). */
@@ -16,11 +17,10 @@ export interface CardHeaderProps {
   id?: string
 }
 
-export function CardHeader({ title, description, action, icon, className, as: As = 'h2', id }: CardHeaderProps) {
+export function CardHeader({ title, description, action, className, as: As = 'h2', id }: CardHeaderProps) {
   return (
     <div className={cn('flex items-start justify-between gap-3 px-5 pt-5', className)}>
       <div className="flex min-w-0 items-start gap-3">
-        {icon && <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-control bg-surface-2 text-fg-muted [&_svg]:size-4">{icon}</span>}
         <div className="min-w-0">
           <As id={id} className="font-display text-base font-semibold tracking-tight text-fg-warm">
             {title}

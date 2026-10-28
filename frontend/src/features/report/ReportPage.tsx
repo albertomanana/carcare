@@ -45,7 +45,7 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-dvh bg-canvas print:bg-white">
-      <header className="no-print sticky top-0 z-20 border-b border-line bg-canvas/85 backdrop-blur-xl">
+      <header className="no-print sticky top-0 z-20 border-b border-line bg-canvas">
         <div className="mx-auto flex h-16 max-w-[900px] items-center gap-3 px-4 sm:px-6">
           <Link to={back} className="inline-flex min-h-11 items-center gap-1.5 rounded-control text-sm text-fg-muted hover:text-fg">
             <ArrowLeft aria-hidden className="size-4" />
@@ -367,7 +367,7 @@ function ReportSection({
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="bg-surface px-1 py-4 sm:px-3">
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-fg-subtle">{label}</p>
+      <p className="text-xs text-fg-subtle">{label}</p>
       <p className="mt-1 font-display text-xl font-semibold text-fg-warm tabular">{value}</p>
       {hint && <p className="mt-0.5 text-xs text-fg-muted">{hint}</p>}
     </div>
@@ -382,7 +382,7 @@ function Table({ caption, head, align, children }: { caption: string; head: stri
         <thead>
           <tr>
             {head.map((h, i) => (
-              <th key={h} scope="col" className={cn('border-b border-line-strong px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-fg-muted first:pl-0 last:pr-0', align[i] === 'right' ? 'text-right' : 'text-left')}>
+              <th key={h} scope="col" className={cn('border-b border-line-strong px-2 py-1.5 text-xs font-semibold text-fg-muted first:pl-0 last:pr-0', align[i] === 'right' ? 'text-right' : 'text-left')}>
                 {h}
               </th>
             ))}

@@ -1,91 +1,24 @@
-import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CircleAlert, ClipboardList, ExternalLink, Phone, Plus, TriangleAlert, UserRound, Warehouse, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CircleAlert, ClipboardList, ExternalLink, Plus, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { Bay, WorkOrder } from '@/api/types'
-import { Avatar } from '@/components/ui/Avatar'
-import { Badge, Plate } from '@/components/ui/Badge'
 import { Button, ButtonLink, IconButton } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { VehicleSwatch } from '@/components/vehicles/VehicleVisuals'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { cn } from '@/lib/cn'
-import { formatKm, formatMoney } from '@/lib/format'
+import { formatKm, formatMoney, formatPlate } from '@/lib/format'
 import { WORK_ORDER_STATUS } from '@/lib/status'
-import { CarThumbnail } from '@/three'
 import { type FloorSelection, resolveSelection, telHref } from './floor'
 import { MoveToMenu } from './MoveToMenu'
-import { BayBadge, LateBadge, OrderStatusPill, PriorityBadge, PromisedAt } from './OrderBadges'
-import { baysSummary, formatWhen, nextStep, waitingOrders } from './orderUtils'
+import { LateBadge, PriorityBadge, PromisedAt } from './OrderBadges'
+import { baysSummary, formatWhen, nextStep, shortOrderNumber, waitingOrders } from './orderUtils'
 import type { OrderActions } from './useOrderActions'
 
-// ───────── Franja de elevadores (alternativa HTML de la escena) ─────────
-
-export function BayStrip({ bays, selection, className }: { bays: Bay[]; selection: FloorSelection; className?: string }) {
-  const resolved = resolveSelection(selection, bays, [])
-  const selectedBay = selection.bay ?? resolved.bay
-  return (
-    <ul aria-label="Elevadores" className={cn('grid grid-cols-2 gap-2 @lg:grid-cols-4', className)}>
-      {bays.map((b) => {
-        const o = b.work_order
-        const selected = selectedBay === b.number
-        const st = o ? WORK_ORDER_STATUS[o.status] : null
-        const StIcon = st?.icon
-        return (
-          <li key={b.number} className="min-w-0">
-            <button
-              type="button"
-              aria-pressed={selected}
-              onClick={() => selection.select(selected ? null : { bay: b.number })}
-              className={cn(
-                'flex h-full w-full min-w-0 flex-col items-start gap-1 rounded-card border bg-surface px-3 py-2.5 text-left transition-colors duration-150',
-                selected ? 'border-accent bg-accent-soft' : 'border-line hover:border-line-strong hover:bg-surface-2/60',
-              )}
-            >
-              <span className="flex w-full items-center gap-1.5 text-xs font-medium text-fg-muted">
-                <Warehouse aria-hidden className="size-3.5 shrink-0" />
-                <span className="truncate">Elevador {b.number}</span>
-                {o?.is_late && (
-                  <span className="ml-auto inline-flex shrink-0 items-center text-danger" title="Va tarde">
-                    <TriangleAlert aria-hidden className="size-3.5" />
-                    <span className="sr-only">, va tarde</span>
-                  </span>
-                )}
-              </span>
-              {o ? (
-                <>
-                  <span className="flex w-full min-w-0 items-center gap-1.5">
-                    <VehicleSwatch vehicle={o.vehicle} size="sm" className="size-5 [&_svg]:size-2.5" />
-                    <span className="truncate text-sm font-medium text-fg">{o.vehicle.display_name}</span>
-                  </span>
-                  <span className="flex w-full min-w-0 items-center gap-1 text-[11px] text-fg-muted">
-                    {StIcon && <StIcon aria-hidden className="size-3 shrink-0" />}
-                    <span className="truncate">
-                      {o.number.replace(/^OT-\d{4}-/, 'OT ')} · {st?.label}
-                    </span>
-                  </span>
-                </>
-              ) : (
-                <span className="py-1 text-sm text-fg-subtle">Libre</span>
-              )}
-            </button>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-export function BayStripSkeleton({ count = 4 }: { count?: number }) {
-  return (
-    <div aria-hidden className="grid grid-cols-2 gap-2 @lg:grid-cols-4">
-      {Array.from({ length: count }, (_, i) => (
-        <Skeleton key={i} className="h-[74px] rounded-card" />
-      ))}
-    </div>
-  )
-}
-
-// ───────── Panel lateral sincronizado con la selección ─────────
+/**
+ * Panel lateral del Taller 3D (plan UX 5.5): lista sin cajas, sincronizada con la escena. Es también la alternativa
+ * HTML accesible de la escena: sin elegir nada lista los elevadores y la zona de espera; al elegir, la ficha rápida
+ * con cambio de estado y de elevador. Píldora solo para "Tarde" y "Urgente" (R5); el resto, en texto.
+ */
 
 export interface FloorPanelProps {
   bays: Bay[]
@@ -97,7 +30,8 @@ export interface FloorPanelProps {
   className?: string
 }
 
-/** Ficha rápida de lo elegido en el taller (elevador, coche en espera) con cambio de estado y de elevador. */
+const TITLE_ID = 'floor-panel-title'
+
 export function FloorPanel({ bays, orders, ordersLoading, selection, actions, className }: FloorPanelProps) {
   const resolved = resolveSelection(selection, bays, orders)
   const ref = useRef<HTMLElement>(null)
@@ -105,14 +39,18 @@ export function FloorPanel({ bays, orders, ordersLoading, selection, actions, cl
   const [error, setError] = useState<{ key: string; message: string } | null>(null)
   const visibleError = error?.key === key ? error.message : null
 
-  // En móvil/tableta el panel queda bajo la escena: al elegir algo se acerca a la vista
+  // Al cambiar lo elegido: si el foco se ha quedado sin elemento (el botón pulsado ya no existe), pasa al título
+  // de la ficha; en móvil y tableta, además, el panel (que va bajo la escena) se acerca a la vista.
   const lastKey = useRef(key)
   useEffect(() => {
     if (lastKey.current === key) return
     lastKey.current = key
-    if (key === '-' || !ref.current || !window.matchMedia('(max-width: 1279px)').matches) return
+    const panel = ref.current
+    if (!panel) return
+    if (document.activeElement === document.body) document.getElementById(TITLE_ID)?.focus({ preventScroll: true })
+    if (key === '-' || !window.matchMedia('(max-width: 1279px)').matches) return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ref.current.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+    panel.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
   }, [key])
 
   const announce = resolved.order
@@ -124,7 +62,7 @@ export function FloorPanel({ bays, orders, ordersLoading, selection, actions, cl
   const onError = (message: string) => setError({ key, message })
 
   return (
-    <aside ref={ref} aria-labelledby="floor-panel-title" className={cn('flex min-w-0 scroll-mt-20 flex-col rounded-card border border-line bg-surface', className)}>
+    <aside ref={ref} aria-labelledby={TITLE_ID} className={cn('flex min-w-0 scroll-mt-20 flex-col', className)}>
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
@@ -139,17 +77,31 @@ export function FloorPanel({ bays, orders, ordersLoading, selection, actions, cl
   )
 }
 
-function PanelHeader({ title, eyebrow, onClose }: { title: ReactNode; eyebrow?: ReactNode; onClose?: () => void }) {
+export function FloorPanelSkeleton() {
   return (
-    <div className="flex items-start justify-between gap-2 border-b border-line px-4 pb-3 pt-4">
+    <div role="status" aria-live="polite" className="space-y-3">
+      <span className="sr-only">Cargando elevadores…</span>
+      <div aria-hidden className="space-y-3">
+        <Skeleton className="h-6 w-40" />
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-control" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PanelHeader({ title, description, onClose }: { title: ReactNode; description?: ReactNode; onClose?: () => void }) {
+  return (
+    <div className="flex items-start justify-between gap-2 pb-3">
       <div className="min-w-0">
-        {eyebrow && <div className="mb-0.5 text-xs font-medium text-fg-subtle">{eyebrow}</div>}
-        <h2 id="floor-panel-title" className="font-display text-base font-semibold tracking-tight text-fg-warm">
+        <h2 id={TITLE_ID} tabIndex={-1} className="font-display text-lg font-semibold tracking-tight text-fg-warm outline-none">
           {title}
         </h2>
+        {description && <p className="mt-0.5 text-sm text-fg-muted">{description}</p>}
       </div>
       {onClose && (
-        <IconButton label="Cerrar ficha" size="sm" onClick={onClose} className="-mr-2 -mt-1">
+        <IconButton label="Cerrar ficha y ver todos los elevadores" size="sm" onClick={onClose} className="-mr-2">
           <X aria-hidden />
         </IconButton>
       )}
@@ -160,35 +112,52 @@ function PanelHeader({ title, eyebrow, onClose }: { title: ReactNode; eyebrow?: 
 function InlineError({ message }: { message: string | null }) {
   if (!message) return null
   return (
-    <p role="alert" className="flex items-start gap-2 rounded-control border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-fg">
-      <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-danger" />
+    <p role="alert" className="flex items-start gap-2 text-sm font-medium text-danger">
+      <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
       <span>{message}</span>
     </p>
   )
 }
 
-function WaitingButton({ order, onSelect }: { order: WorkOrder; onSelect: () => void }) {
+/** Color del coche (el mismo que en la escena) para reconocerlo de un vistazo. Decorativo. */
+function ColorDot({ color }: { color: string | null }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'flex w-full min-w-0 items-center gap-3 rounded-control border bg-surface px-3 py-2 text-left transition-colors hover:border-line-strong hover:bg-surface-2/60',
-        order.is_late ? 'border-danger/40' : 'border-line',
-      )}
-    >
-      <VehicleSwatch vehicle={order.vehicle} size="sm" />
+    <span
+      aria-hidden
+      className={cn('size-2.5 shrink-0 rounded-full border border-line-strong', !color && 'bg-surface-3')}
+      style={color ? { backgroundColor: color } : undefined}
+    />
+  )
+}
+
+function vehicleText(o: WorkOrder): string {
+  return [o.vehicle.display_name, o.vehicle.plate ? formatPlate(o.vehicle.plate) : null].filter(Boolean).join(' · ')
+}
+
+const rowButton = 'flex w-full min-w-0 items-center gap-3 px-1 py-2.5 text-left transition-colors duration-150 hover:bg-surface-2/60'
+
+function SubTitle({ children }: { children: ReactNode }) {
+  return <h3 className="mb-1 text-sm font-medium text-fg">{children}</h3>
+}
+
+/** Una orden en la zona de espera: vehículo, número y estado; "Tarde"/"Urgente" solo si aplica. */
+function WaitingLine({ order }: { order: WorkOrder }) {
+  return (
+    <>
+      <ColorDot color={order.vehicle.color_hex} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-fg">{order.vehicle.display_name}</span>
+        <span className="block truncate text-sm text-fg">{vehicleText(order)}</span>
         <span className="block truncate text-xs text-fg-muted">
-          {order.number} · {WORK_ORDER_STATUS[order.status].label}
+          <span className="tabular">{shortOrderNumber(order.number)}</span> · {WORK_ORDER_STATUS[order.status].label}
         </span>
       </span>
-      <span className="flex shrink-0 flex-col items-end gap-1">
-        {order.is_late && <LateBadge />}
-        <PriorityBadge priority={order.priority} quiet />
-      </span>
-    </button>
+      {(order.is_late || order.priority === 'urgent') && (
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          {order.is_late && <LateBadge />}
+          {order.priority === 'urgent' && <PriorityBadge priority="urgent" />}
+        </span>
+      )}
+    </>
   )
 }
 
@@ -198,34 +167,61 @@ function Overview({ bays, orders, loading, selection }: { bays: Bay[]; orders: W
   const waiting = waitingOrders(orders)
   return (
     <>
-      <PanelHeader title="Elevadores y espera" eyebrow={`${busy} de ${total} elevadores ocupados`} />
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <p className="text-sm text-fg-muted">Elige un elevador o un coche en espera, en la escena o en la lista, para ver su ficha y moverlo.</p>
-        <h3 className="text-xs font-medium uppercase tracking-[0.1em] text-fg-subtle">
-          En espera <span className="tabular">({loading ? '…' : waiting.length})</span>
-        </h3>
-        {loading ? (
-          <div aria-hidden className="space-y-2">
-            {Array.from({ length: 4 }, (_, i) => (
-              <Skeleton key={i} className="h-14 rounded-control" />
-            ))}
-          </div>
-        ) : waiting.length === 0 ? (
-          <p className="rounded-control border border-dashed border-line px-3 py-4 text-center text-sm text-fg-muted">No hay coches esperando elevador.</p>
-        ) : (
-          <ul className="space-y-2">
-            {waiting.slice(0, 6).map((o) => (
-              <li key={o.id}>
-                <WaitingButton order={o} onSelect={() => selection.select({ orderId: o.id })} />
-              </li>
-            ))}
-          </ul>
-        )}
-        {waiting.length > 6 && (
-          <Link to={`${ctx.base}/ordenes`} className="text-sm font-medium text-accent-ink hover:underline">
-            Ver las {waiting.length} en el tablero
-          </Link>
-        )}
+      <PanelHeader title="Elevadores y espera" description={`Elige uno, aquí o en la escena, para ver su ficha y moverlo. ${busy} de ${total} ocupados.`} />
+      <div className="space-y-6">
+        <section aria-label="Elevadores">
+          <SubTitle>Elevadores</SubTitle>
+          {bays.length === 0 ? (
+            <p className="text-sm text-fg-muted">Este taller no tiene elevadores. Se configuran en los ajustes del taller.</p>
+          ) : (
+            <ul className="border-t border-line">
+              {bays.map((b) => {
+                const o = b.work_order
+                return (
+                  <li key={b.number} className="border-b border-line">
+                    <button type="button" onClick={() => selection.select({ bay: b.number })} className={rowButton}>
+                      <span className="w-20 shrink-0 text-sm font-medium text-fg">Elevador {b.number}</span>
+                      {o ? (
+                        <WaitingLine order={o} />
+                      ) : (
+                        <span className="flex-1 text-sm text-fg-muted">Libre</span>
+                      )}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+        <section aria-label="En espera">
+          <SubTitle>
+            En espera <span className="font-normal text-fg-muted tabular">({loading ? '…' : waiting.length})</span>
+          </SubTitle>
+          {loading ? (
+            <div aria-hidden className="space-y-2">
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton key={i} className="h-10 rounded-control" />
+              ))}
+            </div>
+          ) : waiting.length === 0 ? (
+            <p className="border-t border-line py-3 text-sm text-fg-muted">No hay coches esperando elevador.</p>
+          ) : (
+            <ul className="border-t border-line">
+              {waiting.slice(0, 8).map((o) => (
+                <li key={o.id} className="border-b border-line">
+                  <button type="button" onClick={() => selection.select({ orderId: o.id })} className={rowButton}>
+                    <WaitingLine order={o} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {waiting.length > 8 && (
+            <Link to={`${ctx.base}/ordenes`} className="mt-2 inline-block text-sm font-medium text-accent-ink hover:underline">
+              Ver las {waiting.length} en el tablero
+            </Link>
+          )}
+        </section>
       </div>
     </>
   )
@@ -253,40 +249,29 @@ function FreeBaySheet({
   const canOperate = ctx.can('operate')
   return (
     <>
-      <PanelHeader
-        title={
-          <span className="flex items-center gap-2">
-            Elevador {bay}
-            <Badge tone="ok" size="sm">
-              Libre
-            </Badge>
-          </span>
-        }
-        eyebrow="Elevador"
-        onClose={() => selection.select(null)}
-      />
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <PanelHeader title={`Elevador ${bay}`} description="Libre." onClose={() => selection.select(null)} />
+      <div className="space-y-3">
         <InlineError message={error} />
         {loading ? (
           <Skeleton className="h-32 rounded-control" />
         ) : waiting.length === 0 ? (
-          <div className="rounded-control border border-dashed border-line px-3 py-5 text-center text-sm text-fg-muted">
+          <div className="space-y-3 border-t border-line pt-3 text-sm text-fg-muted">
             <p>No hay órdenes esperando elevador.</p>
             {canOperate && (
-              <ButtonLink to={`${ctx.base}/ordenes/nueva?elevador=${bay}`} size="sm" icon={<Plus aria-hidden />} className="mt-3">
+              <ButtonLink to={`${ctx.base}/ordenes/nueva?elevador=${bay}`} size="sm" icon={<Plus aria-hidden />}>
                 Abrir orden en este elevador
               </ButtonLink>
             )}
           </div>
         ) : (
           <>
-            <p className="text-sm text-fg-muted">{canOperate ? 'Sube un coche de la zona de espera:' : 'Coches en espera:'}</p>
-            <ul className="space-y-2">
+            <SubTitle>{canOperate ? 'Sube un coche de la zona de espera' : 'Coches en espera'}</SubTitle>
+            <ul className="border-t border-line">
               {waiting.slice(0, 8).map((o) => (
-                <li key={o.id} className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <WaitingButton order={o} onSelect={() => selection.select({ orderId: o.id })} />
-                  </div>
+                <li key={o.id} className="flex items-center gap-2 border-b border-line">
+                  <button type="button" onClick={() => selection.select({ orderId: o.id })} className={cn(rowButton, 'flex-1')}>
+                    <WaitingLine order={o} />
+                  </button>
                   {canOperate && (
                     <Button
                       size="sm"
@@ -339,16 +324,24 @@ function OrderSheet({
 
   const details: { label: string; value: ReactNode }[] = [
     {
-      label: 'Mecánico',
-      value: order.assigned_to ? (
-        <span className="inline-flex items-center gap-1.5">
-          <Avatar name={order.assigned_to.name} size="xs" />
-          {order.assigned_to.name}
-        </span>
+      label: 'Cliente',
+      value: order.customer ? (
+        <>
+          <Link to={`${ctx.base}/clientes/${order.customer.id}`} className="hover:underline">
+            {order.customer.name}
+          </Link>
+          {order.customer.phone && (
+            <a href={telHref(order.customer.phone)} className="ml-2 text-fg-muted tabular hover:text-fg hover:underline">
+              <span className="sr-only">Llamar al </span>
+              {order.customer.phone}
+            </a>
+          )}
+        </>
       ) : (
-        <span className="text-fg-subtle">Sin asignar</span>
+        <span className="text-fg-subtle">Sin cliente</span>
       ),
     },
+    { label: 'Mecánico', value: order.assigned_to?.name ?? <span className="text-fg-subtle">Sin asignar</span> },
     { label: 'Prometida', value: order.promised_at ? <PromisedAt order={order} /> : <span className="text-fg-subtle">Sin fecha</span> },
     { label: 'Recibida', value: <span className="tabular">{formatWhen(order.received_at)}</span> },
     { label: 'Km de entrada', value: <span className="tabular">{formatKm(order.mileage_in, { empty: 'Sin anotar' })}</span> },
@@ -358,52 +351,37 @@ function OrderSheet({
   return (
     <>
       <PanelHeader
-        eyebrow={<span className="font-mono tracking-wide tabular">{order.number}</span>}
         title={
           <Link to={orderHref} className="hover:underline">
             {order.title}
           </Link>
         }
+        description={
+          <>
+            <span className="tabular">{order.number}</span> · {WORK_ORDER_STATUS[order.status].label} · {order.bay ? `Elevador ${order.bay}` : 'En espera'}
+          </>
+        }
         onClose={() => selection.select(null)}
       />
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex flex-wrap gap-1.5">
-          <OrderStatusPill status={order.status} />
-          {order.is_late && <LateBadge size="md" />}
-          <PriorityBadge priority={order.priority} size="md" quiet />
-          {order.bay ? <BayBadge bay={order.bay} size="md" /> : <Badge tone="neutral">En espera</Badge>}
-        </div>
-
-        <div className="flex items-center gap-3 rounded-control border border-line bg-surface-2/50 p-2.5">
-          <CarThumbnail appearance={{ bodyType: v.body_type, colorHex: v.color_hex }} alt="" className="h-12 w-20 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <Link to={`${ctx.base}/vehiculos/${v.id}`} className="block truncate text-sm font-medium text-fg hover:underline">
-              {v.display_name}
-            </Link>
-            {v.plate && <Plate value={v.plate} className="mt-1 h-5 text-[10px]" />}
-          </div>
-        </div>
-
-        {order.customer && (
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <UserRound aria-hidden className="size-4 shrink-0 text-fg-subtle" />
-            <Link to={`${ctx.base}/clientes/${order.customer.id}`} className="min-w-0 truncate text-fg hover:underline">
-              {order.customer.name}
-            </Link>
-            {order.customer.phone && (
-              <a href={telHref(order.customer.phone)} className="ml-auto inline-flex min-h-11 shrink-0 items-center gap-1 text-xs text-fg-muted hover:text-fg md:min-h-0">
-                <Phone aria-hidden className="size-3.5" />
-                <span className="sr-only">Llamar al </span>
-                <span className="tabular">{order.customer.phone}</span>
-              </a>
-            )}
-          </div>
+      <div className="space-y-4">
+        {(order.is_late || order.priority === 'urgent') && (
+          <p className="flex flex-wrap gap-1.5">
+            {order.is_late && <LateBadge size="md" />}
+            {order.priority === 'urgent' && <PriorityBadge priority="urgent" size="md" />}
+          </p>
         )}
 
-        <dl className="divide-y divide-line rounded-control border border-line text-sm">
+        <p className="flex min-w-0 items-center gap-2 text-sm">
+          <ColorDot color={v.color_hex} />
+          <Link to={`${ctx.base}/vehiculos/${v.id}`} className="min-w-0 truncate font-medium text-fg hover:underline">
+            {vehicleText(order)}
+          </Link>
+        </p>
+
+        <dl className="divide-y divide-line border-y border-line text-sm">
           {details.map((d) => (
-            <div key={d.label} className="flex items-center justify-between gap-3 px-3 py-2">
-              <dt className="text-fg-muted">{d.label}</dt>
+            <div key={d.label} className="flex items-baseline justify-between gap-3 px-1 py-2">
+              <dt className="shrink-0 text-fg-muted">{d.label}</dt>
               <dd className="min-w-0 truncate text-right text-fg">{d.value}</dd>
             </div>
           ))}
@@ -412,7 +390,7 @@ function OrderSheet({
         <InlineError message={error} />
 
         {canOperate && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {next && (
                 <Button
@@ -428,14 +406,9 @@ function OrderSheet({
             </div>
 
             <div>
-              <p className="mb-1.5 text-xs font-medium uppercase tracking-[0.1em] text-fg-subtle">Elevador</p>
+              <SubTitle>Elevador</SubTitle>
               {order.bay ? (
-                <Button
-                  size="sm"
-                  icon={<ArrowDownToLine aria-hidden />}
-                  disabled={busy}
-                  onClick={() => void actions.move(order, order.status, null, { onError })}
-                >
+                <Button size="sm" icon={<ArrowDownToLine aria-hidden />} disabled={busy} onClick={() => void actions.move(order, order.status, null, { onError })}>
                   Bajar del elevador {order.bay}
                 </Button>
               ) : freeBays.length === 0 ? (
@@ -443,13 +416,7 @@ function OrderSheet({
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {freeBays.map((b) => (
-                    <Button
-                      key={b.number}
-                      size="sm"
-                      icon={<ArrowUpFromLine aria-hidden />}
-                      disabled={busy}
-                      onClick={() => void actions.move(order, order.status, b.number, { onError })}
-                    >
+                    <Button key={b.number} size="sm" icon={<ArrowUpFromLine aria-hidden />} disabled={busy} onClick={() => void actions.move(order, order.status, b.number, { onError })}>
                       Subir al {b.number}
                     </Button>
                   ))}
@@ -459,7 +426,7 @@ function OrderSheet({
           </div>
         )}
 
-        <div className="mt-auto flex flex-wrap gap-2 border-t border-line pt-3">
+        <div className="flex flex-wrap gap-2 border-t border-line pt-3">
           <ButtonLink to={orderHref} size="sm" variant="ghost" icon={<ClipboardList aria-hidden />}>
             Abrir la orden
           </ButtonLink>

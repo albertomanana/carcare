@@ -1,4 +1,4 @@
-import { EllipsisVertical, Lock, Pencil, Plus, Receipt, Trash2 } from 'lucide-react'
+import { EllipsisVertical, Pencil, Plus, Receipt, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -8,7 +8,6 @@ import { flattenPages, totalFromPages } from '@/api/hooks/shared'
 import { useVehicleSummary } from '@/api/hooks/vehicles'
 import type { Expense, ExpenseCategory } from '@/api/types'
 import { CategoryBreakdown } from '@/components/charts/Charts'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -19,9 +18,11 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { StatCard } from '@/components/ui/StatCard'
 import { EmptyState, ErrorState, NoResults } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
+import { useHashTarget, useRevealHashTarget } from '@/hooks/useHashTarget'
 import { useSearchParam } from '@/hooks/useSearchParam'
+import { cn } from '@/lib/cn'
 import { formatDate, formatDecimal, formatKm, formatMoney } from '@/lib/format'
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_ICON, EXPENSE_CATEGORY_LABEL, FUEL_UNIT_SHORT } from '@/lib/labels'
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL, FUEL_UNIT_SHORT } from '@/lib/labels'
 import { PERIOD_LABEL, presetPeriod } from '@/lib/period'
 import { useVehicleOutlet } from '../vehicle-outlet'
 
@@ -34,9 +35,13 @@ export default function ExpensesTab() {
   const { vehicle } = useVehicleOutlet()
   const ctx = useWorkspace()
   const [presetParam, setPreset] = useSearchParam('periodo', 'this_year')
-  const preset: Preset = (PRESETS as readonly string[]).includes(presetParam) ? (presetParam as Preset) : 'this_year'
+  // `periodo` admite también un año ("2024"): lo usan los enlaces desde las lecturas de km (contrato §3.4.1)
+  const thisYear = new Date().getFullYear()
+  const yearParam = /^\d{4}$/.test(presetParam) ? Number(presetParam) : null
+  const preset: Preset | 'year' =
+    yearParam === thisYear ? 'this_year' : yearParam === thisYear - 1 ? 'last_year' : yearParam ? 'year' : (PRESETS as readonly string[]).includes(presetParam) ? (presetParam as Preset) : 'this_year'
   const [category, setCategory] = useSearchParam('categoria')
-  const period = useMemo(() => presetPeriod(preset), [preset])
+  const period = useMemo(() => (preset === 'year' ? { from: `${yearParam}-01-01`, to: `${yearParam}-12-31` } : presetPeriod(preset)), [preset, yearParam])
   const summary = useVehicleSummary(vehicle.id, { from: period.from, to: period.to }, ctx.canExpenses)
   const list = useExpenses(vehicle.id, { from: period.from, to: period.to, category, per_page: 25 }, ctx.canExpenses)
   const remove = useDeleteExpense(vehicle.id)
@@ -45,6 +50,16 @@ export default function ExpensesTab() {
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Expense | null>(null)
   const canWrite = ctx.canExpenses && !vehicle.archived_at
+  const hashId = useHashTarget('gasto')
+  useRevealHashTarget({
+    id: hashId,
+    prefix: 'gasto',
+    ready: !list.isPending,
+    found: !!hashId && expenses.some((e) => String(e.id) === hashId),
+    hasNextPage: list.hasNextPage,
+    isFetchingNextPage: list.isFetchingNextPage,
+    fetchNextPage: list.fetchNextPage,
+  })
 
   if (!ctx.canExpenses) return <ErrorState error={undefined} title="Tu rol no incluye los gastos de este espacio" />
 
@@ -52,7 +67,8 @@ export default function ExpensesTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Select aria-label="Periodo" value={preset} onChange={(e) => setPreset(e.target.value)} className="sm:w-52">
+        <Select aria-label="Periodo" value={preset === 'year' ? String(yearParam) : preset} onChange={(e) => setPreset(e.target.value)} className="sm:w-52">
+          {preset === 'year' && <option value={String(yearParam)}>Año {yearParam}</option>}
           {PRESETS.map((p) => (
             <option key={p} value={p}>
               {PERIOD_LABEL[p]}
@@ -81,7 +97,7 @@ export default function ExpensesTab() {
       ) : s ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-            <StatCard label={`Total · ${PERIOD_LABEL[preset].toLowerCase()}`} value={formatMoney(s.totals.period)} change={s.totals.change_pct} upIsGood={false} emphasis />
+            <StatCard label={`Total · ${preset === 'year' ? `año ${yearParam}` : PERIOD_LABEL[preset].toLowerCase()}`} value={formatMoney(s.totals.period)} change={s.totals.change_pct} upIsGood={false} />
             <StatCard
               label="Coste por km"
               value={s.cost_per_km.value ? formatMoney(s.cost_per_km.value) : '—'}
@@ -130,9 +146,9 @@ export default function ExpensesTab() {
           )
         ) : (
           <>
-            <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+            <ul className="divide-y divide-line border-y border-line">
               {expenses.map((e) => (
-                <ExpenseRow key={e.id} expense={e} canWrite={canWrite} historyHref={`${ctx.base}/vehiculos/${vehicle.id}/historial#intervencion-${e.maintenance_record_id}`} onEdit={setEditing} onDelete={setDeleting} />
+                <ExpenseRow key={e.id} expense={e} highlighted={hashId === String(e.id)} canWrite={canWrite} historyHref={`${ctx.base}/vehiculos/${vehicle.id}/historial?ver=intervenciones#intervencion-${e.maintenance_record_id}`} onEdit={setEditing} onDelete={setDeleting} />
               ))}
             </ul>
             <LoadMore hasNextPage={!!list.hasNextPage} isFetchingNextPage={list.isFetchingNextPage} fetchNextPage={list.fetchNextPage} shown={expenses.length} total={totalFromPages(list.data)} what="gastos" />
@@ -179,46 +195,43 @@ export default function ExpensesTab() {
 
 function ExpenseRow({
   expense: e,
+  highlighted,
   canWrite,
   historyHref,
   onEdit,
   onDelete,
 }: {
   expense: Expense
+  highlighted: boolean
   canWrite: boolean
   historyHref: string
   onEdit: (e: Expense) => void
   onDelete: (e: Expense) => void
 }) {
-  const Icon = EXPENSE_CATEGORY_ICON[e.category as ExpenseCategory]
+  // Todo como texto gris (R5 y R7): sin baldosa de icono ni píldoras de "Depósito lleno"
   const meta = [
+    e.description ? EXPENSE_CATEGORY_LABEL[e.category as ExpenseCategory] : null,
     formatDate(e.expense_date),
     e.mileage !== null ? formatKm(e.mileage) : null,
     e.fuel_quantity ? `${formatDecimal(e.fuel_quantity, 2)} ${e.fuel_unit ? FUEL_UNIT_SHORT[e.fuel_unit] : ''}`.trim() : null,
+    e.full_tank ? 'depósito lleno' : null,
   ]
     .filter(Boolean)
     .join(' · ')
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-control bg-surface-2 text-fg-muted">
-        <Icon aria-hidden className="size-4" />
-      </span>
+    <li
+      id={`gasto-${e.id}`}
+      tabIndex={highlighted ? -1 : undefined}
+      className={cn('flex scroll-mt-32 items-center gap-3 py-2.5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent', highlighted && 'bg-surface-2 px-2')}
+    >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">{e.description || EXPENSE_CATEGORY_LABEL[e.category]}</p>
-        <p className="truncate text-xs text-fg-muted tabular">
-          {e.description ? `${EXPENSE_CATEGORY_LABEL[e.category]} · ` : ''}
-          {meta}
-        </p>
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          {e.full_tank && <Badge size="sm">Depósito lleno</Badge>}
-          {e.is_linked && (
-            <Link to={historyHref} className="rounded-full">
-              <Badge size="sm" tone="info" icon={<Lock aria-hidden />}>
-                Desde su intervención
-              </Badge>
-            </Link>
-          )}
-        </div>
+        <p className="text-sm text-fg-muted tabular">{meta}</p>
+        {e.is_linked && (
+          <Link to={historyHref} className="text-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline">
+            Viene de una intervención: se edita allí
+          </Link>
+        )}
       </div>
       <p className="shrink-0 text-right font-medium text-fg tabular">{formatMoney(e.amount)}</p>
       {canWrite && !e.is_linked ? (

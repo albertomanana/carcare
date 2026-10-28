@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Car, Check, UserPlus, Warehouse } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -37,9 +36,9 @@ const schema = z
 type Values = z.infer<typeof schema>
 const FIELDS = ['account_type', 'name', 'email', 'password', 'password_confirmation', 'workshop_name'] as const
 
-const TYPES: { value: WorkspaceType; title: string; text: string; icon: typeof Car }[] = [
-  { value: 'personal', title: 'Particular', text: 'Tu coche o los de casa: diario, gastos, historial y avisos.', icon: Car },
-  { value: 'workshop', title: 'Taller o flota', text: 'Clientes, órdenes en tablero, elevadores y equipo.', icon: Warehouse },
+const TYPES: { value: WorkspaceType; title: string; text: string }[] = [
+  { value: 'personal', title: 'Particular', text: 'Tu coche o los de casa: diario, gastos, historial y avisos.' },
+  { value: 'workshop', title: 'Taller o flota', text: 'Clientes, órdenes en tablero, elevadores y equipo.' },
 ]
 
 export default function RegisterPage() {
@@ -102,31 +101,28 @@ export default function RegisterPage() {
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-fg">¿Cómo vas a usar CarCare?</legend>
           <div className="grid gap-3 sm:grid-cols-2">
-            {TYPES.map(({ value, title, text, icon: Icon }) => {
+            {TYPES.map(({ value, title, text }) => {
               const checked = accountType === value
               return (
                 <label
                   key={value}
                   className={cn(
-                    'relative flex cursor-pointer flex-col gap-2 rounded-card border p-4 transition-colors duration-150',
+                    'relative flex cursor-pointer items-start gap-3 rounded-control border p-3.5 transition-colors duration-150',
                     'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
-                    checked ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-line-strong',
+                    checked ? 'border-accent-ink bg-surface-2' : 'border-line bg-surface hover:border-line-strong',
                   )}
                 >
                   <input type="radio" value={value} className="sr-only" {...register('account_type')} />
-                  <span className="flex items-center justify-between">
-                    <span className={cn('grid size-10 place-items-center rounded-control', checked ? 'bg-accent text-on-accent' : 'bg-surface-2 text-fg-muted')}>
-                      <Icon aria-hidden className="size-5" />
-                    </span>
-                    <span
-                      aria-hidden
-                      className={cn('grid size-5 place-items-center rounded-full border', checked ? 'border-accent bg-accent text-on-accent' : 'border-line-strong')}
-                    >
-                      {checked && <Check className="size-3.5" strokeWidth={3} />}
-                    </span>
+                  <span
+                    aria-hidden
+                    className={cn('mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-2', checked ? 'border-accent-ink' : 'border-line-strong')}
+                  >
+                    {checked && <span className="size-2 rounded-full bg-accent-ink" />}
                   </span>
-                  <span className="font-display text-base font-semibold text-fg-warm">{title}</span>
-                  <span className="text-xs text-fg-muted">{text}</span>
+                  <span className="min-w-0">
+                    <span className="block font-medium text-fg">{title}</span>
+                    <span className="block text-xs text-fg-muted">{text}</span>
+                  </span>
                 </label>
               )
             })}
@@ -161,7 +157,7 @@ export default function RegisterPage() {
 
         <FormErrors messages={orphans} />
 
-        <Button type="submit" variant="primary" size="lg" block loading={registerMutation.isPending} icon={<UserPlus aria-hidden />}>
+        <Button type="submit" variant="primary" size="lg" block loading={registerMutation.isPending}>
           {accountType === 'workshop' ? 'Crear cuenta y taller' : 'Crear cuenta'}
         </Button>
       </form>

@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { Link, type LinkProps } from 'react-router'
+import { useClaimPrimaryAction } from './primary-action'
 import { Spinner } from './Spinner'
 import { buttonClasses, iconButtonClasses, type ButtonSize, type ButtonVariant } from './variants'
 
@@ -10,6 +11,11 @@ export interface ButtonProps extends ComponentProps<'button'> {
   block?: boolean
   icon?: ReactNode
   iconRight?: ReactNode
+  /**
+   * Solo para `variant="primary"`: se oculta en el móvil porque la barra inferior ya ofrece la misma acción
+   * ("+ Registrar"). Así no hay dos primarias a la vez (regla R1).
+   */
+  hideOnMobile?: boolean
 }
 
 export function Button({
@@ -23,12 +29,14 @@ export function Button({
   children,
   disabled,
   type = 'button',
+  hideOnMobile,
   ...props
 }: ButtonProps) {
+  useClaimPrimaryAction(variant === 'primary' && !hideOnMobile)
   return (
     <button
       type={type}
-      className={buttonClasses({ variant, size, block, className })}
+      className={buttonClasses({ variant, size, block, className: hideOnMobile ? `max-md:hidden ${className ?? ''}` : className })}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}
@@ -50,6 +58,7 @@ export interface ButtonLinkProps extends LinkProps {
 
 /** Enlace con aspecto de botón (navegación, no acción). */
 export function ButtonLink({ variant = 'secondary', size = 'md', block, icon, iconRight, className, children, ...props }: ButtonLinkProps) {
+  useClaimPrimaryAction(variant === 'primary')
   return (
     <Link className={buttonClasses({ variant, size, block, className: typeof className === 'string' ? className : undefined })} {...props}>
       {icon}

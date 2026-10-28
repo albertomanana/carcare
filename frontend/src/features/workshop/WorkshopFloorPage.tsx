@@ -6,15 +6,15 @@ import { EmptyState, ErrorState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { WorkshopScene } from '@/three'
-import { BayStrip, BayStripSkeleton, FloorPanel } from './components/FloorPanel'
+import { FloorPanel, FloorPanelSkeleton } from './components/FloorPanel'
 import { resolveSelection, useFloorSelection } from './components/floor'
 import { floorSummary, waitingOrders } from './components/orderUtils'
 import { useOrderActions } from './components/useOrderActions'
 
 /**
- * Taller 3D a pantalla completa: la nave con sus elevadores y la zona de espera, sincronizada con
- * la franja HTML de elevadores y el panel de la derecha (alternativa accesible a la escena).
- * Se actualiza cada minuto; los cambios hechos aquí se ven al momento (actualización optimista).
+ * Taller 3D (plan UX 5.5): la escena a toda la altura y, al lado, la lista de elevadores y de la zona de espera,
+ * sincronizada con la escena y que es su alternativa HTML accesible. Sin la franja de elevadores bajo la escena,
+ * que repetía los rótulos y el panel. Se actualiza cada minuto; los cambios hechos aquí se ven al momento.
  */
 export default function WorkshopFloorPage() {
   const ctx = useWorkspace()
@@ -64,9 +64,9 @@ export default function WorkshopFloorPage() {
           <ErrorState error={bays.error} onRetry={() => void bays.refetch()} />
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(0,1fr)_400px]">
-          <div className="@container flex min-h-0 min-w-0 flex-col gap-3 p-3 sm:p-4 lg:px-8 xl:pr-4">
-            <div className="relative h-[52dvh] min-h-[300px] overflow-hidden rounded-hero border border-line bg-surface sm:h-[480px] xl:h-auto xl:min-h-0 xl:flex-1">
+        <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="flex min-h-0 min-w-0 flex-col p-3 sm:p-4 lg:px-8 xl:pr-4">
+            <div className="relative h-[52dvh] min-h-[300px] overflow-hidden rounded-card border border-line bg-surface sm:h-[480px] xl:h-auto xl:min-h-0 xl:flex-1">
               {bays.isPending ? (
                 <Skeleton className="absolute inset-0 rounded-none" />
               ) : (
@@ -80,16 +80,15 @@ export default function WorkshopFloorPage() {
                 />
               )}
             </div>
-            {bays.isPending ? <BayStripSkeleton count={ctx.workspace.settings.bays_count} /> : <BayStrip bays={bayList} selection={selection} />}
           </div>
-          <div className="min-h-0 min-w-0 px-3 pb-6 sm:px-4 lg:px-8 xl:py-4 xl:pl-0 xl:pr-6">
+          <div className="min-h-0 min-w-0 px-4 pb-8 pt-2 sm:px-6 lg:px-8 xl:overflow-y-auto xl:py-4 xl:pl-2 xl:pr-6">
             {bays.isPending ? (
-              <Skeleton className="h-80 rounded-card xl:h-full" />
+              <FloorPanelSkeleton />
             ) : (
-              <FloorPanel bays={bayList} orders={orders} ordersLoading={open.isPending} selection={selection} actions={actions} className="xl:h-full xl:overflow-y-auto" />
+              <FloorPanel bays={bayList} orders={orders} ordersLoading={open.isPending} selection={selection} actions={actions} />
             )}
             {open.isError && (
-              <p className="mt-2 text-xs text-danger">
+              <p className="mt-3 text-sm text-danger">
                 No se pudo cargar la zona de espera.{' '}
                 <button type="button" className="font-medium underline" onClick={() => void open.refetch()}>
                   Reintentar

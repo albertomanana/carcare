@@ -10,6 +10,7 @@ export interface StatCardProps {
   /** Unidad o texto pequeño tras la cifra. */
   unit?: ReactNode
   hint?: ReactNode
+  /** @deprecated Regla R7: sin iconos en las etiquetas de cifras. Se ignora. */
   icon?: ReactNode
   /** Variación porcentual frente al periodo anterior. null ⇒ no se muestra. */
   change?: number | null
@@ -20,11 +21,15 @@ export interface StatCardProps {
   unavailable?: { reason: string | null; action?: ReactNode }
   loading?: boolean
   className?: string
+  /** @deprecated Regla R8: sin degradados. Se ignora. */
   emphasis?: boolean
 }
 
-/** Tarjeta KPI con cifra grande en tipografía display. */
-export function StatCard({ label, value, unit, hint, icon, change, changeLabel = 'vs. periodo anterior', upIsGood, unavailable, loading, className, emphasis }: StatCardProps) {
+/**
+ * Cifra con su etiqueta. Sin caja, sin icono y sin mayúsculas (reglas R3, R6 y R7 del informe de UX):
+ * la etiqueta va como frase en gris y la cifra debajo. Usar como mucho 3 en la primera pantalla (R2).
+ */
+export function StatCard({ label, value, unit, hint, change, changeLabel = 'vs. periodo anterior', upIsGood, unavailable, loading, className }: StatCardProps) {
   const changeTone =
     change === null || change === undefined || change === 0 || upIsGood === undefined
       ? 'text-fg-muted'
@@ -32,16 +37,13 @@ export function StatCard({ label, value, unit, hint, icon, change, changeLabel =
         ? 'text-ok'
         : 'text-warning'
   return (
-    <div className={cn('flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-4 md:p-5', emphasis && 'border-accent/30 bg-gradient-to-br from-accent-soft to-surface', className)}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-[0.1em] text-fg-subtle">{label}</span>
-        {icon && <span className="text-fg-subtle [&_svg]:size-4">{icon}</span>}
-      </div>
+    <div className={cn('flex min-w-0 flex-col gap-1', className)}>
+      <span className="text-sm text-fg-muted">{label}</span>
       {loading ? (
-        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-8 w-32" />
       ) : unavailable ? (
         <div className="flex flex-col gap-2">
-          <span className="font-display text-2xl font-semibold text-fg-subtle" aria-hidden>
+          <span className="font-display text-xl font-semibold text-fg-subtle" aria-hidden>
             —
           </span>
           <p className="flex items-start gap-1.5 text-xs text-fg-muted">
@@ -53,7 +55,7 @@ export function StatCard({ label, value, unit, hint, icon, change, changeLabel =
       ) : (
         <div className="flex flex-col gap-1">
           <div className="flex items-baseline gap-1.5">
-            <span className="tabular font-display text-[1.75rem] font-semibold leading-none tracking-tight text-fg-warm md:text-3xl">{value}</span>
+            <span className="tabular font-display text-2xl font-semibold leading-tight tracking-tight text-fg-warm">{value}</span>
             {unit && <span className="text-sm text-fg-muted">{unit}</span>}
           </div>
           {change !== null && change !== undefined && (

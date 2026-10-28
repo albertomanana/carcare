@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, ChevronDown, Crown, History, Lock, LogOut, Plus, ShieldCheck, UserMinus, UserPlus, Users, Wrench } from 'lucide-react'
-import { useState } from 'react'
+import { Check, ChevronDown, ChevronRight, History, ListFilter, LogOut, Plus, UserMinus, UserPlus, Users } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -11,10 +11,7 @@ import { useVehicle, useVehicles } from '@/api/hooks/vehicles'
 import { useActivity, useAddMember, useMembers, useRemoveMember, useUpdateMemberRole } from '@/api/hooks/workspaces'
 import type { Member, Vehicle, WorkspaceRole } from '@/api/types'
 import { FormErrors } from '@/components/forms/MileageConflictNotice'
-import { Avatar } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink, IconButton } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog, DialogBody, DialogClose, DialogContent, DialogFooter } from '@/components/ui/Dialog'
 import {
@@ -45,12 +42,15 @@ import { plural } from '@/lib/text'
 import { TeamActivity } from './components/TeamActivity'
 import { memberPermissions, type MemberPermissions } from './components/team'
 
-const ROLE_ICON: Record<WorkspaceRole, typeof Crown> = { owner: Crown, manager: ShieldCheck, mechanic: Wrench }
 const ROLE_ORDER: WorkspaceRole[] = ['owner', 'manager', 'mechanic']
 
 type Pending = { kind: 'role'; member: Member; role: WorkspaceRole } | { kind: 'remove'; member: Member } | null
 
-/** Equipo del taller: quién tiene acceso, con qué rol, y altas/bajas. El último propietario está protegido. */
+/**
+ * Equipo del taller (plan UX 5.5): tabla de personas con su rol y, debajo, la actividad de 10 en 10.
+ * Sin cajas ni iniciales en círculo (R3, R7); el rol es texto o su menú (R5). La explicación de los roles
+ * va plegada. Al abrir solo se piden los miembros y la actividad (R12): los vehículos del filtro, al usarlo.
+ */
 export default function TeamPage() {
   const ctx = useWorkspace()
   useDocumentTitle('Equipo')
@@ -79,8 +79,11 @@ export default function TeamPage() {
           )
         }
       />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-        <div className="min-w-0 space-y-8">
+      <div className="max-w-4xl space-y-10">
+        <section aria-labelledby="personas-title" className="min-w-0">
+          <h2 id="personas-title" className="mb-3 font-display text-lg font-semibold tracking-tight text-fg-warm">
+            Personas
+          </h2>
           {members.isPending ? (
             <MembersSkeleton />
           ) : members.isError ? (
@@ -88,9 +91,9 @@ export default function TeamPage() {
           ) : (
             <MemberList members={members.data} />
           )}
-          <RecentActivity />
-        </div>
-        <RolesGuide />
+          <RolesGuide />
+        </section>
+        <RecentActivity />
       </div>
       <AddMemberDialog open={adding} onOpenChange={setAdding} />
     </>
@@ -106,6 +109,9 @@ function MemberList({ members }: { members: Member[] }) {
   const [pending, setPending] = useState<Pending>(null)
   const actor = ctx.workspace.role
   const owners = members.filter((m) => m.role === 'owner').length
+  const perms = members.map((m) => memberPermissions({ actorRole: actor, actorId: user?.id ?? null, member: m, ownersCount: owners }))
+  // El motivo del miembro protegido (último propietario) se dice una vez bajo la lista, no en su fila (5.5)
+  const protectedReason = ctx.can('manage') ? (perms.find((p) => p.protectedReason)?.protectedReason ?? null) : null
 
   const changeRole = (member: Member, role: WorkspaceRole) =>
     updateRole.mutate(
@@ -150,17 +156,30 @@ function MemberList({ members }: { members: Member[] }) {
   const busyId = updateRole.isPending ? updateRole.variables?.userId : remove.isPending ? remove.variables : null
 
   return (
-    <section aria-labelledby="members-title">
-      <h2 id="members-title" className="sr-only">
-        Miembros
-      </h2>
-      <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-        {members.map((m) => {
-          const perms = memberPermissions({ actorRole: actor, actorId: user?.id ?? null, member: m, ownersCount: owners })
-          return <MemberRow key={m.user.id} member={m} perms={perms} isSelf={m.user.id === user?.id} busy={busyId === m.user.id} onRole={requestRole} onRemove={(mm) => setPending({ kind: 'remove', member: mm })} />
-        })}
+    <>
+      <div
+        aria-hidden
+        className="hidden gap-4 border-t border-line px-1 py-2 text-xs font-medium text-fg-muted md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_11rem_2.75rem]"
+      >
+        <span>Persona</span>
+        <span>Desde</span>
+        <span>Rol</span>
+        <span />
+      </div>
+      <ul className="border-t border-line" aria-label="Personas del taller">
+        {members.map((m, i) => (
+          <MemberRow
+            key={m.user.id}
+            member={m}
+            perms={perms[i]}
+            isSelf={m.user.id === user?.id}
+            busy={busyId === m.user.id}
+            onRole={requestRole}
+            onRemove={(mm) => setPending({ kind: 'remove', member: mm })}
+          />
+        ))}
       </ul>
-      {owners === 1 && <p className="mt-2 text-xs text-fg-subtle">El taller tiene un único propietario: para que deje de serlo, nombra antes a otro propietario.</p>}
+      {protectedReason && <p className="mt-2 text-xs text-fg-subtle">{protectedReason}</p>}
 
       <ConfirmDialog
         open={p?.kind === 'role'}
@@ -193,7 +212,7 @@ function MemberList({ members }: { members: Member[] }) {
         loading={remove.isPending}
         onConfirm={() => p?.kind === 'remove' && doRemove(p.member)}
       />
-    </section>
+    </>
   )
 }
 
@@ -212,29 +231,35 @@ function MemberRow({
   onRole: (m: Member, role: WorkspaceRole) => void
   onRemove: (m: Member) => void
 }) {
-  const Icon = ROLE_ICON[member.role]
+  const joined = formatDate(member.joined_at)
   return (
-    <li className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center" aria-busy={busy || undefined}>
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar name={member.user.name} highlight={isSelf} />
-        <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-x-2 truncate font-medium text-fg">
-            {member.user.name}
-            {isSelf && <span className="text-xs font-normal text-fg-subtle">(tú)</span>}
-          </p>
-          <p className="truncate text-xs text-fg-muted">
-            {member.user.email} · desde el {formatDate(member.joined_at)}
-          </p>
-        </div>
+    <li
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-line px-1 py-3 md:grid-cols-[minmax(0,1fr)_7.5rem_11rem_2.75rem]"
+      aria-busy={busy || undefined}
+    >
+      <div className="col-span-2 min-w-0 md:col-span-1">
+        <p className="truncate text-sm font-medium text-fg">
+          {member.user.name}
+          {isSelf && <span className="font-normal text-fg-subtle"> (tú)</span>}
+        </p>
+        <p className="truncate text-xs text-fg-muted">
+          {member.user.email}
+          <span className="md:hidden"> · desde el {joined}</span>
+        </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2 pl-12 sm:pl-0">
+      <p className="hidden text-sm text-fg-muted tabular md:block">
+        <span className="sr-only">Desde el </span>
+        {joined}
+      </p>
+      <div className="min-w-0">
         {perms.roles.length > 1 ? (
           <DropdownMenu>
-            <DropdownMenuTrigger disabled={busy} className={cn(buttonClasses({ size: 'sm' }), 'min-w-36 justify-between')} aria-label={`Rol de ${member.user.name}: ${ROLE_LABEL[member.role]}. Cambiar rol`}>
-              <span className="inline-flex items-center gap-1.5">
-                <Icon aria-hidden />
-                {ROLE_LABEL[member.role]}
-              </span>
+            <DropdownMenuTrigger
+              disabled={busy}
+              className={cn(buttonClasses({ size: 'sm' }), 'w-full max-w-44 justify-between')}
+              aria-label={`Rol de ${member.user.name}: ${ROLE_LABEL[member.role]}. Cambiar rol`}
+            >
+              {ROLE_LABEL[member.role]}
               <ChevronDown aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-72">
@@ -250,21 +275,18 @@ function MemberRow({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Badge tone={member.role === 'owner' ? 'accent' : member.role === 'manager' ? 'info' : 'neutral'} icon={<Icon aria-hidden />}>
+          <p className="text-sm text-fg">
+            <span className="sr-only">Rol: </span>
             {ROLE_LABEL[member.role]}
-          </Badge>
+          </p>
         )}
-        {perms.protectedReason && (
-          <span className="inline-flex items-center gap-1 text-xs text-fg-subtle" title={perms.protectedReason}>
-            <Lock aria-hidden className="size-3.5" />
-            {perms.protectedLabel}
-          </span>
-        )}
+      </div>
+      <div className="flex justify-end">
         {perms.canRemove &&
           (isSelf ? (
-            <Button size="sm" variant="ghost" icon={<LogOut aria-hidden />} disabled={busy} onClick={() => onRemove(member)}>
-              Salir del taller
-            </Button>
+            <IconButton label="Salir del taller" size="sm" disabled={busy} onClick={() => onRemove(member)}>
+              <LogOut aria-hidden />
+            </IconButton>
           ) : (
             <IconButton label={`Quitar a ${member.user.name} del taller`} size="sm" disabled={busy} onClick={() => onRemove(member)}>
               <UserMinus aria-hidden />
@@ -275,32 +297,24 @@ function MemberRow({
   )
 }
 
+/** Qué puede hacer cada rol, plegado bajo la lista (5.5). `<details>` nativo: teclado y lector sin JavaScript. */
 function RolesGuide() {
   return (
-    <aside aria-labelledby="roles-title" className="space-y-3">
-      <Card className="p-5">
-        <h2 id="roles-title" className="font-display text-base font-semibold text-fg-warm">
-          Qué puede hacer cada rol
-        </h2>
-        <ul className="mt-3 space-y-3">
-          {ROLE_ORDER.map((r) => {
-            const Icon = ROLE_ICON[r]
-            return (
-              <li key={r} className="flex items-start gap-3">
-                <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-control bg-surface-2 text-fg-muted [&_svg]:size-4">
-                  <Icon />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium text-fg">{ROLE_LABEL[r]}</span>
-                  <span className="block text-sm text-fg-muted">{ROLE_DESCRIPTION[r]}</span>
-                </span>
-              </li>
-            )
-          })}
-        </ul>
-        <p className="mt-4 border-t border-line pt-3 text-xs text-fg-subtle">Todos pueden ver el taller, abrir y mover órdenes, y registrar intervenciones. Los permisos se comprueban también en el servidor.</p>
-      </Card>
-    </aside>
+    <details className="group mt-4 text-sm">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-control font-medium text-fg-muted hover:text-fg md:min-h-9 [&::-webkit-details-marker]:hidden">
+        <ChevronRight aria-hidden className="size-4 shrink-0 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" />
+        ¿Qué puede hacer cada rol?
+      </summary>
+      <dl className="mt-2 max-w-2xl divide-y divide-line border-y border-line">
+        {ROLE_ORDER.map((r) => (
+          <div key={r} className="grid gap-1 py-2.5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+            <dt className="font-medium text-fg">{ROLE_LABEL[r]}</dt>
+            <dd className="text-fg-muted">{ROLE_DESCRIPTION[r]}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 max-w-2xl text-xs text-fg-subtle">Todos pueden ver el taller, abrir y mover órdenes, y registrar intervenciones. Los permisos se comprueban también en el servidor.</p>
+    </details>
   )
 }
 
@@ -309,18 +323,44 @@ function RecentActivity() {
   const ctx = useWorkspace()
   const [vehicleParam, setVehicleParam] = useSearchParam('vehiculo')
   const vehicleId = /^\d+$/.test(vehicleParam) ? Number(vehicleParam) : null
+  // El filtro (y su petición de vehículos) solo se monta al pedirlo o si ya viene en la URL (R12)
+  const [filterWanted, setFilterWanted] = useState(false)
+  const filterOpen = filterWanted || vehicleId !== null
   const activity = useActivity(ctx.id, { per_page: ACTIVITY_PAGE, vehicle_id: vehicleId ?? undefined })
   const items = flattenPages(activity.data)
   const total = totalFromPages(activity.data)
 
   return (
-    <Section title="Actividad" id="actividad">
-      <ActivityVehicleFilter value={vehicleId} onChange={(id) => setVehicleParam(id === null ? null : String(id))} />
+    <Section
+      title="Actividad"
+      id="actividad"
+      action={
+        !filterOpen && (
+          <Button size="sm" variant="ghost" icon={<ListFilter aria-hidden />} onClick={() => setFilterWanted(true)}>
+            Filtrar por vehículo
+          </Button>
+        )
+      }
+    >
+      {filterOpen && (
+        <ActivityVehicleFilter
+          value={vehicleId}
+          autoFocus={filterWanted && vehicleId === null}
+          onChange={(id) => setVehicleParam(id === null ? null : String(id))}
+          onClose={() => {
+            setFilterWanted(false)
+            setVehicleParam(null)
+          }}
+        />
+      )}
       {activity.isPending ? (
-        <div role="status" className="space-y-2">
+        <div role="status" className="border-t border-line">
           <span className="sr-only">Cargando actividad…</span>
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-12 rounded-control" />
+            <div key={i} aria-hidden className="space-y-1.5 border-b border-line px-1 py-3">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-24" />
+            </div>
           ))}
         </div>
       ) : activity.isError ? (
@@ -369,44 +409,69 @@ function RecentActivity() {
 const ACTIVITY_PAGE = 10
 
 /** Selector de vehículo para la actividad. Lista los vehículos activos del taller por nombre (hasta 100). */
-function ActivityVehicleFilter({ value, onChange }: { value: number | null; onChange: (id: number | null) => void }) {
+function ActivityVehicleFilter({
+  value,
+  autoFocus,
+  onChange,
+  onClose,
+}: {
+  value: number | null
+  autoFocus?: boolean
+  onChange: (id: number | null) => void
+  onClose: () => void
+}) {
   const ctx = useWorkspace()
   const vehicles = useVehicles(ctx.id, { per_page: 100, sort: 'name' })
   const list = vehicles.data?.data ?? []
   const missing = value !== null && !!vehicles.data && !list.some((v) => v.id === value)
   // El vehículo elegido puede no estar en la lista (archivado o más allá de los 100 primeros)
   const selected = useVehicle(missing ? value : undefined)
+  const selectRef = useRef<HTMLSelectElement>(null)
+  const ready = !vehicles.isPending
+
+  // Al pulsar «Filtrar por vehículo» el foco pasa al selector en cuanto tiene opciones
+  useEffect(() => {
+    if (autoFocus && ready) selectRef.current?.focus()
+  }, [autoFocus, ready])
 
   if (vehicles.isError) {
-    return value !== null ? (
+    return (
       <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
-        Solo la actividad de un vehículo.
-        <Button size="sm" onClick={() => onChange(null)}>
+        No se pudieron cargar los vehículos.
+        <Button size="sm" onClick={() => void vehicles.refetch()}>
+          Reintentar
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onClose}>
           Ver toda la actividad
         </Button>
       </p>
-    ) : null
+    )
   }
-  if (vehicles.data && list.length === 0 && value === null) return null
 
   return (
-    <label className="mb-3 flex items-center gap-2 text-sm text-fg-muted">
-      <span className="shrink-0">Vehículo</span>
-      <Select
-        value={value === null ? '' : String(value)}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-        disabled={vehicles.isPending}
-        className="w-full sm:w-72"
-      >
-        <option value="">Todos los vehículos</option>
-        {missing && <option value={value}>{selected.data ? vehicleOptionLabel(selected.data) : 'Vehículo elegido'}</option>}
-        {list.map((v) => (
-          <option key={v.id} value={v.id}>
-            {vehicleOptionLabel(v)}
-          </option>
-        ))}
-      </Select>
-    </label>
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-fg-muted sm:flex-none">
+        <span className="shrink-0">Vehículo</span>
+        <Select
+          ref={selectRef}
+          value={value === null ? '' : String(value)}
+          onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+          disabled={!ready}
+          className="w-full sm:w-72"
+        >
+          <option value="">{ready ? 'Todos los vehículos' : 'Cargando vehículos…'}</option>
+          {missing && <option value={value}>{selected.data ? vehicleOptionLabel(selected.data) : 'Vehículo elegido'}</option>}
+          {list.map((v) => (
+            <option key={v.id} value={v.id}>
+              {vehicleOptionLabel(v)}
+            </option>
+          ))}
+        </Select>
+      </label>
+      <Button size="sm" variant="ghost" onClick={onClose}>
+        Quitar filtro
+      </Button>
+    </div>
   )
 }
 
@@ -462,7 +527,6 @@ function AddMemberForm({ onDone }: { onDone: () => void }) {
           <legend className="text-sm font-medium text-fg">Rol</legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {(['mechanic', 'manager'] as const).map((r) => {
-              const Icon = ROLE_ICON[r]
               const checked = role === r
               return (
                 <label
@@ -473,7 +537,6 @@ function AddMemberForm({ onDone }: { onDone: () => void }) {
                   )}
                 >
                   <input type="radio" name="role" value={r} checked={checked} onChange={() => setValue('role', r, { shouldDirty: true })} className="sr-only" />
-                  <Icon aria-hidden className={cn('mt-0.5 size-4 shrink-0', checked ? 'text-accent-ink' : 'text-fg-subtle')} />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 text-sm font-medium text-fg">
                       {ROLE_LABEL[r]}
@@ -504,11 +567,10 @@ function AddMemberForm({ onDone }: { onDone: () => void }) {
 
 function MembersSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="divide-y divide-line rounded-card border border-line bg-surface">
+    <div role="status" aria-live="polite" className="border-t border-line">
       <span className="sr-only">Cargando equipo…</span>
       {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} aria-hidden className="flex items-center gap-3 px-4 py-3.5">
-          <Skeleton className="size-9 rounded-full" />
+        <div key={i} aria-hidden className="flex items-center gap-4 border-b border-line px-1 py-3">
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-3 w-64 max-w-full" />
@@ -519,3 +581,4 @@ function MembersSkeleton() {
     </div>
   )
 }
+

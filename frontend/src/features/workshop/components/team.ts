@@ -12,8 +12,7 @@ export interface MemberPermissions {
   /** Roles que se pueden elegir para este miembro (incluido el actual). Con uno o ninguno no hay menú. */
   roles: WorkspaceRole[]
   canRemove: boolean
-  /** Etiqueta visible cuando el miembro está protegido ('Único propietario'). */
-  protectedLabel: string | null
+  /** Por qué no se puede tocar a este miembro (último propietario). La pantalla lo dice una vez, bajo la lista. */
   protectedReason: string | null
 }
 
@@ -47,7 +46,6 @@ export function memberPermissions({
   return {
     roles,
     canRemove,
-    protectedLabel: lastOwner ? 'Único propietario' : null,
-    protectedReason: lastOwner ? 'No se puede quitar ni cambiar el rol del último propietario: nombra antes a otro propietario.' : null,
+    protectedReason: lastOwner ? 'El taller tiene un único propietario: no se puede quitar ni cambiar su rol hasta que nombres a otro propietario.' : null,
   }
 }

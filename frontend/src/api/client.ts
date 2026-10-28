@@ -13,13 +13,16 @@ export class ApiError extends Error {
   readonly status: number
   readonly errors: Record<string, string[]>
   readonly body: ApiErrorBody | null
+  /** Segundos de la cabecera `Retry-After` (429); null si no llega. */
+  readonly retryAfter: number | null
 
-  constructor(status: number, message: string, body: ApiErrorBody | null = null) {
+  constructor(status: number, message: string, body: ApiErrorBody | null = null, retryAfter: number | null = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.body = body
     this.errors = body?.errors ?? {}
+    this.retryAfter = retryAfter
   }
 
   /** Primer mensaje de error de un campo (422). */
@@ -174,7 +177,9 @@ async function parseError(res: Response): Promise<ApiError> {
     /* respuesta sin JSON */
   }
   const message = body?.message?.trim() || DEFAULT_MESSAGES[res.status] || DEFAULT_MESSAGES[500]
-  return new ApiError(res.status, message, body)
+  const retryHeader = Number(res.headers.get('Retry-After'))
+  const retryAfter = Number.isFinite(retryHeader) && retryHeader > 0 ? Math.ceil(retryHeader) : null
+  return new ApiError(res.status, message, body, retryAfter)
 }
 
 async function rawRequest(path: string, options: RequestOptions, retried = false): Promise<Response> {

@@ -13,13 +13,11 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { cn } from '@/lib/cn'
 import { formatKm } from '@/lib/format'
 import { BODY_LABEL } from '@/lib/labels'
 import { WORK_ORDER_STATUS } from '@/lib/status'
 import { plural } from '@/lib/text'
 import { normalizePlate } from '@/lib/validation'
-import { CarThumbnail } from '@/three'
 import { type CustomerMode, type NewOrderValues, QUICK_COLORS } from './newOrderForm'
 
 const BODY_TYPES = Object.keys(BODY_LABEL) as BodyType[]
@@ -41,7 +39,7 @@ function OpenOrderNotice({ vehicle }: { vehicle: Vehicle }) {
   const open = vehicle.stats.open_work_order
   if (!open) return null
   return (
-    <p className="flex items-start gap-2 rounded-control border border-warning/40 bg-warning-soft px-3 py-2 text-sm text-fg">
+    <p className="flex items-start gap-2 text-sm text-fg">
       <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
       <span>
         Ya tiene abierta la{' '}
@@ -58,11 +56,10 @@ function OpenOrderNotice({ vehicle }: { vehicle: Vehicle }) {
 function VehicleLine({ vehicle }: { vehicle: Vehicle }) {
   return (
     <>
-      <CarThumbnail appearance={{ bodyType: vehicle.body_type, colorHex: vehicle.color_hex }} alt="" className="h-10 w-16 shrink-0" />
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="flex flex-wrap items-baseline gap-x-2">
           <span className="truncate text-sm font-medium text-fg">{vehicle.display_name}</span>
-          {vehicle.plate && <Plate value={vehicle.plate} className="h-5 text-[10px]" />}
+          <Plate value={vehicle.plate} className="text-sm" />
         </span>
         <span className="block truncate text-xs text-fg-muted">
           {[vehicle.customer?.name ?? 'Sin cliente', formatKm(vehicle.current_mileage, { empty: 'sin km' })].join(' · ')}
@@ -75,20 +72,11 @@ function VehicleLine({ vehicle }: { vehicle: Vehicle }) {
 
 /** Paso «Vehículo»: uno del taller (buscador) o alta rápida de cliente + vehículo. */
 export function VehicleSection({ form, presetCustomerId }: { form: Form; presetCustomerId: string | null }) {
-  const mode = useWatch({ control: form.control, name: 'vehicle_mode' })
+  const [mode, vehicleId] = useWatch({ control: form.control, name: ['vehicle_mode', 'vehicle_id'] })
   const setMode = (m: NewOrderValues['vehicle_mode']) => form.setValue('vehicle_mode', m, { shouldDirty: true })
+  const linkCls = 'inline-flex min-h-11 items-center gap-1.5 rounded-control text-sm font-medium text-accent-ink hover:underline md:min-h-9'
   return (
-    <div className="space-y-4">
-      <SegmentedControl
-        label="¿Qué coche entra?"
-        block
-        value={mode}
-        onValueChange={setMode}
-        options={[
-          { value: 'existing', label: 'Ya está en el taller' },
-          { value: 'new', label: 'Coche nuevo', icon: <Plus aria-hidden /> },
-        ]}
-      />
+    <div className="space-y-3">
       {mode === 'existing' ? (
         <ExistingVehiclePicker
           form={form}
@@ -103,7 +91,18 @@ export function VehicleSection({ form, presetCustomerId }: { form: Form; presetC
           }}
         />
       ) : (
-        <NewVehicleFields form={form} />
+        <>
+          <NewVehicleFields form={form} />
+          <button type="button" className={linkCls} onClick={() => setMode('existing')}>
+            Elegir uno que ya está en el taller
+          </button>
+        </>
+      )}
+      {mode === 'existing' && !vehicleId && (
+        <button type="button" className={linkCls} onClick={() => setMode('new')}>
+          <Plus aria-hidden className="size-4" />
+          Coche nuevo: dar de alta cliente y vehículo
+        </button>
       )}
     </div>
   )
@@ -117,19 +116,19 @@ function ExistingVehiclePicker({ form, presetCustomerId, onCreateNew }: { form: 
   const debounced = useDebouncedValue(term)
   const [customerFilter, setCustomerFilter] = useState(presetCustomerId)
   const filterCustomer = useCustomer(customerFilter ? Number(customerFilter) : undefined)
-  const results = useVehicles(ctx.id, { search: debounced.trim() || undefined, per_page: 6, sort: 'recent', customer_id: customerFilter || undefined }, !vehicleId)
+  const searching = !!debounced.trim() || !!customerFilter
+  const results = useVehicles(ctx.id, { search: debounced.trim() || undefined, per_page: 6, sort: 'recent', customer_id: customerFilter || undefined }, !vehicleId && searching)
   const error = form.formState.errors.vehicle_id?.message
   const choose = (id: string) => form.setValue('vehicle_id', id, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })
 
   if (vehicleId) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-3 rounded-card border border-accent/50 bg-accent-soft/40 p-3">
+        <div className="flex items-center gap-3 border-y border-line py-2.5">
           {selected.isPending ? (
-            <div className="flex flex-1 items-center gap-3" role="status">
+            <div className="flex-1" role="status">
               <span className="sr-only">Cargando vehículo…</span>
-              <Skeleton className="h-10 w-16" />
-              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-48" />
             </div>
           ) : selected.isError || !selected.data ? (
             <p className="flex-1 text-sm text-danger">No se pudo cargar el vehículo elegido. Elige otro.</p>
@@ -168,15 +167,15 @@ function ExistingVehiclePicker({ form, presetCustomerId, onCreateNew }: { form: 
           </button>
         </p>
       )}
+      {!searching ? (
+        <p className="text-xs text-fg-subtle">Escribe la matrícula, la marca, el modelo o el nombre del cliente.</p>
+      ) : (
       <div className="overflow-hidden rounded-card border border-line">
         {results.isPending ? (
-          <div role="status" className="space-y-px">
+          <div role="status" className="space-y-3 p-3">
             <span className="sr-only">Buscando vehículos…</span>
             {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} aria-hidden className="flex items-center gap-3 p-3">
-                <Skeleton className="h-10 w-16" />
-                <Skeleton className="h-4 w-48" />
-              </div>
+              <Skeleton key={i} className="h-4 w-48" />
             ))}
           </div>
         ) : results.isError ? (
@@ -195,7 +194,7 @@ function ExistingVehiclePicker({ form, presetCustomerId, onCreateNew }: { form: 
                   ? 'Este cliente aún no tiene vehículos en el taller.'
                   : 'Aún no hay vehículos en el taller.'}
             </p>
-            <Button size="sm" icon={<Plus aria-hidden />} onClick={() => onCreateNew(plateLike ? normalizePlate(debounced) : null, customerFilter)}>
+            <Button size="sm" icon={<Plus aria-hidden />} onClick={() => onCreateNew(plateLike ? normalizePlate(debounced) : null, filterCustomer.data?.anonymized_at ? null : customerFilter)}>
               {plateLike ? `Dar de alta ${normalizePlate(debounced)}` : 'Dar de alta un coche nuevo'}
             </Button>
           </div>
@@ -207,7 +206,7 @@ function ExistingVehiclePicker({ form, presetCustomerId, onCreateNew }: { form: 
                   type="button"
                   onClick={() => choose(String(v.id))}
                   aria-label={`Elegir ${v.display_name}${v.plate ? `, matrícula ${v.plate}` : ''}`}
-                  className="flex min-h-14 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2"
+                  className="flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2"
                 >
                   <VehicleLine vehicle={v} />
                 </button>
@@ -216,6 +215,7 @@ function ExistingVehiclePicker({ form, presetCustomerId, onCreateNew }: { form: 
           </ul>
         )}
       </div>
+      )}
       {results.data && results.data.meta.total > list.length && (
         <p className="text-xs text-fg-subtle">
           Mostrando {list.length} de {plural(results.data.meta.total, 'vehículo', 'vehículos')}: afina la búsqueda para encontrar el tuyo.
@@ -285,6 +285,8 @@ function CustomerChooser({ form }: { form: Form }) {
   const debounced = useDebouncedValue(term)
   const selected = useCustomer(mode === 'existing' && customerId ? Number(customerId) : undefined)
   const results = useCustomerSearch(ctx.id, debounced.trim(), mode === 'existing' && !customerId)
+  // Un cliente anonimizado no se puede asignar a un coche (contrato §3.10.1 ⇒ 422): no se ofrece.
+  const found = results.data?.data.filter((c) => !c.anonymized_at) ?? []
   const e = formState.errors
   const choose = (id: string) => setValue('customer_id', id, { shouldDirty: true, shouldValidate: formState.isSubmitted })
 
@@ -310,8 +312,7 @@ function CustomerChooser({ form }: { form: Form }) {
       {mode === 'none' && <p className="text-sm text-fg-muted">El vehículo quedará sin cliente. Puedes asignárselo más tarde desde su ficha.</p>}
       {mode === 'existing' &&
         (customerId ? (
-          <div className="flex items-center gap-3 rounded-card border border-line bg-surface p-3">
-            <UserRound aria-hidden className="size-5 shrink-0 text-fg-subtle" />
+          <div className="flex items-center gap-3 border-y border-line py-2.5">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{selected.data?.name ?? (selected.isError ? 'No se pudo cargar el cliente' : 'Cargando cliente…')}</p>
               {selected.data && (
@@ -332,7 +333,7 @@ function CustomerChooser({ form }: { form: Form }) {
                 </p>
               ) : results.isError ? (
                 <p className="p-3 text-sm text-danger">No se pudo buscar. {results.error.message}</p>
-              ) : results.data.data.length === 0 ? (
+              ) : found.length === 0 ? (
                 <div className="space-y-2 p-3 text-sm text-fg-muted">
                   <p>{debounced.trim() ? `Ningún cliente coincide con «${debounced.trim()}».` : 'Aún no hay clientes.'}</p>
                   <Button
@@ -348,7 +349,7 @@ function CustomerChooser({ form }: { form: Form }) {
                 </div>
               ) : (
                 <ul aria-label="Clientes encontrados">
-                  {results.data.data.map((c) => (
+                  {found.map((c) => (
                   <li key={c.id} className="border-b border-line last:border-b-0">
                   <button
                     type="button"
@@ -376,33 +377,6 @@ function CustomerChooser({ form }: { form: Form }) {
           </div>
         ))}
       <FieldError message={e.customer_id?.message} />
-    </div>
-  )
-}
-
-/** Coche que entra en el taller (elegido o el que se está dando de alta). */
-export interface EnteringVehicle {
-  name: string
-  plate: string | null
-  bodyType: BodyType | null
-  colorHex: string | null
-  customer: string | null
-  mileage: number | null
-}
-
-export function VehiclePreview({ vehicle, className }: { vehicle: EnteringVehicle | null; className?: string }) {
-  return (
-    <div className={cn('flex items-center gap-3', className)}>
-      <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-control bg-surface-2">
-        <CarThumbnail appearance={{ bodyType: vehicle?.bodyType ?? null, colorHex: vehicle?.colorHex ?? null }} alt="" className="absolute inset-0 h-full w-full p-1" />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate font-medium text-fg">{vehicle?.name ?? 'Elige un vehículo'}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
-          <Plate value={vehicle?.plate} />
-          {vehicle?.mileage != null && <span className="tabular">{formatKm(vehicle.mileage)}</span>}
-        </div>
-      </div>
     </div>
   )
 }
