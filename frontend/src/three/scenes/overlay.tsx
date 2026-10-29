@@ -12,6 +12,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, type ReactNode } from 'react'
 import * as THREE from 'three'
+import type { OverlayStore } from './overlayStore'
 
 export type Pivot = 'center' | 'bottom' | 'icon'
 
@@ -28,33 +29,6 @@ export interface OverlayAnchor {
   fixed?: boolean
   /** Opacidad cuando no está "activo" (para atenuar el resto al seleccionar uno). */
   dim?: boolean
-}
-
-export class OverlayStore {
-  readonly els = new Map<string, HTMLElement>()
-  readonly lines = new Map<string, SVGLineElement>()
-  readonly dots = new Map<string, SVGCircleElement>()
-  /** Desplazamiento elegido en el fotograma anterior (histéresis: evita saltos entre posiciones equivalentes). */
-  readonly prev = new Map<string, [number, number]>()
-  invalidate: (() => void) | null = null
-
-  setEl(id: string, el: HTMLElement | null) {
-    if (el) this.els.set(id, el)
-    else this.els.delete(id)
-    this.invalidate?.()
-  }
-  setLine(id: string, el: SVGLineElement | null) {
-    if (el) this.lines.set(id, el)
-    else this.lines.delete(id)
-  }
-  setDot(id: string, el: SVGCircleElement | null) {
-    if (el) this.dots.set(id, el)
-    else this.dots.delete(id)
-  }
-}
-
-export function useOverlayStore() {
-  return useMemo(() => new OverlayStore(), [])
 }
 
 /** Capa HTML (fuera del <Canvas>, mismo tamaño) con las líneas guía y los rótulos. */
@@ -144,11 +118,9 @@ export function OverlayProjector({ store, anchors, declutter = true }: { store: 
   const cam = useMemo(() => new THREE.Vector3(), [])
 
   useEffect(() => {
-    store.invalidate = invalidate
+    const unbind = store.bind(invalidate)
     invalidate()
-    return () => {
-      if (store.invalidate === invalidate) store.invalidate = null
-    }
+    return unbind
   }, [store, invalidate])
   useEffect(() => {
     invalidate()

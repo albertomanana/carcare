@@ -6,6 +6,13 @@
 | Fecha | 2026-10-23 23:20 → 2026-10-24 (cortado dos veces por el límite de uso) |
 | Encargo | Tarea 20 de `docs/equipo/AUTOPILOTO.md`, ampliada el 24/10 con la decisión 5.7 / regla R11 del [informe de UX](2026-10-23-disenador-ux-simplificacion.md): miniaturas sin three.js, imagen fija para la portada, mapa de zonas y Taller 3D optimizados, 3 avisos de lint; informe final de 1c/1d |
 | Estado | En curso (este informe se va completando durante el trabajo) |
+| Cierre | 2026-10-28 (piloto automático): arreglo de la precarga de `three`/`charts` en `vite.config.ts`, rótulos del Taller 3D sin mayúsculas (R6), medición "después" y apartados 3‑8 |
+
+Estado a las 20:41 (28/10): retomo el informe. Empiezo por el fallo de la precarga de `three-*.js`/`charts-*.js` en `index.html` (apartado 6.3 del [informe del taller](2026-10-26-frontend-react-taller.md)).
+
+Estado a las 20:50: **precarga arreglada** en `vite.config.ts` (grupo `vendor` + guarda que hace fallar la build si vuelve a pasar). `index.html` precarga ahora 10 archivos, 606,6 kB (193,3 kB gzip), sin `three` ni `charts`; antes, 11 archivos, 1.980,2 kB (566,7 kB gzip). Detalle en 3.1. Sigue: comprobación en el navegador de qué pantallas descargan three.js.
+
+Estado a las 21:03: **comprobación en el navegador hecha** (25 pantallas, build de producción en :5187, API SQLite en :8080): three.js solo en Taller 3D, ficha (mapa de zonas), editar vehículo (vista previa de "Aspecto") y portada **después** de pulsar "Ver en 3D"; Recharts solo en Gastos y Analítica, con sus gráficos pintados (tabla en 4.2). Rótulos de elevador sin mayúsculas. typecheck, lint (0 errores) y test en verde. Sigue: medición "después" completa (tiempos, `renderer.info`, fugas) en marcha.
 
 ## 1. Objetivo
 

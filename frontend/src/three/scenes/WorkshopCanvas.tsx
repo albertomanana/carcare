@@ -6,6 +6,7 @@
  *  - rótulos HTML accesibles (un botón por elevador y por orden en espera) proyectados sobre la escena.
  * Seleccionar un elevador acerca la cámara (instantáneo con movimiento reducido). Un único <Canvas>.
  */
+import { useCursor } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -21,7 +22,8 @@ import { useInView, usePrefersReducedMotion, useThemeTokens, type ThemeTokens } 
 import { toneColor } from '../markers/ZoneMarkerButton'
 import { CameraRig, type Focus } from './CameraRig'
 import { boxCorners, fitView } from './fit'
-import { OverlayItem, OverlayLayer, OverlayProjector, useOverlayStore, type OverlayAnchor, type OverlayStore } from './overlay'
+import { OverlayItem, OverlayLayer, OverlayProjector, type OverlayAnchor } from './overlay'
+import { useOverlayStore, type OverlayStore } from './overlayStore'
 import { StudioEnvironment } from './Stage'
 import { useCanvasLabel } from './useCanvasLabel'
 
@@ -232,7 +234,7 @@ function BayLabel({
         )}
       >
         <span className="flex items-center gap-1.5 whitespace-nowrap">
-          <span className="font-display text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">{compact && !selected ? `E${bay.number}` : `Elevador ${bay.number}`}</span>
+          <span className="font-display text-xs font-semibold text-fg-subtle">{compact && !selected ? `E${bay.number}` : `Elevador ${bay.number}`}</span>
           {o ? (
             <>
               {tone && <span className={cx('size-2 rounded-full', tone.dot)} aria-hidden />}
@@ -643,6 +645,9 @@ function Lift({
   const shadow = useRef<THREE.Mesh>(null)
   const beam = useRef<THREE.Group>(null)
   const h = useRef(target)
+  // Altura con la que se monta la parte móvil; después la anima useFrame escribiendo en el objeto (sin renders).
+  // R3F compara los arrays de props elemento a elemento, así que este valor fijo no pisa la altura animada.
+  const [initialY] = useState(target)
   const invalidate = useThree((s) => s.invalidate)
   const spin = spinning && o?.status === 'in_progress'
 
@@ -712,9 +717,7 @@ function Lift({
 
   const [hover, setHover] = useState(false)
   const gl = useThree((s) => s.gl)
-  useEffect(() => {
-    gl.domElement.style.cursor = hover ? 'pointer' : ''
-  }, [hover, gl])
+  useCursor(hover, 'pointer', '', gl.domElement)
 
   return (
     <group position={[x, 0, z]}>
@@ -757,7 +760,7 @@ function Lift({
       )}
 
       {/* Parte móvil: carros, brazos y coche */}
-      <group ref={lifted} position={[0, h.current, 0]}>
+      <group ref={lifted} position={[0, initialY, 0]}>
         {[1, -1].map((side) => (
           <mesh key={side} geometry={carriageGeo} position={[side * POST_X, armY + 0.12, 0]}>
             <meshStandardMaterial color={pal.postDark} roughness={0.5} metalness={0.5} />
