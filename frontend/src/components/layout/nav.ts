@@ -4,6 +4,7 @@ import {
   ChartColumn,
   ClipboardList,
   House,
+  Inbox,
   type LucideIcon,
   MonitorSmartphone,
   Settings,
@@ -38,6 +39,7 @@ export function navItems(ctx: WorkspaceContextValue | null): NavItem[] {
     return [
       { to: base, label: 'Centro de control', mobileLabel: 'Inicio', icon: MonitorSmartphone, end: true, mobile: true },
       { to: `${base}/ordenes`, label: 'Órdenes', icon: SquareKanban, mobile: true },
+      { to: `${base}/solicitudes`, label: 'Solicitudes', icon: Inbox },
       { to: `${base}/clientes`, label: 'Clientes', icon: UsersRound, mobile: true },
       { to: `${base}/garaje`, label: 'Vehículos', icon: Car },
       { to: `${base}/taller`, label: 'Taller 3D', icon: Warehouse },

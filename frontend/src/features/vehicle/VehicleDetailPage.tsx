@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ArrowLeft, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Trash2, Wrench } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowLeft, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -323,6 +323,12 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
               <DropdownMenuItem icon={<Printer aria-hidden />} onSelect={() => navigate(`${base}/informe`)}>
                 Informe imprimible
               </DropdownMenuItem>
+              {/* E16: pedir a un taller del directorio que repare este coche (solo el owner del espacio personal) */}
+              {ctx.isPersonal && ctx.can('own') && !archived && (
+                <DropdownMenuItem icon={<Store aria-hidden />} onSelect={() => navigate(`${ctx.base}/solicitudes/nueva?vehiculo=${vehicle.id}`)}>
+                  Pedir reparación a un taller
+                </DropdownMenuItem>
+              )}
               {canManage && (
                 <>
                   <DropdownMenuSeparator />

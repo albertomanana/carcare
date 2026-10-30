@@ -6,6 +6,7 @@ import { AppIndexRedirect, GuestOnly, RequireAuth } from '@/features/auth/guards
 import { LegacyTabRedirect } from '@/features/vehicle/LegacyTabRedirect'
 import { NotFoundPage } from '@/features/errors/NotFoundPage'
 import { RouteError } from '@/features/errors/RouteError'
+import { ByWorkspaceType } from '@/features/workspace/ByWorkspaceType'
 import { DefaultWorkspaceRoute, WorkspaceRoute } from '@/features/workspace/WorkspaceRoute'
 
 // Cada pantalla es un chunk propio (carga inicial ligera; three.js solo llega con las pantallas 3D)
@@ -37,6 +38,13 @@ const CustomerDetail = lazy(() => import('@/features/workshop/CustomerDetailPage
 const WorkshopFloor = lazy(() => import('@/features/workshop/WorkshopFloorPage'))
 const Team = lazy(() => import('@/features/workshop/TeamPage'))
 const Settings = lazy(() => import('@/features/settings/SettingsPage'))
+// E16 · solicitudes a talleres: la misma ruta lleva a la pantalla del particular o a la del taller (ByWorkspaceType)
+const Directory = lazy(() => import('@/features/requests/DirectoryPage'))
+const NewRequest = lazy(() => import('@/features/requests/NewRequestPage'))
+const MyRequests = lazy(() => import('@/features/requests/MyRequestsPage'))
+const RequestDetail = lazy(() => import('@/features/requests/RequestDetailPage'))
+const WorkshopRequests = lazy(() => import('@/features/workshop/requests/WorkshopRequestsPage'))
+const WorkshopRequestDetail = lazy(() => import('@/features/workshop/requests/WorkshopRequestDetailPage'))
 
 function page(Component: LazyExoticComponent<ComponentType>) {
   return <Component />
@@ -119,6 +127,13 @@ export const routes: RouteObject[] = [
                   { path: 'clientes/:customerId', element: page(CustomerDetail) },
                   { path: 'taller', element: page(WorkshopFloor) },
                   { path: 'equipo', element: page(Team) },
+                  { path: 'talleres', element: page(Directory) },
+                  { path: 'solicitudes', element: <ByWorkspaceType title="Solicitudes" personal={MyRequests} workshop={WorkshopRequests} /> },
+                  { path: 'solicitudes/nueva', element: <ByWorkspaceType title="Nueva solicitud" personal={NewRequest} workshop={null} /> },
+                  {
+                    path: 'solicitudes/:requestId',
+                    element: <ByWorkspaceType title="Solicitud" personal={RequestDetail} workshop={WorkshopRequestDetail} />,
+                  },
                   { path: '*', element: <NotFoundPage /> },
                 ],
               },

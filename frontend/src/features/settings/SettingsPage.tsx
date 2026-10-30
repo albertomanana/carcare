@@ -22,6 +22,7 @@ import { cn } from '@/lib/cn'
 import { STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { joinList, plural } from '@/lib/text'
 import { PasswordCard, ProfileCard } from './AccountForms'
+import { DirectoryProfileCard } from './DirectoryProfileCard'
 import { WorkspacesCard } from './WorkspacesCard'
 
 const SECTIONS = [
@@ -29,10 +30,11 @@ const SECTIONS = [
   { id: 'contrasena', label: 'Contraseña' },
   { id: 'apariencia', label: 'Apariencia' },
   { id: 'espacios', label: 'Espacios' },
+  { id: 'directorio', label: 'Directorio' },
   { id: 'cuenta', label: 'Eliminar cuenta' },
 ]
 
-/** Ajustes de la cuenta: perfil, contraseña, tema, espacios y baja. */
+/** Ajustes de la cuenta: perfil, contraseña, tema, espacios, directorio de talleres (si perteneces a alguno) y baja. */
 export default function SettingsPage() {
   useDocumentTitle('Ajustes')
   const { user, workspaces, status, error, refetch } = useAuth()
@@ -58,7 +60,7 @@ export default function SettingsPage() {
         <div className="grid gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
           <nav aria-label="Secciones de ajustes" className="hidden lg:block">
             <ul className="sticky top-24 space-y-1">
-              {SECTIONS.map((s) => (
+              {SECTIONS.filter((s) => s.id !== 'directorio' || workspaces.some((w) => w.type === 'workshop')).map((s) => (
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
@@ -79,6 +81,7 @@ export default function SettingsPage() {
             <PasswordCard />
             <AppearanceCard />
             <WorkspacesCard user={user} workspaces={workspaces} />
+            <DirectoryProfileCard workspaces={workspaces} />
             <DeleteAccountCard workspaces={workspaces} />
           </div>
         </div>

@@ -42,4 +42,19 @@ export const qk = {
   customer: (id: ID) => ['customers', id] as const,
   customerVehicles: (id: ID) => ['customers', id, 'vehicles'] as const,
   workOrder: (id: ID) => ['work-orders', id] as const,
+
+  // ───────── E16 · directorio, solicitudes y notificaciones (§3.13) ─────────
+  /** Solicitudes de un espacio: enviadas (personal) o recibidas (taller). Invalidar por prefijo con repairRequestsAll. */
+  repairRequests: (ws: ID, params: QueryParams = {}) => ['workspaces', ws, 'repair-requests', params] as const,
+  repairRequestsAll: (ws: ID) => ['workspaces', ws, 'repair-requests'] as const,
+  /** Una solicitud (las dos partes la piden por id, sin espacio). */
+  repairRequest: (id: ID) => ['repair-requests', id] as const,
+  repairRequestHistory: (id: ID) => ['repair-requests', id, 'history'] as const,
+  directory: (params: QueryParams = {}) => ['directory', params] as const,
+  directoryWorkshop: (id: ID) => ['directory', 'workshop', id] as const,
+  /** Perfil del directorio de un taller (Ajustes). */
+  directoryProfile: (ws: ID) => ['workspaces', ws, 'directory-profile'] as const,
+  /** Listado de la campana. Invalidar todo con ['notifications']. */
+  notifications: (params: QueryParams = {}) => ['notifications', 'list', params] as const,
+  notificationsCount: ['notifications', 'count'] as const,
 }
