@@ -17,6 +17,7 @@ class VehicleService
     public function __construct(
         private readonly MileageService $mileage,
         private readonly ActivityLogger $activity,
+        private readonly RepairRequestService $repairRequests,
     ) {}
 
     public function create(Workspace $workspace, array $data): Vehicle
@@ -86,7 +87,11 @@ class VehicleService
         return $vehicle;
     }
 
-    /** Solo vehículos archivados. Borra en cascada su historial y sus archivos. */
+    /**
+     * Solo vehículos archivados. Borra en cascada su historial y sus archivos. Si es de un garaje personal,
+     * en la misma transacción cancela sus solicitudes de reparación abiertas y avisa al taller (§3.3, §3.13.4).
+     * Si un taller tenía una copia enlazada (`source_vehicle_id`), solo pierde el enlace (FK nullOnDelete).
+     */
     public function delete(Vehicle $vehicle): void
     {
         if (! $vehicle->isArchived()) {
@@ -98,6 +103,7 @@ class VehicleService
         DB::transaction(function () use ($vehicle) {
             $this->activity->log($vehicle->workspace_id, 'vehicle.deleted', 'vehicle', $vehicle->id,
                 ActivityPhrase::of('eliminó', 'eliminaste', 'el vehículo '.$vehicle->displayName()));
+            $this->repairRequests->cancelForDeletedVehicle($vehicle);
             $vehicle->delete();
         });
 

@@ -53,7 +53,7 @@ class AccountService
 
     /**
      * Borra la cuenta: su espacio personal (con datos y archivos), los talleres donde es el
-     * único propietario y su pertenencia al resto.
+     * único propietario, su pertenencia al resto y sus avisos en la app.
      */
     public function delete(User $user): void
     {
@@ -75,6 +75,8 @@ class AccountService
 
         DB::transaction(function () use ($user) {
             DB::table('workspace_user')->where('user_id', $user->id)->delete();
+            // E16 (§3.13.8): la tabla `notifications` es polimórfica y no tiene clave foránea.
+            $user->notifications()->delete();
             $user->delete();
         });
     }

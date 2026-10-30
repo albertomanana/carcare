@@ -42,6 +42,42 @@ class WorkspacePolicy extends WorkspaceScopedPolicy
         return $this->workshopOnly($user, $workspace, WorkspaceRole::OPERATE);
     }
 
+    /** Perfil del directorio (E16, §3.13.2): lo edita solo el owner (manager y mechanic ⇒ 403). */
+    public function ownWorkshop(User $user, Workspace $workspace): Response
+    {
+        return $this->workshopOnly($user, $workspace, WorkspaceRole::OWN);
+    }
+
+    /**
+     * Listado de solicitudes de reparación (§3.13.1): en `personal`, las enviadas (solo el owner);
+     * en `workshop`, las recibidas (cualquier miembro).
+     */
+    public function listRepairRequests(User $user, Workspace $workspace): Response
+    {
+        return static::check($user, $workspace->id, $workspace->isPersonal() ? WorkspaceRole::OWN : WorkspaceRole::VIEW);
+    }
+
+    /** Enviar una solicitud: solo el owner de un espacio personal. En un taller la ruta no existe (404). */
+    public function createRepairRequest(User $user, Workspace $workspace): Response
+    {
+        if ($user->roleIn($workspace) === null || $workspace->isWorkshop()) {
+            return Response::denyAsNotFound();
+        }
+
+        return static::check($user, $workspace->id, WorkspaceRole::OWN);
+    }
+
+    /**
+     * Ficha pública del directorio (§3.13.1): cualquier usuario con sesión, pero solo si el espacio es un
+     * taller con `listed = true`. Si no, 404 (no se revela que existe).
+     */
+    public function viewInDirectory(User $user, Workspace $workspace): Response
+    {
+        return $workspace->isWorkshop() && $workspace->workshopProfile?->listed === true
+            ? Response::allow()
+            : Response::denyAsNotFound();
+    }
+
     private function workshopOnly(User $user, Workspace $workspace, string $capability): Response
     {
         $response = static::check($user, $workspace->id, $capability);

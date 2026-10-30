@@ -22,6 +22,10 @@ dataset('acciones de gestión', [
     'exportar cliente' => ['POST', '/customers/{customer}/export', []],
     'anonimizar cliente' => ['POST', '/customers/{customer}/anonymize', []],
     'borrar orden' => ['DELETE', '/work-orders/{order}', []],
+    'editar el perfil del directorio' => ['PUT', '/workspaces/{wws}/directory-profile', ['listed' => true, 'city' => 'Lleida']],
+    'aceptar una solicitud' => ['POST', '/repair-requests/{rr}/accept', []],
+    'rechazar una solicitud' => ['POST', '/repair-requests/{rr}/reject', ['reason' => 'Agenda completa']],
+    'enviar un presupuesto' => ['POST', '/repair-requests/{rr}/quotes', ['items' => [['kind' => 'labor', 'name' => 'Mano de obra', 'quantity' => '1', 'unit_price' => '40.00']]]],
 ]);
 
 it('el mecánico recibe 403 en lo que no puede hacer', function (string $method, string $uri, array $body) {

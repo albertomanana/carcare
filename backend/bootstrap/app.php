@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ForbiddenException;
 use App\Http\Middleware\ForceJsonResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -52,7 +53,8 @@ return Application::configure(basePath: dirname(__DIR__))
             $status = $e->getStatusCode();
             $message = match ($status) {
                 401 => 'No autenticado.',
-                403 => 'No tienes permiso para esta acción.',
+                // Solo ForbiddenException lleva un 403 con frase propia (p. ej. el historial no compartido, §3.13.7).
+                403 => $e instanceof ForbiddenException ? $e->getMessage() : 'No tienes permiso para esta acción.',
                 404 => 'Recurso no encontrado.',
                 405 => 'Método no permitido.',
                 419 => 'La sesión ha caducado. Recarga la página e inténtalo de nuevo.',

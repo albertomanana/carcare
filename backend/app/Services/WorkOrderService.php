@@ -29,11 +29,36 @@ class WorkOrderService
         private readonly MileageService $mileage,
         private readonly MaintenanceService $maintenance,
         private readonly ActivityLogger $activity,
+        private readonly RepairRequestNotifier $notifier,
     ) {}
 
     public function create(Workspace $workspace, array $data): WorkOrder
     {
-        return DB::transaction(function () use ($workspace, $data) {
+        return $this->open($workspace, $data, null, function (WorkOrder $order, Vehicle $vehicle) use ($workspace) {
+            $this->activity->log($workspace->id, 'work_order.created', 'work_order', $order->id,
+                ActivityLogger::actor()." abrió la orden {$order->number} para ".$this->vehicleLabel($vehicle),
+                $vehicle->id, ['status' => $order->status->value]);
+        });
+    }
+
+    /**
+     * Orden nacida de una solicitud de reparación (E16, §3.13.6), dentro de la transacción de la conversión:
+     * el cliente es el del punto 1 (no el del vehículo) y la actividad no lleva autor, porque la acción
+     * la hizo el particular ("Se abrió OT-2026-0031 desde una solicitud").
+     */
+    public function createFromRepairRequest(Workspace $workspace, array $data, int $customerId): WorkOrder
+    {
+        return $this->open($workspace, $data, $customerId, function (WorkOrder $order, Vehicle $vehicle) use ($workspace) {
+            $this->activity->logWithoutUser($workspace->id, 'work_order.created', 'work_order', $order->id,
+                "Se abrió {$order->number} desde una solicitud", $vehicle->id,
+                ['status' => $order->status->value, 'source' => 'repair_request']);
+        });
+    }
+
+    /** @param  \Closure(WorkOrder, Vehicle): void  $logActivity */
+    private function open(Workspace $workspace, array $data, ?int $customerId, \Closure $logActivity): WorkOrder
+    {
+        return DB::transaction(function () use ($workspace, $data, $customerId, $logActivity) {
             // Bloqueo del espacio: serializa numeración y asignación de elevadores entre peticiones concurrentes.
             $this->lock($workspace);
 
@@ -48,7 +73,7 @@ class WorkOrderService
             $order->fill([
                 'workspace_id' => $workspace->id,
                 'vehicle_id' => $vehicle->id,
-                'customer_id' => $vehicle->customer_id,
+                'customer_id' => $customerId ?? $vehicle->customer_id,
                 'number' => sprintf('OT-%d-%04d', $year, $sequence),
                 'year' => $year,
                 'sequence' => $sequence,
@@ -69,9 +94,7 @@ class WorkOrderService
 
             $this->syncMileage($order, $vehicle);
 
-            $this->activity->log($workspace->id, 'work_order.created', 'work_order', $order->id,
-                ActivityLogger::actor()." abrió la orden {$order->number} para ".$this->vehicleLabel($vehicle),
-                $vehicle->id, ['status' => $order->status->value]);
+            $logActivity($order, $vehicle);
 
             return $order->refresh();
         });
@@ -167,6 +190,9 @@ class WorkOrderService
                 $this->activity->log($workspace->id, 'work_order.status_changed', 'work_order', $order->id,
                     ActivityLogger::actor()." movió {$order->number} a «{$status->label()}»",
                     $order->vehicle_id, ['from' => $previous->value, 'to' => $status->value]);
+                // E16 (§3.13.6): si la orden viene de una solicitud, al pasar a `ready` se avisa al particular.
+                // Ningún otro cambio de estado avisa (orderReady no hace nada fuera de `ready`).
+                $this->notifier->orderReady($order);
             } elseif ($order->wasChanged('bay')) {
                 $where = $order->bay ? "al elevador {$order->bay}" : 'fuera de los elevadores';
                 $this->activity->log($workspace->id, 'work_order.updated', 'work_order', $order->id,

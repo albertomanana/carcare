@@ -56,11 +56,15 @@ function addMember(Workspace $workspace, User $user, WorkspaceRole $role): User
     return $user;
 }
 
-/** Inicia sesión en la API (guard web, como Sanctum en modo SPA). */
+/**
+ * Inicia sesión en la API (guard web, como Sanctum en modo SPA). El guard se indica siempre: tras la
+ * primera petición, `auth:sanctum` deja `sanctum` como guard por defecto y `current_password:web`
+ * (borrar la cuenta) no vería al usuario.
+ */
 function loginAs(User $user): void
 {
     auth()->forgetGuards();
-    test()->actingAs($user);
+    test()->actingAs($user, 'web');
 }
 
 function makeVehicle(Workspace $workspace, array $attributes = []): Vehicle
@@ -144,8 +148,84 @@ function world(): object
     ]);
     $wexpense = app(ExpenseService::class)->create($wvehicle, ['category' => 'other', 'amount' => '10.00', 'expense_date' => day()]);
 
+    // E16: el taller de Olga está en el directorio y ha recibido una solicitud de Pablo, un particular.
+    listWorkshop($wws);
+    $requester = makeUser('Pablo Particular');
+    $rr = app(\App\Services\RepairRequestService::class)->create(
+        $requester->personalWorkspace(), $requester, makeVehicle($requester->personalWorkspace(), ['plate' => '3333CCC']), $wws,
+        ['title' => 'Ruido al frenar', 'description' => 'Chirrían los frenos delanteros.', 'preferred_date' => day(2), 'mileage' => 0, 'share_history' => true],
+    );
+
     return (object) compact(
         'owner', 'mechanic', 'manager', 'pws', 'wws', 'vehicle', 'log', 'record', 'linked', 'expense',
-        'reminder', 'document', 'customer', 'wvehicle', 'order', 'wexpense',
+        'reminder', 'document', 'customer', 'wvehicle', 'order', 'wexpense', 'requester', 'rr',
     );
+}
+
+// ───────────────────────── E16: directorio y solicitudes de reparación ─────────────────────────
+
+/** Pone un taller en el directorio (perfil guardado con listed = true). */
+function listWorkshop(Workspace $workshop, array $attributes = []): \App\Models\WorkshopProfile
+{
+    return \App\Models\WorkshopProfile::updateOrCreate(['workspace_id' => $workshop->id], array_merge([
+        'listed' => true, 'city' => 'Lleida', 'address' => 'C/ Inventada, 1', 'phone' => '973 000 000',
+        'services' => ['maintenance', 'brakes'], 'opening_hours' => 'L-V 8:00-14:00',
+    ], $attributes));
+}
+
+/**
+ * Mundo de E16: Lucía (particular) con un coche de 84.200 km; el taller de Marcos (owner) en el
+ * directorio, con una gerente y un mecánico; y una intrusa con su propio garaje y su propio taller.
+ */
+function e16World(): object
+{
+    $owner = makeUser('Marcos Taller', 'Taller Destino');
+    $wws = workshopOf($owner);
+    $manager = addMember($wws, makeUser('Elena Gerente'), WorkspaceRole::Manager);
+    $mechanic = addMember($wws, makeUser('Andrés Mecánico'), WorkspaceRole::Mechanic);
+    listWorkshop($wws);
+
+    $client = makeUser('Lucía Cliente');
+    $pws = $client->personalWorkspace();
+    $car = makeVehicle($pws, [
+        'plate' => '1234ABC', 'color_hex' => '#C0392B', 'year' => 2019, 'nickname' => 'El rojo', 'vin' => 'VSSZZZKJZKR000001',
+    ]);
+    addReading($car, 84200, day(-3));
+
+    $intruder = makeUser('Irene Intrusa', 'Taller Irene');
+
+    return (object) compact('owner', 'wws', 'manager', 'mechanic', 'client', 'pws', 'car', 'intruder');
+}
+
+/** Cuerpo válido de `RepairRequestInput` para el coche de Lucía y el taller de Marcos. */
+function requestInput(object $w, array $overrides = []): array
+{
+    return array_merge([
+        'vehicle_id' => $w->car->id, 'workshop_id' => $w->wws->id, 'title' => 'Ruido al frenar',
+        'description' => 'Chirrían los frenos delanteros al frenar suave.', 'zone' => 'brakes',
+        'preferred_date' => day(3), 'mileage' => 84500, 'contact_phone' => '600 000 000', 'share_history' => false,
+    ], $overrides);
+}
+
+/** Cuerpo válido de `RepairQuoteInput`: 2 líneas, 120,00 € + 21 % = 145,20 €. */
+function quoteInput(array $overrides = []): array
+{
+    return array_merge([
+        'items' => [
+            ['kind' => 'part', 'name' => 'Pastillas delanteras', 'part_number' => 'PF-1', 'quantity' => '1', 'unit_price' => '80.00'],
+            ['kind' => 'labor', 'name' => 'Mano de obra', 'quantity' => '1', 'unit_price' => '40.00'],
+        ],
+        'valid_days' => 15,
+        'note' => 'Incluye revisión de discos.',
+    ], $overrides);
+}
+
+/** Envía una solicitud por la API como Lucía y devuelve su id. */
+function sendRequest(object $w, array $overrides = []): int
+{
+    loginAs($w->client);
+
+    return test()->postJson("/api/v1/workspaces/{$w->pws->id}/repair-requests", requestInput($w, $overrides))
+        ->assertCreated()
+        ->json('data.id');
 }

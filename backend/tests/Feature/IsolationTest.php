@@ -31,6 +31,21 @@ function resourceEndpoints(): array
         'listar órdenes' => ['GET', '/workspaces/{wws}/work-orders'],
         'crear orden' => ['POST', '/workspaces/{wws}/work-orders'],
         'elevadores' => ['GET', '/workspaces/{wws}/bays'],
+        // Directorio de talleres (E16): el perfil es del taller
+        'ver perfil del directorio' => ['GET', '/workspaces/{wws}/directory-profile'],
+        'editar perfil del directorio' => ['PUT', '/workspaces/{wws}/directory-profile'],
+        // Solicitudes de reparación (E16): las dos partes son Pablo (particular) y el taller de Olga
+        'listar solicitudes' => ['GET', '/workspaces/{pws}/repair-requests'],
+        'crear solicitud' => ['POST', '/workspaces/{pws}/repair-requests'],
+        'ver solicitud' => ['GET', '/repair-requests/{rr}'],
+        'compartir historial' => ['PATCH', '/repair-requests/{rr}'],
+        'cancelar solicitud' => ['POST', '/repair-requests/{rr}/cancel'],
+        'aceptar solicitud' => ['POST', '/repair-requests/{rr}/accept'],
+        'rechazar solicitud' => ['POST', '/repair-requests/{rr}/reject'],
+        'enviar presupuesto' => ['POST', '/repair-requests/{rr}/quotes'],
+        'aceptar presupuesto' => ['POST', '/repair-requests/{rr}/quote/accept'],
+        'rechazar presupuesto' => ['POST', '/repair-requests/{rr}/quote/reject'],
+        'historial compartido' => ['GET', '/repair-requests/{rr}/history'],
         // Vehículo y vistas derivadas
         'ver vehículo' => ['GET', '/vehicles/{vehicle}'],
         'editar vehículo' => ['PATCH', '/vehicles/{vehicle}'],
@@ -90,7 +105,18 @@ function accountEndpoints(): array
     return [
         ['GET', '/me'], ['PATCH', '/me'], ['PUT', '/me/password'], ['DELETE', '/me'],
         ['POST', '/auth/logout'], ['GET', '/workspaces'], ['POST', '/workspaces'],
+        // Avisos en la app (E16, §3.13.8): cada usuario solo los suyos (AppNotificationTest prueba los ajenos).
+        ['GET', '/notifications'], ['GET', '/notifications/count'], ['POST', '/notifications/read'],
     ];
+}
+
+/**
+ * Directorio de talleres (E16, §3.13.2): lo ve cualquier usuario con sesión, así que no es aislamiento
+ * sino visibilidad (solo talleres con listed = true). Se prueba en DirectoryTest; aquí, el 401.
+ */
+function directoryEndpoints(): array
+{
+    return [['GET', '/workshops'], ['GET', '/workshops/{wws}']];
 }
 
 /** Rutas públicas. */
@@ -112,7 +138,7 @@ dataset('endpoints del garaje personal', array_filter(
 
 it('los datasets cubren todas las rutas de route:list --path=api', function () {
     $normalize = fn (string $method, string $uri) => $method.' /'.preg_replace('/\{[^}]+\}/', '{}', trim($uri, '/'));
-    $covered = collect([...resourceEndpoints(), ...accountEndpoints(), ...publicEndpoints()])
+    $covered = collect([...resourceEndpoints(), ...accountEndpoints(), ...directoryEndpoints(), ...publicEndpoints()])
         ->map(fn (array $e) => $normalize($e[0], 'api/v1'.$e[1]));
 
     $routes = collect(Route::getRoutes()->getRoutes())
@@ -175,6 +201,14 @@ it('responde 401 sin sesión', function (string $method, string $uri) {
 it('responde 401 sin sesión en las rutas de cuenta y espacios', function (string $method, string $uri) {
     $this->json($method, '/api/v1'.$uri)->assertUnauthorized()->assertExactJson(['message' => 'No autenticado.']);
 })->with(accountEndpoints());
+
+it('responde 401 sin sesión en el directorio de talleres', function (string $method, string $uri) {
+    $w = world();
+    listWorkshop($w->wws);
+    auth()->forgetGuards();
+
+    $this->json($method, api($uri, $w))->assertUnauthorized()->assertExactJson(['message' => 'No autenticado.']);
+})->with(directoryEndpoints());
 
 it('los miembros del taller no ven el garaje personal de la dueña (404)', function (string $who, string $method, string $uri) {
     $w = world();

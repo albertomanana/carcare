@@ -32,6 +32,10 @@ function demoCounts(): array
         'expenses' => Expense::count(),
         'reminders' => Reminder::count(),
         'orders' => WorkOrder::count(),
+        'profiles' => \App\Models\WorkshopProfile::count(),
+        'requests' => \App\Models\RepairRequest::count(),
+        'quotes' => \App\Models\RepairQuote::count(),
+        'notifications' => \Illuminate\Support\Facades\DB::table('notifications')->count(),
     ];
 }
 
@@ -94,7 +98,10 @@ it('siembra el taller con 4 elevadores, equipo, ~12 clientes, ~20 vehículos y ~
         ->and($vehicles->pluck('color_hex')->unique()->count())->toBeGreaterThanOrEqual(5);
 
     $orders = WorkOrder::where('workspace_id', $ws->id)->get();
-    expect($orders->count())->toBeBetween(25, 35)
+    // ~30 órdenes propias del taller, más la que nació de la solicitud convertida de demo@ (E16).
+    $fromRequests = \App\Models\RepairRequest::whereNotNull('work_order_id')->pluck('work_order_id');
+    expect($fromRequests)->toHaveCount(1)
+        ->and($orders->whereNotIn('id', $fromRequests)->count())->toBeBetween(25, 35)
         ->and($orders->pluck('status')->map->value->unique()->sort()->values()->all())->toBe(collect(WorkOrderStatus::values())->sort()->values()->all())
         ->and($orders->filter(fn ($o) => ! $o->isFinal() && $o->bay !== null)->count())->toBe(3)
         ->and($orders->filter(fn ($o) => $o->isLate())->count())->toBeGreaterThanOrEqual(1);

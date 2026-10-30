@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HealthController;
@@ -9,7 +10,9 @@ use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\MeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MileageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\RepairRequestController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\Workshop\CustomerController;
 use App\Http\Controllers\Workshop\WorkOrderController;
@@ -75,7 +78,39 @@ Route::prefix('v1')->group(function () {
             Route::get('work-orders', [WorkOrderController::class, 'index'])->can('viewWorkshop', 'workspace');
             Route::post('work-orders', [WorkOrderController::class, 'store'])->can('operateWorkshop', 'workspace');
             Route::get('bays', [WorkOrderController::class, 'bays'])->can('viewWorkshop', 'workspace');
+
+            // Perfil del directorio (E16, §3.13.2): lo ve el equipo del taller y solo el owner lo edita.
+            Route::get('directory-profile', [DirectoryController::class, 'profile'])->can('viewWorkshop', 'workspace');
+            Route::put('directory-profile', [DirectoryController::class, 'updateProfile'])->can('ownWorkshop', 'workspace');
+
+            // Solicitudes de reparación (E16, §3.13): en personal, las enviadas (y solo ahí se crean); en un taller, las recibidas.
+            Route::get('repair-requests', [RepairRequestController::class, 'index'])->can('listRepairRequests', 'workspace');
+            Route::post('repair-requests', [RepairRequestController::class, 'store'])->can('createRepairRequest', 'workspace');
         });
+
+        // ───────── Directorio de talleres (E16, §3.13.2): cualquier usuario con sesión ─────────
+        Route::get('workshops', [DirectoryController::class, 'index']);
+        Route::get('workshops/{workshop}', [DirectoryController::class, 'show'])->can('viewInDirectory', 'workshop');
+
+        // ───────── Solicitudes de reparación (E16, §3.13.4) ─────────
+        // Dos partes: el solicitante (owner del espacio personal) y el taller. Tercero ⇒ 404;
+        // la otra parte ⇒ 403; el mecánico no decide (403).
+        Route::prefix('repair-requests/{repairRequest}')->group(function () {
+            Route::get('/', [RepairRequestController::class, 'show'])->can('view', 'repairRequest');
+            Route::patch('/', [RepairRequestController::class, 'update'])->can('actAsRequester', 'repairRequest');
+            Route::post('cancel', [RepairRequestController::class, 'cancel'])->can('actAsRequester', 'repairRequest');
+            Route::post('accept', [RepairRequestController::class, 'accept'])->can('decide', 'repairRequest');
+            Route::post('reject', [RepairRequestController::class, 'reject'])->can('decide', 'repairRequest');
+            Route::post('quotes', [RepairRequestController::class, 'sendQuote'])->can('decide', 'repairRequest');
+            Route::post('quote/accept', [RepairRequestController::class, 'acceptQuote'])->can('actAsRequester', 'repairRequest');
+            Route::post('quote/reject', [RepairRequestController::class, 'rejectQuote'])->can('actAsRequester', 'repairRequest');
+            Route::get('history', [RepairRequestController::class, 'history'])->can('view', 'repairRequest');
+        });
+
+        // ───────── Notificaciones en la app (E16, §3.13.8): cada usuario, solo las suyas ─────────
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/count', [NotificationController::class, 'count']);
+        Route::post('notifications/read', [NotificationController::class, 'read']);
 
         // ───────── Vehículos ─────────
         Route::prefix('vehicles/{vehicle}')->group(function () {

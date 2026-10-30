@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkspaceRole;
 use App\Enums\WorkspaceType;
 use App\Support\Money;
 use Database\Factories\WorkspaceFactory;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Workspace extends Model
 {
@@ -56,6 +58,18 @@ class Workspace extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);
+    }
+
+    /** Perfil del directorio (E16). Solo talleres; puede no existir si el owner nunca lo guardó. */
+    public function workshopProfile(): HasOne
+    {
+        return $this->hasOne(WorkshopProfile::class);
+    }
+
+    /** Owner y managers: los destinatarios de los avisos del taller (§3.13.8). */
+    public function managers(): BelongsToMany
+    {
+        return $this->members()->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Manager->value]);
     }
 
     public function isPersonal(): bool

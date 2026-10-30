@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\MileageSource;
+use App\Enums\NotificationKind;
 use App\Enums\ReminderStatus;
 use App\Enums\WorkOrderStatus;
 use App\Enums\WorkspaceRole;
@@ -13,13 +14,17 @@ use App\Models\Expense;
 use App\Models\MaintenanceRecord;
 use App\Models\MileageLog;
 use App\Models\Reminder;
+use App\Models\RepairRequest;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\WorkOrder;
 use App\Models\Workspace;
+use App\Models\WorkshopProfile;
+use App\Notifications\RepairRequestNotification;
 use App\Services\AccountService;
 use App\Services\MaintenanceService;
 use App\Services\MileageService;
+use App\Services\RepairRequestService;
 use App\Services\WorkOrderService;
 use App\Services\WorkspaceService;
 use App\Support\Km;
@@ -28,11 +33,14 @@ use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 /**
@@ -43,6 +51,9 @@ use Throwable;
  *  - taller@carcare.test    → "Taller Demo" (Marcos, owner) con 4 elevadores, 12 clientes, 20 vehículos y ~36 órdenes.
  *  - gerente@carcare.test   → manager del taller (Elena).
  *  - mecanico@carcare.test  → mechanic del taller (Andrés).
+ *  - taller2@, taller3@ y taller4@carcare.test → owners de otros 3 talleres ficticios del directorio (E16).
+ *  - Directorio y solicitudes (E16, §3.13): 4 talleres en el directorio y 4 solicitudes de demo@ (pendiente,
+ *    con presupuesto, convertida con su orden entregada y rechazada), con sus avisos en la app.
  * Contraseña de todas: "password".
  *
  * ADITIVO E IDEMPOTENTE (se puede ejecutar sobre una base con datos reales):
@@ -67,9 +78,16 @@ class DemoSeeder extends Seeder
     /** Textos que delatan restos de pruebas manuales o automáticas dentro de los espacios demo. */
     public const TEST_RESIDUE_PATTERNS = ['Prueba QA', 'QA frontend'];
 
+    /** Owners de los otros talleres del directorio (E16). No son espacios demo a efectos de limpieza. */
+    public const DIRECTORY_EMAILS = ['taller2@carcare.test', 'taller3@carcare.test', 'taller4@carcare.test'];
+
+    /** Teléfono de contacto (ficticio) que demo@ deja en sus solicitudes. */
+    private const DEMO_CONTACT_PHONE = '600 000 099';
+
     private const TABLES = [
         'users', 'workspaces', 'customers', 'vehicles', 'mileage_logs', 'maintenance_records',
         'expenses', 'reminders', 'documents', 'work_orders', 'activities',
+        'workshop_profiles', 'repair_requests', 'repair_quotes', 'notifications',
     ];
 
     private CarbonImmutable $today;
@@ -94,6 +112,7 @@ class DemoSeeder extends Seeder
         private readonly MaintenanceService $maintenance,
         private readonly WorkOrderService $workOrders,
         private readonly WorkspaceService $workspaces,
+        private readonly RepairRequestService $repairRequests,
     ) {}
 
     public function run(): void
@@ -113,6 +132,7 @@ class DemoSeeder extends Seeder
                 $this->removeTestResidue();
                 $this->seedPersonal();
                 $this->seedWorkshop();
+                $this->seedRepairRequests($this->seedDirectory());
                 $this->flushActivities();
             });
             $after = $this->counts();
@@ -149,7 +169,7 @@ class DemoSeeder extends Seeder
 
         $this->command->info($this->dryRun
             ? 'SIMULACIÓN (DEMO_DRY_RUN=1): esto es lo que haría. No se ha guardado nada.'
-            : 'Demo al día: demo@carcare.test y taller@carcare.test (también gerente@ y mecanico@), contraseña "password".');
+            : 'Demo al día: demo@carcare.test y taller@carcare.test (también gerente@, mecanico@ y taller2@ a taller4@), contraseña "password".');
         foreach ($this->notes as $note) {
             $this->command->line('  · '.$note);
         }
@@ -1512,5 +1532,224 @@ class DemoSeeder extends Seeder
                 $this->reminder($vehicle, $data);
             }
         }
+    }
+
+    // ═══════════════════════════════ Directorio y solicitudes (E16, §3.13) ═══════════════════════════════
+
+    /** Taller del que $owner es propietario (el primero), o null. */
+    private function ownedWorkshop(User $owner): ?Workspace
+    {
+        return $owner->workspaces()->where('type', 'workshop')->wherePivot('role', WorkspaceRole::Owner->value)->orderBy('workspaces.id')->first();
+    }
+
+    /**
+     * Los 4 talleres del directorio (§5): Taller Demo y otros 3 ficticios con su propio owner. Direcciones
+     * claramente inventadas y teléfono null salvo el de Taller Demo. Un perfil que ya existe no se toca
+     * (por ejemplo, si el owner lo ha editado o se ha sacado del directorio).
+     *
+     * @return array{demo: Workspace, norte: Workspace, neumaticos: Workspace, carrocerias: Workspace}
+     */
+    private function seedDirectory(): array
+    {
+        $demoOwner = User::query()->where('email', 'taller@carcare.test')->firstOrFail();
+        $workshops = ['demo' => $this->ownedWorkshop($demoOwner)];
+        $this->ensureProfile($workshops['demo'], $demoOwner, [
+            'city' => 'Lleida', 'address' => 'C/ Inventada, 12', 'phone' => '973 000 000',
+            'services' => ['maintenance', 'mechanics', 'tyres', 'brakes', 'electrical', 'ac', 'pre_itv'],
+            'opening_hours' => 'L-V 8:00-13:30 y 15:00-19:00',
+        ]);
+
+        // [clave, owner, email, taller, días desde el alta, perfil]
+        $others = [
+            ['norte', 'Jordi Ejemplo', 'taller2@carcare.test', 'Talleres Ejemplo Norte', 300, [
+                'city' => 'Lleida', 'address' => 'Av. Ficticia, 45', 'phone' => null,
+                'services' => ['maintenance', 'mechanics', 'brakes', 'electrical', 'pre_itv'], 'opening_hours' => 'L-V 8:30-18:30',
+            ]],
+            ['neumaticos', 'Rosa Prueba', 'taller3@carcare.test', 'Neumáticos Prueba', 250, [
+                'city' => 'Tarragona', 'address' => 'C/ Imaginaria, 7', 'phone' => null,
+                'services' => ['tyres', 'brakes', 'maintenance'], 'opening_hours' => 'L-S 9:00-14:00',
+            ]],
+            ['carrocerias', 'Tomás Ficticio', 'taller4@carcare.test', 'Carrocerías Ficticia', 200, [
+                'city' => 'Barcelona', 'address' => 'Pg. Supuesto, 101', 'phone' => null,
+                'services' => ['bodywork', 'ac'], 'opening_hours' => 'L-V 8:00-16:00',
+            ]],
+        ];
+        foreach ($others as [$key, $name, $email, $workshopName, $daysAgo, $profile]) {
+            $owner = $this->ensureUser($name, $email, 'workshop', $workshopName, $daysAgo);
+            $ws = $this->ownedWorkshop($owner);
+            if ($ws === null) {
+                $ws = $this->workspaces->createWorkshop($owner, $workshopName);
+                $this->note("Taller creado: {$workshopName}");
+            }
+            $this->ensureProfile($ws, $owner, $profile);
+            $workshops[$key] = $ws;
+        }
+
+        return $workshops;
+    }
+
+    private function ensureProfile(Workspace $ws, User $owner, array $profile): void
+    {
+        if (WorkshopProfile::query()->where('workspace_id', $ws->id)->exists()) {
+            return;
+        }
+
+        $at = $this->today->subDays(60)->setTime(9, 30);
+        WorkshopProfile::create(['workspace_id' => $ws->id, 'listed' => true, ...$profile, 'created_at' => $at, 'updated_at' => $at]);
+        $this->activity($ws, $owner, null, 'directory_profile.updated', 'workshop_profile', $ws->id,
+            "{$owner->name} actualizó el perfil del directorio", $at);
+        $this->note("Perfil del directorio creado: {$ws->name} ({$profile['city']})");
+    }
+
+    /**
+     * Las 4 solicitudes de demo@ (§5), creadas con las mismas reglas de la API (RepairRequestService y
+     * WorkOrderService) en su fecha: así la actividad, los avisos, la conversión y la numeración son los
+     * reales. Cada pareja abierta usa un vehículo distinto. Una solicitud se reconoce por su asunto, su
+     * taller y su remitente: si ya existe (aunque se haya respondido o convertido después), no se toca.
+     *
+     * @param  array{demo: Workspace, norte: Workspace, neumaticos: Workspace, carrocerias: Workspace}  $workshops
+     */
+    private function seedRepairRequests(array $workshops): void
+    {
+        $demo = User::query()->where('email', 'demo@carcare.test')->firstOrFail();
+        $personal = $demo->personalWorkspace();
+        $car = fn (string $plate) => Vehicle::query()->where('workspace_id', $personal->id)->where('plate', $plate)->whereNull('archived_at')->first();
+        $ibiza = $car('4821KTB');
+        $sportage = $car('7310LFW');
+        if ($ibiza === null || $sportage === null) {
+            $this->note('Solicitudes demo: falta un vehículo demo sin archivar (4821KTB o 7310LFW); no se crean');
+
+            return;
+        }
+
+        $owner = User::query()->where('email', 'taller@carcare.test')->firstOrFail();
+        $manager = User::query()->where('email', 'gerente@carcare.test')->firstOrFail();
+        $mechanic = User::query()->where('email', 'mecanico@carcare.test')->firstOrFail();
+        $bodyshop = User::query()->where('email', 'taller4@carcare.test')->firstOrFail();
+        $today = $this->today;
+
+        // 1. Convertida antigua: Seat Ibiza → Taller Demo, con su orden ya entregada.
+        $r = $this->demoRequest($demo, $personal, $ibiza, $workshops['demo'], $today->subDays(38)->setTime(19, 20), [
+            'title' => 'Revisión antes de un viaje largo',
+            'description' => 'Antes de un viaje de unos 1.500 km quiero revisar el aceite, los niveles y los neumáticos.',
+            'zone' => 'general', 'preferred_date' => $today->subDays(36)->toDateString(), 'share_history' => true,
+        ]);
+        if ($r !== null) {
+            $this->asOf($today->subDays(37)->setTime(9, 15), $manager, fn () => $this->repairRequests->accept($r, [
+                'items' => [
+                    ['kind' => 'fluid', 'name' => 'Aceite 5W-30 (litros)', 'quantity' => '4.00', 'unit_price' => '9.80'],
+                    ['kind' => 'part', 'name' => 'Filtro de aceite', 'part_number' => 'FO-1042', 'quantity' => '1', 'unit_price' => '12.50'],
+                    ['kind' => 'labor', 'name' => 'Revisión de niveles y neumáticos', 'quantity' => '0.50', 'unit_price' => '48.00'],
+                    ['kind' => 'labor', 'name' => 'Mano de obra', 'quantity' => '0.60', 'unit_price' => '48.00'],
+                ],
+                'valid_days' => 15,
+                'note' => 'Si vemos algo más durante la revisión, te llamamos antes de tocarlo.',
+            ]));
+            $quoteId = (int) $r->quotes()->where('status', 'sent')->value('id');
+            $r = $this->asOf($today->subDays(37)->setTime(13, 40), $demo, fn () => $this->repairRequests->acceptQuote($r, $quoteId));
+            $steps = [
+                [WorkOrderStatus::Diagnosing, 8, 45, $mechanic], [WorkOrderStatus::InProgress, 9, 30, $mechanic],
+                [WorkOrderStatus::Ready, 12, 10, $mechanic], [WorkOrderStatus::Delivered, 18, 30, $owner],
+            ];
+            foreach ($steps as [$status, $h, $m, $actor]) {
+                $this->asOf($today->subDays(36)->setTime($h, $m), $actor,
+                    fn () => $this->workOrders->changeStatus($r->workOrder()->firstOrFail(), $status, false, null));
+            }
+            $this->markNotificationsRead($r);
+        }
+
+        // 2. Rechazada por Carrocerías Ficticia, con motivo.
+        $r = $this->demoRequest($demo, $personal, $sportage, $workshops['carrocerias'], $today->subDays(12)->setTime(20, 5), [
+            'title' => 'Arañazo en la puerta trasera izquierda',
+            'description' => 'Arañazo largo en la puerta trasera izquierda, sin abolladura. ¿Se puede pulir o hay que pintar?',
+            'zone' => 'body', 'preferred_date' => $today->subDays(5)->toDateString(), 'share_history' => false,
+        ]);
+        if ($r !== null) {
+            $this->asOf($today->subDays(11)->setTime(10, 30), $bodyshop,
+                fn () => $this->repairRequests->reject($r, 'No tenemos hueco hasta dentro de seis semanas. Lo sentimos.'));
+            $this->markNotificationsRead($r);
+        }
+
+        // 3. Con presupuesto (v1 vigente) de Taller Demo: para enseñar la aceptación y la conversión.
+        $r = $this->demoRequest($demo, $personal, $ibiza, $workshops['demo'], $today->subDays(2)->setTime(18, 45), [
+            'title' => 'Chirrido al frenar',
+            'description' => 'Chirrían los frenos al frenar suave y el pedal se nota algo largo. Quiero saber el precio antes de llevarlo.',
+            'zone' => 'brakes', 'preferred_date' => $today->addDays(4)->toDateString(), 'share_history' => true,
+        ]);
+        if ($r !== null) {
+            $this->asOf($today->subDay()->setTime(10, 20), $owner, fn () => $this->repairRequests->accept($r, [
+                'items' => [
+                    ['kind' => 'part', 'name' => 'Juego de pastillas delanteras', 'part_number' => 'PF-3302', 'quantity' => '1', 'unit_price' => '39.90'],
+                    ['kind' => 'fluid', 'name' => 'Líquido de frenos DOT 4 (litros)', 'quantity' => '1.00', 'unit_price' => '14.50'],
+                    ['kind' => 'labor', 'name' => 'Mano de obra', 'quantity' => '1.20', 'unit_price' => '48.00'],
+                ],
+                // 30 días: el presupuesto sigue vigente durante la presentación del proyecto.
+                'valid_days' => 30,
+                'note' => 'Si los discos están por debajo del mínimo, te llamamos antes de cambiarlos.',
+            ]));
+            // El taller ya leyó la solicitud; el particular aún no ha visto el presupuesto.
+            $this->markNotificationsRead($r, [NotificationKind::QuoteSent->value]);
+        }
+
+        // 4. Pendiente en Taller Demo: avisa (sin leer) a taller@ y gerente@; para enseñar aceptar y rechazar.
+        $this->demoRequest($demo, $personal, $sportage, $workshops['demo'], CarbonImmutable::now()->subHours(2)->startOfMinute(), [
+            'title' => 'Golpe seco en la suspensión delantera',
+            'description' => 'Al pasar por badenes se oye un golpe seco en la rueda delantera derecha. Empezó hace un par de semanas.',
+            'zone' => 'suspension', 'preferred_date' => $today->addDays(6)->toDateString(), 'share_history' => true,
+        ]);
+    }
+
+    /**
+     * Crea una solicitud de demo@ en la fecha $at con RepairRequestService (copia fija, actividad y aviso al
+     * taller). Los km declarados son los del coche en esa fecha. Devuelve null si ya existía o si las reglas de
+     * la API no la permiten (pareja abierta o límite de 24 h por solicitudes hechas a mano).
+     */
+    private function demoRequest(User $user, Workspace $personal, Vehicle $vehicle, Workspace $workshop, CarbonImmutable $at, array $data): ?RepairRequest
+    {
+        $exists = RepairRequest::query()->where('requester_user_id', $user->id)
+            ->where('workshop_workspace_id', $workshop->id)->where('title', $data['title'])->exists();
+        if ($exists) {
+            return null;
+        }
+
+        $mileage = MileageLog::query()->where('vehicle_id', $vehicle->id)->where('recorded_at', '<=', $at)->max('mileage')
+            ?? $vehicle->current_mileage ?? 0;
+        try {
+            $request = $this->asOf($at, $user, fn () => $this->repairRequests->create($personal, $user, $vehicle, $workshop,
+                [...$data, 'mileage' => (int) $mileage, 'contact_phone' => self::DEMO_CONTACT_PHONE]));
+        } catch (HttpException $e) {
+            $this->note("Solicitud demo «{$data['title']}» a {$workshop->name} no creada: {$e->getMessage()}");
+
+            return null;
+        }
+        $this->note("Solicitud demo creada: «{$data['title']}» a {$workshop->name} para {$vehicle->displayName()}");
+
+        return $request;
+    }
+
+    /**
+     * Ejecuta $callback como si fuera $at (nunca en el futuro) y con $user como autor: los servicios fechan
+     * con now() la actividad, los avisos, las versiones del presupuesto, la orden y sus lecturas.
+     */
+    private function asOf(CarbonImmutable $at, User $user, callable $callback): mixed
+    {
+        $previous = Carbon::getTestNow();
+        Carbon::setTestNow(Carbon::instance($at->min(CarbonImmutable::now())));
+        try {
+            return $this->actingAs($user, $callback);
+        } finally {
+            Carbon::setTestNow($previous);
+        }
+    }
+
+    /** Marca como leídos los avisos de la solicitud (salvo los de los tipos de $keepUnread), 15 min después de llegar. */
+    private function markNotificationsRead(RepairRequest $request, array $keepUnread = []): void
+    {
+        DatabaseNotification::query()->where('type', RepairRequestNotification::class)->whereNull('read_at')->get()
+            ->filter(fn (DatabaseNotification $n) => ($n->data['repair_request_id'] ?? null) === $request->id
+                && ! in_array($n->data['kind'] ?? null, $keepUnread, true))
+            ->each(fn (DatabaseNotification $n) => $n->forceFill([
+                'read_at' => $n->created_at->copy()->addMinutes(15)->min(Carbon::now()),
+            ])->save());
     }
 }

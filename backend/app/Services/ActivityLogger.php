@@ -52,6 +52,31 @@ class ActivityLogger
         ]);
     }
 
+    /**
+     * Actividad sin autor (`user = null`). E16 (§3.13.9): en la actividad del taller, las acciones del
+     * particular y lo que nace de la conversión de una solicitud no llevan su nombre ("El cliente aceptó…").
+     */
+    public function logWithoutUser(
+        int $workspaceId,
+        string $action,
+        string $entityType,
+        int $entityId,
+        string $summary,
+        ?int $vehicleId = null,
+        array $metadata = [],
+    ): Activity {
+        return Activity::create([
+            'workspace_id' => $workspaceId,
+            'user_id' => null,
+            'vehicle_id' => $vehicleId,
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'summary' => mb_substr($summary, 0, 255),
+            'metadata' => $metadata === [] ? null : $metadata,
+        ]);
+    }
+
     /** Atajo para acciones sobre un vehículo o sus datos. */
     public function forVehicle(Vehicle $vehicle, string $action, string $entityType, int $entityId, string|ActivityPhrase $summary, array $metadata = []): Activity
     {
