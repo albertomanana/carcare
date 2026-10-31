@@ -129,9 +129,9 @@ function RequestRow({ request: r, to }: { request: RepairRequest; to: string }) 
             {' · '}
             <span className="tabular">{sub}</span>
           </p>
-          <p className="mt-0.5 text-xs text-fg-subtle sm:hidden">Recibida {formatRelativeTime(r.created_at, new Date(), { pastOnly: true })}</p>
+          <p className="mt-0.5 text-xs text-fg-subtle sm:hidden">Recibida {formatRelativeTime(r.created_at, undefined, { pastOnly: true })}</p>
         </div>
-        <span className="hidden shrink-0 text-xs text-fg-subtle sm:block">Recibida {formatRelativeTime(r.created_at, new Date(), { pastOnly: true })}</span>
+        <span className="hidden shrink-0 text-xs text-fg-subtle sm:block">Recibida {formatRelativeTime(r.created_at, undefined, { pastOnly: true })}</span>
         <ChevronRight aria-hidden className="size-4 shrink-0 text-fg-subtle transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
       </Link>
     </li>

@@ -42,7 +42,7 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="grid size-11 place-items-center rounded-full transition-colors hover:bg-surface-2 data-[state=open]:bg-surface-2 md:size-10"
+        className="grid size-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-surface-2 data-[state=open]:bg-surface-2 md:size-10"
         aria-label={`Menú de usuario de ${user?.name ?? ''}`}
       >
         <Avatar name={user?.name} size="sm" />

@@ -5,7 +5,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { useDirectoryProfile } from '@/api/hooks/repairRequests'
@@ -24,9 +24,9 @@ import { formatDate } from '@/lib/format'
 import { handleFormError } from '@/lib/forms'
 import { can } from '@/lib/permissions'
 
-export const PHONE_REGEX = /^[0-9 +()-]{6,30}$/
+const PHONE_REGEX = /^[0-9 +()-]{6,30}$/
 
-export const directorySchema = z
+const directorySchema = z
   .object({
     listed: z.boolean(),
     city: z.string().trim().max(80, 'Máximo 80 caracteres.'),
@@ -43,11 +43,11 @@ export const directorySchema = z
     else if (v.city && v.city.length < 2) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['city'], message: 'Mínimo 2 caracteres.' })
   })
 
-export type DirectoryValues = z.infer<typeof directorySchema>
+type DirectoryValues = z.infer<typeof directorySchema>
 
 const FIELDS = ['listed', 'city', 'address', 'phone', 'services', 'opening_hours'] as const
 
-export function profileToValues(p: DirectoryProfile): DirectoryValues {
+function profileToValues(p: DirectoryProfile): DirectoryValues {
   return {
     listed: p.listed,
     city: p.city ?? '',
@@ -58,7 +58,7 @@ export function profileToValues(p: DirectoryProfile): DirectoryValues {
   }
 }
 
-export function valuesToProfileInput(v: DirectoryValues): DirectoryProfileInput {
+function valuesToProfileInput(v: DirectoryValues): DirectoryProfileInput {
   return {
     listed: v.listed,
     city: v.city.trim() || null,
@@ -144,6 +144,7 @@ function DirectoryForm({ workspace, profile }: { workspace: Workspace; profile: 
   const form = useForm<DirectoryValues>({ resolver: zodResolver(directorySchema), defaultValues: profileToValues(profile) })
   const { register, control, handleSubmit, formState, reset, setError } = form
   const errors = formState.errors
+  const listed = useWatch({ control, name: 'listed' })
 
   // Si el perfil cambia fuera del formulario (otra pestaña, refetch) y no hay cambios sin guardar, se refleja
   useEffect(() => {
@@ -177,7 +178,7 @@ function DirectoryForm({ workspace, profile }: { workspace: Workspace; profile: 
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Ciudad" required={form.watch('listed')} error={errors.city?.message}>
+        <Field label="Ciudad" required={listed} error={errors.city?.message}>
           <Input maxLength={80} autoComplete="address-level2" {...register('city')} />
         </Field>
         <Field label="Teléfono" error={errors.phone?.message}>

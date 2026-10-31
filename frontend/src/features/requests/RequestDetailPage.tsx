@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import { errorMessage, isApiError } from '@/api/client'
 import { useAcceptQuote, useCancelRepairRequest, useRejectQuote, useRepairRequest, useUpdateRepairRequest } from '@/api/hooks/repairRequests'
 import type { RepairQuote, RepairRequest } from '@/api/types'
-import { Plate } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { DataList } from '@/components/ui/Card'
 import { Switch } from '@/components/ui/Checkbox'
@@ -66,7 +65,6 @@ export default function RequestDetailPage() {
 }
 
 function RequestDetail({ request: r, back }: { request: RepairRequest; back: { to: string; label: string } }) {
-  const ctx = useWorkspace()
   const open = isOpenRequest(r.status)
   const [latest, ...older] = r.quotes
   const [showOlder, setShowOlder] = useState(false)
@@ -125,8 +123,6 @@ function RequestDetail({ request: r, back }: { request: RepairRequest; back: { t
           {open && <CancelRequest request={r} />}
         </aside>
       </div>
-      {/* El espacio activo se usa en los enlaces de los hijos */}
-      <span hidden>{ctx.id}</span>
     </>
   )
 }
@@ -318,10 +314,8 @@ function SentData({ request: r }: { request: RepairRequest }) {
         <VehicleThumb vehicle={r.vehicle} className="h-14 w-24 shrink-0" />
         <div className="min-w-0 text-sm">
           <p className="font-medium text-fg">{r.vehicle.display_name}</p>
-          <p className="text-fg-muted">
-            {facts.slice(1).filter((f) => f !== (r.vehicle.plate ? undefined : f)).join(' · ')}
-            {r.vehicle.plate && !facts.length && <Plate value={r.vehicle.plate} />}
-          </p>
+          {/* El primer dato es la marca y el modelo, que ya están en la línea de arriba */}
+          {facts.length > 1 && <p className="text-fg-muted">{facts.slice(1).join(' · ')}</p>}
         </div>
       </div>
       <DataList

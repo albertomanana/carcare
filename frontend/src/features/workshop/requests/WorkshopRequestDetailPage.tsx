@@ -2,7 +2,7 @@ import { FilePlus2, Lock, Mail, Phone, SquareKanban, X } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import { isApiError } from '@/api/client'
-import { useRepairRequest, useRepairRequestHistory } from '@/api/hooks/repairRequests'
+import { useRepairRequest } from '@/api/hooks/repairRequests'
 import type { RepairRequest } from '@/api/types'
 import { Plate, StatusPill } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -14,6 +14,7 @@ import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
 import { VehicleSwatch, VehicleThumb } from '@/components/vehicles/VehicleVisuals'
 import { QuoteCard } from '@/features/requests/components/QuoteCard'
+import { SharedHistoryList } from '@/features/requests/components/SharedHistoryList'
 import { currentQuote, isOpenRequest, requestStatusDescriptor } from '@/features/requests/requestStatus'
 import { mailHref } from '@/features/workshop/components/customerForm'
 import { telHref } from '@/features/workshop/components/floor'
@@ -21,7 +22,7 @@ import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { vehicleColorName } from '@/lib/colors'
 import { formatDate, formatKm } from '@/lib/format'
-import { BODY_LABEL, FUEL_LABEL, RECORD_TYPE_LABEL, SERVICE_KIND_LABEL, WORK_ORDER_STATUS_LABEL, ZONE_LABEL } from '@/lib/labels'
+import { BODY_LABEL, FUEL_LABEL, WORK_ORDER_STATUS_LABEL, ZONE_LABEL } from '@/lib/labels'
 import { TONE_CLASSES } from '@/lib/status'
 import { plural } from '@/lib/text'
 import { AcceptDialog, RejectDialog, SendQuoteDialog } from './components/DecisionDialogs'
@@ -142,12 +143,12 @@ function RequestDetail({ request: r, back }: { request: RepairRequest; back: { t
 
         {latest && (
           <section aria-label="Presupuesto" className="min-w-0 space-y-4 lg:col-start-1">
-            <QuoteCard quote={latest} perspective="workshop" />
+            <QuoteCard quote={latest} perspective="workshop" showPrices={ctx.can('manage')} />
             {older.length > 0 && (
               <Disclosure label="Versiones anteriores" summary={plural(older.length, 'versión', 'versiones')} open={showOld} onOpenChange={setShowOld}>
                 <div className="space-y-8 pt-2">
                   {older.map((q) => (
-                    <QuoteCard key={q.id} quote={q} perspective="workshop" as="h3" />
+                    <QuoteCard key={q.id} quote={q} perspective="workshop" as="h3" showPrices={ctx.can('manage')} />
                   ))}
                 </div>
               </Disclosure>
@@ -300,9 +301,8 @@ function OrderSummary({ request: r }: { request: RepairRequest }) {
 
 /** Historial que comparte el cliente: sin importes ni notas, y solo mientras la solicitud está abierta (§3.13.7). */
 function SharedHistory({ request: r }: { request: RepairRequest }) {
-  const history = useRepairRequestHistory(r.id, r.history_available)
   const reason = !r.share_history
-    ? 'El cliente no comparte su historial con el taller.'
+    ? 'El cliente no comparte su historial.'
     : !isOpenRequest(r.status)
       ? 'El historial solo se ve mientras la solicitud está abierta.'
       : !r.history_available
@@ -310,41 +310,18 @@ function SharedHistory({ request: r }: { request: RepairRequest }) {
         : null
 
   return (
-    <Section title="Historial del coche" description={r.history_available ? 'Lo comparte el cliente. Sin importes ni notas.' : undefined}>
+    <Section
+      title={r.history_available ? 'Historial compartido por el cliente' : 'Historial del coche'}
+      description={r.history_available ? 'Sin importes ni notas. Solo mientras la solicitud esté abierta.' : undefined}
+    >
       {reason ? (
         <p className="flex items-start gap-2 text-sm text-fg-muted">
           <Lock aria-hidden className="mt-0.5 size-4 shrink-0" />
           {reason}
         </p>
-      ) : history.isPending ? (
-        <div role="status" aria-live="polite">
-          <span className="sr-only">Cargando el historial…</span>
-          <SkeletonText lines={3} />
-        </div>
-      ) : history.isError ? (
-        <ErrorState error={history.error} onRetry={() => void history.refetch()} compact />
-      ) : history.data.length === 0 ? (
-        <p className="text-sm text-fg-muted">El cliente no tiene intervenciones anotadas en este coche.</p>
       ) : (
-        <ul className="border-t border-line" aria-label="Intervenciones del coche">
-          {history.data.map((h, i) => (
-            <li key={i} className="border-b border-line px-1 py-2.5">
-              <p className="text-sm font-medium text-fg">{h.title}</p>
-              <p className="mt-0.5 text-xs text-fg-muted">
-                <span className="tabular">{formatDate(h.service_date)}</span>
-                {' · '}
-                {[RECORD_TYPE_LABEL[h.type], ZONE_LABEL[h.zone], h.service_kind ? SERVICE_KIND_LABEL[h.service_kind] : null].filter(Boolean).join(' · ')}
-                {h.mileage !== null && (
-                  <>
-                    {' · '}
-                    <span className="tabular">{formatKm(h.mileage)}</span>
-                  </>
-                )}
-                {h.workshop_name && ` · ${h.workshop_name}`}
-              </p>
-            </li>
-          ))}
-        </ul>
+        // La misma lista que ve el particular en "Ver lo que ve el taller" (E16‑9)
+        <SharedHistoryList requestId={r.id} />
       )}
     </Section>
   )

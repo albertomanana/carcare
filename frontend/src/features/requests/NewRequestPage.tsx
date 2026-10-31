@@ -20,7 +20,7 @@ import { EmptyState, ErrorState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParam } from '@/hooks/useSearchParam'
-import { addDays, formatKm, formatNumber, parseIntegerInput, todayISO, toISODate } from '@/lib/format'
+import { addDays, formatKm, formatNumber, formatPlate, parseIntegerInput, todayISO, toISODate } from '@/lib/format'
 import { applyServerErrors } from '@/lib/forms'
 import { ZONE_LABEL, ZONES } from '@/lib/labels'
 import { mileageError } from '@/lib/validation'
@@ -249,7 +249,7 @@ function RequestForm({
             {vehicles.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.display_name}
-                {v.plate ? ` · ${v.plate}` : ''}
+                {v.plate ? ` · ${formatPlate(v.plate)}` : ''}
               </option>
             ))}
           </Select>

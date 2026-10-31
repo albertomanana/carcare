@@ -120,7 +120,7 @@ function RequestRow({ request: r, href }: { request: RepairRequest; href: string
           {r.workshop.name}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-0.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 sm:shrink-0 sm:flex-col sm:items-end">
         <RequestStatusLabel request={r} />
         <span className="text-xs text-fg-subtle tabular">Enviada el {formatDate(r.created_at)}</span>
       </div>

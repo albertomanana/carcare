@@ -107,11 +107,11 @@ export function AcceptDialog({ request, defaultTaxRate, open, onClose }: { reque
           </DialogClose>
           {mode === 'quote' ? (
             <Button type="submit" form={formId} variant="primary" loading={accept.isPending}>
-              Aceptar y enviar presupuesto
+              Aceptar y enviar presupuesto ahora
             </Button>
           ) : (
             <Button variant="primary" loading={accept.isPending} onClick={acceptLater}>
-              Aceptar sin presupuesto
+              Aceptar, el presupuesto irá después
             </Button>
           )}
         </DialogFooter>

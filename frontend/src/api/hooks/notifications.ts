@@ -24,10 +24,13 @@ export function useNotificationsCount(enabled = true) {
   })
 }
 
-/** Últimas notificaciones (20 por página, "Ver más" pide la siguiente). Solo se piden al abrir la campana. */
+/**
+ * Últimas notificaciones (20 por página, "Ver más" pide la siguiente). Solo se piden al abrir la campana y siempre
+ * frescas: si el contador dice que hay algo nuevo, la lista no puede enseñar la copia de hace 30 s.
+ */
 export function useNotifications(enabled: boolean) {
   const params = { per_page: NOTIFICATIONS_PER_PAGE }
-  return useInfiniteList<AppNotification>(qk.notifications(params), '/notifications', params, enabled)
+  return useInfiniteList<AppNotification>(qk.notifications(params), '/notifications', params, enabled, { staleTime: 0 })
 }
 
 type ListData = InfiniteData<Paginated<AppNotification>> | undefined

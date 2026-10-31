@@ -12,6 +12,7 @@ import { CommandPalette } from './CommandPalette'
 import { Logo, LogoMark } from './Logo'
 import { MobileNav } from './MobileNav'
 import { navItems, SETTINGS_ITEM, type NavItem } from './nav'
+import { NotificationBell } from './NotificationBell'
 import { UserMenu } from './UserMenu'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
@@ -49,7 +50,7 @@ function TopNavLink({ item }: { item: NavItem }) {
       end={item.end}
       className={({ isActive }) =>
         cn(
-          'inline-flex min-h-10 items-center rounded-control px-3 text-sm font-medium transition-colors duration-150',
+          'inline-flex min-h-10 shrink-0 items-center rounded-control px-2 text-sm font-medium transition-colors duration-150 xl:px-3',
           isActive ? 'bg-surface-2 text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
         )
       }
@@ -67,7 +68,7 @@ function SearchButtons({ onOpen }: { onOpen: () => void }) {
         type="button"
         onClick={onOpen}
         aria-keyshortcuts="Control+K Meta+K"
-        className="hidden h-10 w-56 items-center gap-2 rounded-control border border-line bg-surface px-3 text-sm text-fg-subtle transition-colors hover:border-line-strong hover:text-fg-muted lg:flex"
+        className="hidden h-10 w-44 shrink-0 items-center gap-2 rounded-control border border-line bg-surface px-3 text-sm text-fg-subtle transition-colors hover:border-line-strong hover:text-fg-muted lg:flex xl:w-52"
       >
         <Search aria-hidden className="size-4" />
         <span className="flex-1 text-left">Buscar…</span>
@@ -205,6 +206,7 @@ export function AppShell() {
                     <WorkspaceSwitcher />
                     <div className="flex-1" />
                     <SearchButtons onOpen={openPalette} />
+                    <NotificationBell />
                     <UserMenu />
                   </div>
                 </header>
@@ -225,7 +227,7 @@ export function AppShell() {
             <div className="flex min-h-dvh flex-col">
               {/* Particular: barra superior con las secciones */}
               <header className="no-print sticky top-0 z-20 border-b border-line bg-canvas">
-                <div className="mx-auto flex h-16 w-full max-w-[1100px] items-center gap-2 px-4 sm:px-6 md:gap-3">
+                <div className="mx-auto flex h-16 w-full max-w-[1100px] items-center gap-2 px-4 sm:px-6 xl:gap-3">
                   <Link to={home} className="shrink-0 rounded-control" aria-label="CarCare: inicio">
                     <span className="hidden lg:inline-flex">
                       <Logo />
@@ -235,13 +237,14 @@ export function AppShell() {
                     </span>
                   </Link>
                   <WorkspaceSwitcher />
-                  <nav aria-label="Secciones" className="hidden items-center gap-1 md:flex">
+                  <nav aria-label="Secciones" className="hidden items-center gap-0.5 md:flex xl:gap-1">
                     {items.map((item) => (
                       <TopNavLink key={item.to} item={item} />
                     ))}
                   </nav>
                   <div className="flex-1" />
                   <SearchButtons onOpen={openPalette} />
+                  <NotificationBell />
                   <UserMenu />
                 </div>
               </header>

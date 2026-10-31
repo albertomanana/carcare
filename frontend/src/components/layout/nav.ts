@@ -9,6 +9,7 @@ import {
   MonitorSmartphone,
   Settings,
   SquareKanban,
+  Store,
   Users,
   Warehouse,
   UsersRound,
@@ -52,6 +53,8 @@ export function navItems(ctx: WorkspaceContextValue | null): NavItem[] {
     { to: base, label: 'Inicio', icon: House, end: true, mobile: true },
     { to: `${base}/garaje`, label: 'Garaje', icon: Car, mobile: true },
     { to: `${base}/agenda`, label: 'Agenda', icon: CalendarClock, mobile: true },
+    { to: `${base}/talleres`, label: 'Talleres', icon: Store },
+    { to: `${base}/solicitudes`, label: 'Solicitudes', icon: Inbox },
     ...(canManage ? [{ to: `${base}/analitica`, label: 'Analítica', icon: ChartColumn }] : []),
   ]
 }

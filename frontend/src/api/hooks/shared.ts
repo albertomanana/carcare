@@ -3,13 +3,14 @@ import { api, type QueryParams } from '../client'
 import type { ID, Paginated } from '../types'
 
 /** Listado paginado con "Cargar más" (meta.current_page / last_page del contrato). */
-export function useInfiniteList<T>(key: QueryKey, path: string, params: QueryParams = {}, enabled = true) {
+export function useInfiniteList<T>(key: QueryKey, path: string, params: QueryParams = {}, enabled = true, options: { staleTime?: number } = {}) {
   return useInfiniteQuery({
     queryKey: [...key, 'infinite'],
     queryFn: ({ pageParam, signal }) => api.get<Paginated<T>>(path, { ...params, page: pageParam }, { signal }),
     initialPageParam: 1,
     getNextPageParam: (last) => (last.meta.current_page < last.meta.last_page ? last.meta.current_page + 1 : undefined),
     enabled,
+    ...options,
   })
 }
 

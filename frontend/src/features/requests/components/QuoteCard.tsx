@@ -25,6 +25,8 @@ export interface QuoteCardProps {
   actions?: ReactNode
   /** Nivel del título según dónde se pinte. */
   as?: 'h2' | 'h3'
+  /** false ⇒ sin importes: el mecánico ve qué se ha presupuestado, no por cuánto (los importes son de `manage`, §2). */
+  showPrices?: boolean
   className?: string
 }
 
@@ -33,7 +35,7 @@ export interface QuoteCardProps {
  * (D12 = A). Sin caja (R3): título, líneas con separador fino y totales. Los importes vienen de la API como string
  * y se formatean con Intl (es‑ES). La reutiliza el taller (tarea 35).
  */
-export function QuoteCard({ quote, perspective = 'requester', actions, as: Heading = 'h2', className }: QuoteCardProps) {
+export function QuoteCard({ quote, perspective = 'requester', actions, as: Heading = 'h2', showPrices = true, className }: QuoteCardProps) {
   const titleId = useId()
   const status = quoteStatus(quote)
   const StatusIcon = status.icon
@@ -82,11 +84,12 @@ export function QuoteCard({ quote, perspective = 'requester', actions, as: Headi
                 {ITEM_KIND_LABEL[it.kind]}
                 {it.part_number ? ` · Ref. ${it.part_number}` : ''} ·{' '}
                 <span className="tabular">
-                  {qty(it.quantity)} × {it.unit_price ? formatMoney(it.unit_price) : '—'}
+                  {qty(it.quantity)}
+                  {showPrices && <> × {it.unit_price ? formatMoney(it.unit_price) : '—'}</>}
                 </span>
               </p>
             </div>
-            <span className="shrink-0 font-medium text-fg tabular">{it.total ? formatMoney(it.total) : '—'}</span>
+            {showPrices && <span className="shrink-0 font-medium text-fg tabular">{it.total ? formatMoney(it.total) : '—'}</span>}
           </li>
         ))}
       </ul>
@@ -106,12 +109,16 @@ export function QuoteCard({ quote, perspective = 'requester', actions, as: Headi
             <th scope="col" className="px-2 py-2 text-right font-medium">
               Cant.
             </th>
-            <th scope="col" className="px-2 py-2 text-right font-medium">
-              Precio/u
-            </th>
-            <th scope="col" className="px-2 py-2 text-right font-medium">
-              Total
-            </th>
+            {showPrices && (
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Precio/u
+              </th>
+            )}
+            {showPrices && (
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Total
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
@@ -121,27 +128,31 @@ export function QuoteCard({ quote, perspective = 'requester', actions, as: Headi
               <td className="px-2 py-2 text-fg">{it.name}</td>
               <td className="px-2 py-2 text-xs text-fg-muted">{it.part_number ?? '—'}</td>
               <td className="px-2 py-2 text-right text-fg tabular">{qty(it.quantity)}</td>
-              <td className="px-2 py-2 text-right text-fg-muted tabular">{it.unit_price ? formatMoney(it.unit_price) : '—'}</td>
-              <td className="px-2 py-2 text-right font-medium text-fg tabular">{it.total ? formatMoney(it.total) : '—'}</td>
+              {showPrices && <td className="px-2 py-2 text-right text-fg-muted tabular">{it.unit_price ? formatMoney(it.unit_price) : '—'}</td>}
+              {showPrices && <td className="px-2 py-2 text-right font-medium text-fg tabular">{it.total ? formatMoney(it.total) : '—'}</td>}
             </tr>
           ))}
         </tbody>
       </table>
 
-      <dl className="ml-auto mt-3 max-w-xs space-y-1 text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-fg-muted">Subtotal</dt>
-          <dd className="text-fg tabular">{formatMoney(quote.subtotal)}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-fg-muted">IVA ({rate(quote.tax_rate)} %)</dt>
-          <dd className="text-fg tabular">{formatMoney(quote.tax_amount)}</dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 border-t border-line pt-1.5">
-          <dt className="font-medium text-fg">Total con IVA</dt>
-          <dd className="text-base font-semibold text-fg tabular">{formatMoney(quote.total)}</dd>
-        </div>
-      </dl>
+      {showPrices ? (
+        <dl className="ml-auto mt-3 max-w-xs space-y-1 text-sm">
+          <div className="flex justify-between gap-3">
+            <dt className="text-fg-muted">Subtotal</dt>
+            <dd className="text-fg tabular">{formatMoney(quote.subtotal)}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-fg-muted">IVA ({rate(quote.tax_rate)} %)</dt>
+            <dd className="text-fg tabular">{formatMoney(quote.tax_amount)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 border-t border-line pt-1.5">
+            <dt className="font-medium text-fg">Total con IVA</dt>
+            <dd className="text-base font-semibold text-fg tabular">{formatMoney(quote.total)}</dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="mt-2 text-xs text-fg-subtle">Los importes los ven el propietario y el gerente.</p>
+      )}
 
       {quote.note && (
         <div className="mt-4 text-sm">
