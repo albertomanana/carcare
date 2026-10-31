@@ -336,6 +336,174 @@ it('si el cliente de la solicitud anterior está anonimizado, crea uno nuevo', f
         ->toBe(['Se dio de alta a un cliente (anonimizado)', 'Se dio de alta al cliente Lucía Cliente desde una solicitud']);
 });
 
+it('otro coche del mismo usuario: reutiliza el cliente y crea otro vehículo', function () {
+    $w = e16World();
+    [$first, $v1] = quotedRequest($w);
+    $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk();
+    $second = makeVehicle($w->pws, ['make' => 'Kia', 'model' => 'Sportage', 'plate' => '9999ZZZ']);
+    [$id, $v1b] = quotedRequest($w, ['vehicle_id' => $second->id, 'mileage' => 10]);
+
+    $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $v1b])->assertOk();
+
+    expect(Customer::query()->where('workspace_id', $w->wws->id)->count())->toBe(1)
+        ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->count())->toBe(2)
+        ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->where('source_vehicle_id', $second->id)->sole()->customer_id)
+        ->toBe(RepairRequest::find($first)->customer_id);
+});
+
+it('un coche sin matrícula también se reutiliza, por el enlace con el coche del particular', function () {
+    $w = e16World();
+    $car = makeVehicle($w->pws, ['plate' => null]);
+    [$first, $v1] = quotedRequest($w, ['vehicle_id' => $car->id, 'mileage' => 10]);
+    $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk();
+    [$second, $v1b] = quotedRequest($w, ['vehicle_id' => $car->id, 'mileage' => 20]);
+
+    $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk();
+
+    $copy = Vehicle::query()->where('workspace_id', $w->wws->id)->sole();
+    expect($copy->plate)->toBeNull()->and($copy->source_vehicle_id)->toBe($car->id);
+});
+
+it('la matrícula se compara normalizada: encuentra la que el taller escribió con guiones y minúsculas', function () {
+    $w = e16World();
+    loginAs($w->owner);
+    $typed = $this->postJson("/api/v1/workspaces/{$w->wws->id}/vehicles", ['make' => 'Seat', 'model' => 'Ibiza', 'plate' => '1234-abc'])
+        ->assertCreated()->json('data');
+    [$id, $quoteId] = quotedRequest($w);
+
+    $order = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order');
+
+    expect(WorkOrder::find($order['id'])->vehicle_id)->toBe($typed['id'])
+        ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->count())->toBe(1);
+});
+
+it('una copia archivada del coche no se reutiliza: se crea otra con el cliente de siempre', function () {
+    $w = e16World();
+    [$first, $v1] = quotedRequest($w);
+    $order = $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk()->json('data.work_order');
+    $copy = WorkOrder::find($order['id'])->vehicle;
+    loginAs($w->owner);
+    $this->postJson("/api/v1/work-orders/{$order['id']}/status", ['status' => 'delivered'])->assertOk();
+    $this->postJson("/api/v1/vehicles/{$copy->id}/archive")->assertOk();
+    [$second, $v1b] = quotedRequest($w);
+
+    $next = $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk()->json('data.work_order');
+
+    expect(WorkOrder::find($next['id'])->vehicle_id)->not->toBe($copy->id)
+        ->and(WorkOrder::find($next['id'])->vehicle->customer_id)->toBe($copy->customer_id)
+        ->and(Customer::query()->where('workspace_id', $w->wws->id)->count())->toBe(1);
+});
+
+it('si el taller eliminó al cliente de la solicitud anterior, se crea uno nuevo', function () {
+    $w = e16World();
+    [$first, $v1] = quotedRequest($w);
+    $order = $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk()->json('data.work_order');
+    loginAs($w->owner);
+    $this->postJson("/api/v1/work-orders/{$order['id']}/status", ['status' => 'delivered'])->assertOk();
+    $this->deleteJson('/api/v1/customers/'.RepairRequest::find($first)->customer_id)->assertNoContent();
+    expect(RepairRequest::find($first)->customer_id)->toBeNull();
+    [$second, $v1b] = quotedRequest($w);
+
+    $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk();
+
+    expect(Customer::query()->where('workspace_id', $w->wws->id)->sole()->id)->toBe(RepairRequest::find($second)->customer_id);
+});
+
+it('cada taller tiene su propia ficha del mismo particular: nunca se reutiliza entre talleres', function () {
+    $w = e16World();
+    $otherOwner = makeUser('Otra Dueña', 'Neumáticos Prueba');
+    $other = workshopOf($otherOwner);
+    listWorkshop($other);
+    [$first, $v1] = quotedRequest($w);
+    $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk();
+    $second = sendRequest($w, ['workshop_id' => $other->id]);
+    loginAs($otherOwner);
+    $v1b = $this->postJson(rq($second, '/accept'), ['quote' => quoteInput()])->assertOk()->json('data.quotes.0.id');
+    loginAs($w->client);
+
+    $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk();
+
+    expect(Customer::query()->where('workspace_id', $other->id)->count())->toBe(1)
+        ->and(Customer::query()->where('workspace_id', $w->wws->id)->count())->toBe(1)
+        ->and(Vehicle::query()->where('workspace_id', $other->id)->count())->toBe(1)
+        ->and(RepairRequest::find($second)->customer_id)->not->toBe(RepairRequest::find($first)->customer_id);
+});
+
+it('unos km declarados menores que los de la copia del taller no bloquean la conversión', function () {
+    $w = e16World();
+    [$first, $v1] = quotedRequest($w);
+    $order = $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk()->json('data.work_order');
+    $copy = WorkOrder::find($order['id'])->vehicle;
+    loginAs($w->owner);
+    $this->postJson("/api/v1/work-orders/{$order['id']}/status", ['status' => 'delivered'])->assertOk();
+    addReading($copy, 95000, day(-1));
+    [$second, $v1b] = quotedRequest($w, ['mileage' => 84500]);
+
+    $next = $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk()->json('data.work_order');
+
+    expect(WorkOrder::find($next['id'])->mileage_in)->toBe(84500);
+});
+
+it('si el particular borra el coche, la copia del taller pierde el enlace y sigue siendo del taller', function () {
+    $w = e16World();
+    [$id, $quoteId] = quotedRequest($w);
+    $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk();
+    $copy = Vehicle::query()->where('workspace_id', $w->wws->id)->sole();
+    $this->postJson("/api/v1/vehicles/{$w->car->id}/archive")->assertOk();
+
+    $this->deleteJson("/api/v1/vehicles/{$w->car->id}")->assertNoContent();
+
+    expect(Vehicle::find($w->car->id))->toBeNull()
+        ->and($copy->fresh()->source_vehicle_id)->toBeNull()
+        ->and($copy->fresh()->plate)->toBe('1234ABC')
+        ->and(RepairRequest::find($id)->status->value)->toBe('converted')
+        ->and(WorkOrder::find(RepairRequest::find($id)->work_order_id))->not->toBeNull();
+});
+
+it('si el particular borra su cuenta, sus solicitudes desaparecen; la orden y la ficha siguen en el taller', function () {
+    $w = e16World();
+    [$id, $quoteId] = quotedRequest($w);
+    $order = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order');
+    $customerId = RepairRequest::find($id)->customer_id;
+
+    $this->deleteJson('/api/v1/me', ['password' => 'password'])->assertNoContent();
+
+    expect(RepairRequest::find($id))->toBeNull()
+        ->and(RepairQuote::find($quoteId))->toBeNull()
+        ->and(WorkOrder::find($order['id']))->not->toBeNull()
+        ->and(Customer::find($customerId))->not->toBeNull()
+        ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->sole()->source_vehicle_id)->toBeNull();
+});
+
+it('un importe que no cabe en DECIMAL(10,2) da 422, nunca un error de la base de datos', function (string $route, array $body, string $field) {
+    $w = e16World();
+    $id = sendRequest($w);
+    loginAs($w->owner);
+    if ($route === '/quotes') {
+        $this->postJson(rq($id, '/accept'))->assertOk();
+    }
+
+    $this->postJson(rq($id, $route), $body)->assertUnprocessable()->assertJsonValidationErrors($field);
+    expect(RepairQuote::count())->toBe(0);
+})->with([
+    'una línea enorme (quotes)' => ['/quotes', quoteInput(['items' => [['kind' => 'part', 'name' => 'P', 'quantity' => '99999.99', 'unit_price' => '999999.99']]]), 'items'],
+    'una línea enorme (accept)' => ['/accept', ['quote' => quoteInput(['items' => [['kind' => 'part', 'name' => 'P', 'quantity' => '99999.99', 'unit_price' => '999999.99']]])], 'quote.items'],
+    'muchas líneas al máximo' => ['/quotes', quoteInput(['items' => array_fill(0, 50, ['kind' => 'part', 'name' => 'P', 'quantity' => '100', 'unit_price' => '999999.99'])]), 'items'],
+]);
+
+it('el importe más alto admitido se guarda, se convierte en orden y se lee entero', function () {
+    $w = e16World();
+    $items = [['kind' => 'part', 'name' => 'Flota entera', 'quantity' => '50', 'unit_price' => '999999.99']]; // 49.999.999,50 €
+    [$id, $quoteId] = quotedRequest($w, [], ['items' => $items, 'tax_rate' => '100']);
+
+    expect($this->getJson(rq($id))->assertOk()->json('data.quotes.0'))->toMatchArray([
+        'subtotal' => '49999999.50', 'tax_amount' => '49999999.50', 'total' => '99999999.00',
+    ]);
+
+    $order = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order');
+    expect(WorkOrder::find($order['id'])->total)->toBe('99999999.00');
+});
+
 it('una solicitud convertida no se cancela (409 con el número de la orden)', function () {
     $w = e16World();
     [$id, $quoteId] = quotedRequest($w);

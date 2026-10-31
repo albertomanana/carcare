@@ -71,6 +71,19 @@ it('valida los filtros de los listados', function (string $uri, string $field) {
     'página' => ['/workspaces/{pws}/activity?page=0', 'page'],
 ]);
 
+it('unas líneas cuyo importe no cabe en DECIMAL(10,2) dan 422, nunca un error de la base de datos', function (string $method, string $uri, array $body) {
+    $w = world();
+    loginAs($w->owner);
+    $huge = ['items' => [['kind' => 'part', 'name' => 'Pieza', 'quantity' => '99999.99', 'unit_price' => '999999.99']]];
+
+    $this->json($method, api($uri, $w), [...$body, ...$huge])->assertUnprocessable()->assertJsonValidationErrors('items');
+})->with([
+    'crear intervención' => ['POST', '/vehicles/{vehicle}/maintenance', ['type' => 'repair', 'zone' => 'engine', 'title' => 'Motor', 'service_date' => '2026-01-10']],
+    'editar intervención' => ['PATCH', '/maintenance/{record}', []],
+    'crear orden' => ['POST', '/workspaces/{wws}/work-orders', ['title' => 'Motor']],
+    'editar orden' => ['PATCH', '/work-orders/{order}', []],
+]);
+
 it('la validación nunca filtra trazas ni SQL', function () {
     $w = world();
     loginAs($w->owner);
