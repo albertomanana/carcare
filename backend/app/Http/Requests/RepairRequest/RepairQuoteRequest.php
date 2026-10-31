@@ -26,12 +26,12 @@ class RepairQuoteRequest extends ApiRequest
     public static function quoteRules(string $prefix = ''): array
     {
         return [
-            "{$prefix}items" => ['required', 'array', 'min:1', 'max:50'],
+            "{$prefix}items" => ['required', 'array', 'min:1', 'max:50', self::itemsTotalFits()],
             "{$prefix}items.*" => ['array'],
             "{$prefix}items.*.kind" => ['required', Rule::enum(ItemKind::class)],
             "{$prefix}items.*.name" => ['required', 'string', 'min:1', 'max:120'],
             "{$prefix}items.*.part_number" => ['sometimes', 'nullable', 'string', 'max:60'],
-            "{$prefix}items.*.quantity" => ['required', 'numeric', 'gt:0', 'max:99999.99', 'decimal:0,2'],
+            "{$prefix}items.*.quantity" => ['required', 'numeric', 'gt:0', 'max:'.self::MAX_QUANTITY, 'decimal:0,2'],
             "{$prefix}items.*.unit_price" => ['required', ...self::money()],
             "{$prefix}tax_rate" => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
             "{$prefix}valid_days" => ['sometimes', 'nullable', 'integer', 'min:1', 'max:90'],

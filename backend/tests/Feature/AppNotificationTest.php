@@ -28,8 +28,10 @@ function notificationsOf(User $user): array
 /** Ninguna frase lleva el nombre, el email ni el teléfono del particular. */
 function expectNoPersonalData(object $w): void
 {
-    $summaries = DB::table('notifications')->pluck('data')->implode("\n");
-    expect($summaries)->not->toContain('Lucía')
+    // Decodificado: en la columna, json_encode escribe "Lucía" y buscar el nombre en bruto no lo encontraría nunca.
+    $summaries = DB::table('notifications')->pluck('data')->map(fn (string $data) => json_decode($data, true)['summary'])->implode("\n");
+    expect($summaries)->not->toBeEmpty()
+        ->and($summaries)->not->toContain('Lucía')
         ->and($summaries)->not->toContain($w->client->email)
         ->and($summaries)->not->toContain('600 000 000');
 }

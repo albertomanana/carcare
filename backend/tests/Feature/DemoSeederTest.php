@@ -140,6 +140,56 @@ it('las cuentas demo inician sesión y sus pantallas principales responden', fun
     $spa()->getJson("/api/v1/workspaces/{$workshop['id']}/analytics")->assertForbidden();
 });
 
+it('siembra el directorio de talleres y las 4 solicitudes de demo@ (E16, §5)', function () {
+    $this->seed(DemoSeeder::class);
+
+    // Los 4 talleres del directorio, con datos claramente inventados y teléfono solo en Taller Demo.
+    $profiles = \App\Models\WorkshopProfile::with('workspace')->get()->keyBy(fn ($p) => $p->workspace->name);
+    expect($profiles->keys()->sort()->values()->all())->toBe(['Carrocerías Ficticia', 'Neumáticos Prueba', 'Taller Demo', 'Talleres Ejemplo Norte'])
+        ->and($profiles->every(fn ($p) => $p->listed))->toBeTrue()
+        ->and($profiles->map->city->all())->toMatchArray([
+            'Taller Demo' => 'Lleida', 'Talleres Ejemplo Norte' => 'Lleida', 'Neumáticos Prueba' => 'Tarragona', 'Carrocerías Ficticia' => 'Barcelona',
+        ])
+        ->and($profiles->map->phone->filter()->all())->toBe(['Taller Demo' => '973 000 000'])
+        ->and($profiles['Taller Demo']->services)->toEqualCanonicalizing(['maintenance', 'mechanics', 'tyres', 'brakes', 'electrical', 'ac', 'pre_itv']);
+    foreach (['taller2@carcare.test', 'taller3@carcare.test', 'taller4@carcare.test'] as $email) {
+        expect(workshopOf(User::where('email', $email)->sole())->workshopProfile->listed)->toBeTrue();
+    }
+
+    // Las 4 solicitudes: una abierta por pareja vehículo‑taller.
+    $demo = User::where('email', 'demo@carcare.test')->sole();
+    $requests = \App\Models\RepairRequest::with(['workshop', 'workOrder', 'quotes'])->where('requester_user_id', $demo->id)->get()->keyBy(fn ($r) => $r->status->value);
+    expect($requests->keys()->sort()->values()->all())->toBe(['converted', 'pending', 'quoted', 'rejected'])
+        ->and($requests['pending']->workshop->name)->toBe('Taller Demo')
+        ->and($requests['quoted']->workshop->name)->toBe('Taller Demo')
+        ->and($requests['quoted']->vehicle_id)->not->toBe($requests['pending']->vehicle_id)
+        ->and($requests['quoted']->quotes->sole()->status->value)->toBe('sent')
+        ->and($requests['quoted']->quotes->sole()->isExpired())->toBeFalse()
+        ->and($requests['converted']->workshop->name)->toBe('Taller Demo')
+        ->and($requests['converted']->workOrder->status)->toBe(WorkOrderStatus::Delivered)
+        ->and($requests['converted']->workOrder->total)->toBe($requests['converted']->quotes->sole()->total)
+        ->and($requests['rejected']->workshop->name)->toBe('Carrocerías Ficticia')
+        ->and($requests['rejected']->reject_reason)->not->toBeEmpty();
+
+    // Sin leer: la solicitud nueva para taller@ y gerente@, y el presupuesto recibido para demo@.
+    $unread = fn (string $email) => User::where('email', $email)->sole()->unreadNotifications()->get()->map(fn ($n) => [$n->data['kind'], $n->data['repair_request_id']])->all();
+    expect($unread('taller@carcare.test'))->toBe([['repair_request.received', $requests['pending']->id]])
+        ->and($unread('gerente@carcare.test'))->toBe([['repair_request.received', $requests['pending']->id]])
+        ->and($unread('demo@carcare.test'))->toBe([['repair_quote.sent', $requests['quoted']->id]])
+        ->and($unread('mecanico@carcare.test'))->toBe([]);
+
+    // E16‑2: buscar "lleida" encuentra los dos talleres de Lleida y ninguno más.
+    loginAs($demo);
+    $found = $this->getJson('/api/v1/workshops?search=lleida')->assertOk()->json('data');
+    expect(array_column($found, 'name'))->toBe(['Taller Demo', 'Talleres Ejemplo Norte']);
+
+    // La demo se puede enseñar: el taller acepta la pendiente y el particular acepta el presupuesto vigente.
+    $this->postJson("/api/v1/repair-requests/{$requests['quoted']->id}/quote/accept", ['quote_id' => $requests['quoted']->quotes->sole()->id])
+        ->assertOk()->assertJsonPath('data.status', 'converted');
+    loginAs(User::where('email', 'gerente@carcare.test')->sole());
+    $this->postJson("/api/v1/repair-requests/{$requests['pending']->id}/accept")->assertOk()->assertJsonPath('data.status', 'accepted');
+});
+
 it('se puede ejecutar varias veces sin duplicar datos', function () {
     $this->seed(DemoSeeder::class);
     $first = demoCounts();

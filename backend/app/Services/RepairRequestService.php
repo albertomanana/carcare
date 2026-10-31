@@ -44,6 +44,9 @@ class RepairRequestService
 
     public const DEFAULT_VALID_DAYS = 15;
 
+    /** Reintentos si MariaDB elige esta transacción como víctima de un interbloqueo (todo se relee al repetir). */
+    private const TRANSACTION_ATTEMPTS = 3;
+
     /** Intervenciones que se comparten como máximo en el historial (§3.13.7). */
     public const HISTORY_LIMIT = 50;
 
@@ -153,7 +156,7 @@ class RepairRequestService
                 "Nueva solicitud para {$request->vehicleLabel()}: «{$request->title}»");
 
             return $request->fresh(RepairRequest::RESOURCE_RELATIONS);
-        });
+        }, self::TRANSACTION_ATTEMPTS);
     }
 
     // ───────────────────────── Acciones del particular ─────────────────────────
@@ -217,7 +220,7 @@ class RepairRequestService
             }
 
             $this->convert($r, $quote);
-        });
+        }, lockWorkshop: true);
     }
 
     /** Rechazar el presupuesto vigente (aunque haya caducado): la solicitud vuelve a `accepted`. */
@@ -339,16 +342,26 @@ class RepairRequestService
 
     // ───────────────────────── Internos ─────────────────────────
 
-    /** Relee la solicitud con bloqueo de fila, aplica la transición y devuelve la solicitud fresca. */
-    private function locked(RepairRequest $request, Closure $transition): RepairRequest
+    /**
+     * Relee la solicitud con bloqueo de fila, aplica la transición y devuelve la solicitud fresca.
+     *
+     * Con $lockWorkshop bloquea también el taller, ANTES de la primera lectura sin bloqueo. En MariaDB (REPEATABLE
+     * READ) esa lectura fija la foto de la transacción: si se hiciera antes, una orden que otra petición confirma
+     * mientras esta espera el bloqueo no se vería, y la conversión repetiría su número (clave única ⇒ 500).
+     * El orden es siempre solicitud → taller, el mismo que siguen las demás transiciones.
+     */
+    private function locked(RepairRequest $request, Closure $transition, bool $lockWorkshop = false): RepairRequest
     {
-        return DB::transaction(function () use ($request, $transition) {
+        return DB::transaction(function () use ($request, $transition, $lockWorkshop) {
             $locked = RepairRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
+            if ($lockWorkshop) {
+                Workspace::query()->whereKey($locked->workshop_workspace_id)->lockForUpdate()->first();
+            }
             $locked->load('workshop');
             $transition($locked);
 
             return $locked->fresh(RepairRequest::RESOURCE_RELATIONS);
-        });
+        }, self::TRANSACTION_ATTEMPTS);
     }
 
     private function ensureOpen(RepairRequest $r): void

@@ -9,14 +9,18 @@ use App\Enums\FuelType;
 use App\Enums\FuelUnit;
 use App\Enums\ItemKind;
 use App\Enums\MileageSource;
+use App\Enums\NotificationKind;
 use App\Enums\Priority;
 use App\Enums\RecordType;
 use App\Enums\ReminderKind;
 use App\Enums\ReminderState;
 use App\Enums\ReminderStatus;
+use App\Enums\RepairQuoteStatus;
+use App\Enums\RepairRequestStatus;
 use App\Enums\ServiceKind;
 use App\Enums\Transmission;
 use App\Enums\WorkOrderStatus;
+use App\Enums\WorkshopService;
 use App\Enums\WorkspaceRole;
 use App\Enums\WorkspaceType;
 use App\Enums\Zone;
@@ -650,6 +654,160 @@ final class Contract
         ];
     }
 
+    // ───────────────────────── Directorio, solicitudes y notificaciones (E16, §3.13) ─────────────────────────
+
+    public static function directoryProfile(): array
+    {
+        return [
+            'workspace_id' => 'int',
+            'listed' => 'bool',
+            'city' => '?string',
+            'address' => '?string',
+            'phone' => '?string',
+            'services' => self::listOf(self::enum(WorkshopService::class)),
+            'opening_hours' => '?string',
+            'updated_at' => '?datetime',
+        ];
+    }
+
+    public static function directoryWorkshop(): array
+    {
+        return [
+            'id' => 'int',
+            'name' => 'string',
+            'city' => 'string',
+            'address' => '?string',
+            'phone' => '?string',
+            'services' => self::listOf(self::enum(WorkshopService::class)),
+            'opening_hours' => '?string',
+            'is_member' => 'bool',
+        ];
+    }
+
+    public static function directoryWorkshopRef(): array
+    {
+        return ['id' => 'int', 'name' => 'string', 'city' => '?string', 'phone' => '?string'];
+    }
+
+    public static function repairRequestVehicle(): array
+    {
+        return [
+            'make' => 'string',
+            'model' => 'string',
+            'year' => '?int',
+            'fuel_type' => self::enum(FuelType::class, true),
+            'body_type' => self::enum(BodyType::class, true),
+            'color_hex' => '?string',
+            'plate' => '?string',
+            'display_name' => 'string',
+        ];
+    }
+
+    /** Línea de un presupuesto: un LineItem sin `id` y siempre con precio y total (comentario de RepairQuote.items). */
+    public static function repairQuoteItem(): array
+    {
+        return [
+            'kind' => self::enum(ItemKind::class),
+            'name' => 'string',
+            'part_number' => '?string',
+            'quantity' => 'decimal',
+            'unit_price' => 'money',
+            'total' => 'money',
+        ];
+    }
+
+    public static function repairQuote(): array
+    {
+        return [
+            'id' => 'int',
+            'version' => 'int',
+            'status' => self::enum(RepairQuoteStatus::class),
+            'items' => self::listOf(self::repairQuoteItem()),
+            'subtotal' => 'money',
+            'tax_rate' => 'decimal',
+            'tax_amount' => 'money',
+            'total' => 'money',
+            'valid_days' => 'int',
+            'valid_until' => 'date',
+            'is_expired' => 'bool',
+            'note' => '?string',
+            'client_reason' => '?string',
+            'sent_at' => 'datetime',
+            'answered_at' => '?datetime',
+        ];
+    }
+
+    public static function repairRequestWorkOrder(): array
+    {
+        return [
+            'id' => 'int',
+            'number' => 'string',
+            'status' => self::enum(WorkOrderStatus::class),
+            'received_at' => 'datetime',
+            'completed_at' => '?datetime',
+            'delivered_at' => '?datetime',
+        ];
+    }
+
+    public static function repairRequest(): array
+    {
+        return [
+            'id' => 'int',
+            'perspective' => 'enum:requester,workshop',
+            'status' => self::enum(RepairRequestStatus::class),
+            'workshop' => self::directoryWorkshopRef(),
+            'requester' => ['name' => 'string', 'email' => 'string'],
+            'contact_phone' => '?string',
+            'vehicle_id' => '?int',
+            'vehicle' => self::repairRequestVehicle(),
+            'title' => 'string',
+            'description' => 'string',
+            'zone' => self::enum(Zone::class, true),
+            'preferred_date' => 'date',
+            'mileage' => 'int',
+            'share_history' => 'bool',
+            'history_available' => 'bool',
+            'reject_reason' => '?string',
+            'quotes' => self::listOf(self::repairQuote()),
+            'work_order' => self::nullable(self::repairRequestWorkOrder()),
+            'responded_at' => '?datetime',
+            'closed_at' => '?datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
+
+    public static function sharedHistoryEntry(): array
+    {
+        return [
+            'service_date' => 'date',
+            'type' => self::enum(RecordType::class),
+            'zone' => self::enum(Zone::class),
+            'service_kind' => self::enum(ServiceKind::class, true),
+            'title' => 'string',
+            'mileage' => '?int',
+            'workshop_name' => '?string',
+        ];
+    }
+
+    public static function appNotification(): array
+    {
+        return [
+            'id' => 'string',
+            'kind' => self::enum(NotificationKind::class),
+            'summary' => 'string',
+            'workspace_id' => 'int',
+            'repair_request_id' => '?int',
+            'read_at' => '?datetime',
+            'created_at' => 'datetime',
+        ];
+    }
+
+    public static function notificationCount(): array
+    {
+        return ['unread' => 'int'];
+    }
+
     public static function pageMeta(): array
     {
         return ['current_page' => 'int', 'last_page' => 'int', 'per_page' => 'int', 'total' => 'int'];
@@ -700,6 +858,16 @@ final class Contract
             'WorkshopDashboard' => self::workshopDashboard(),
             'WorkspaceAnalytics' => self::workspaceAnalytics(),
             'PageMeta' => self::pageMeta(),
+            'DirectoryProfile' => self::directoryProfile(),
+            'DirectoryWorkshop' => self::directoryWorkshop(),
+            'DirectoryWorkshopRef' => self::directoryWorkshopRef(),
+            'RepairRequestVehicle' => self::repairRequestVehicle(),
+            'RepairQuote' => self::repairQuote(),
+            'RepairRequestWorkOrder' => self::repairRequestWorkOrder(),
+            'RepairRequest' => self::repairRequest(),
+            'SharedHistoryEntry' => self::sharedHistoryEntry(),
+            'AppNotification' => self::appNotification(),
+            'NotificationCount' => self::notificationCount(),
         ];
     }
 
@@ -729,6 +897,10 @@ final class Contract
             'DocumentType' => DocumentType::class,
             'WorkOrderStatus' => WorkOrderStatus::class,
             'Priority' => Priority::class,
+            'WorkshopService' => WorkshopService::class,
+            'RepairRequestStatus' => RepairRequestStatus::class,
+            'RepairQuoteStatus' => RepairQuoteStatus::class,
+            'NotificationKind' => NotificationKind::class,
         ];
     }
 }

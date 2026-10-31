@@ -446,6 +446,23 @@ it('el historial compartido: no archivadas, desc, sin importes ni descripciones,
     }
 });
 
+it('el historial compartido se queda en las 50 intervenciones más recientes', function () {
+    $w = e16World();
+    $rows = [];
+    foreach (range(1, 55) as $i) {
+        $rows[] = ['vehicle_id' => $w->car->id, 'type' => 'maintenance', 'zone' => 'engine', 'title' => "Intervención {$i}",
+            'service_date' => day(-$i), 'currency' => 'EUR', 'created_at' => now(), 'updated_at' => now()];
+    }
+    DB::table('maintenance_records')->insert($rows);
+    $id = sendRequest($w, ['share_history' => true]);
+
+    $history = $this->getJson(rr($id, '/history'))->assertOk()->json('data');
+
+    expect($history)->toHaveCount(50)
+        ->and($history[0]['title'])->toBe('Intervención 1')
+        ->and($history[49]['title'])->toBe('Intervención 50');
+});
+
 it('el historial da 403 si no se comparte, si la solicitud se cerró o si el coche ya no existe', function (string $case) {
     $w = e16World();
     $id = sendRequest($w, ['share_history' => $case !== 'sin consentimiento']);
