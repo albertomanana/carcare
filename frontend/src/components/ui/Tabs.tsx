@@ -28,5 +28,6 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof RT.Tr
 }
 
 export function TabsContent({ className, ...props }: ComponentProps<typeof RT.Content>) {
-  return <RT.Content className={cn('mt-4 outline-none data-[state=active]:animate-fade-in', className)} {...props} />
+  // Radix deja el panel en el orden de Tab (tabindex=0): con `outline-none` el foco llegaba a él sin verse. Usa el anillo global.
+  return <RT.Content className={cn('mt-4 data-[state=active]:animate-fade-in', className)} {...props} />
 }

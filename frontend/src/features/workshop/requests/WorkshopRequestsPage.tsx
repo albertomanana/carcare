@@ -159,15 +159,21 @@ function RequestListSkeleton() {
 function RequestsEmpty({ tab, onShowAll }: { tab: TabId; onShowAll: () => void }) {
   const ctx = useWorkspace()
   const profile = useDirectoryProfile(ctx.id)
-  const notListed = profile.data && !profile.data.listed
+  const listed = profile.data?.listed === true
+  const notListed = profile.data?.listed === false
   const isOwner = ctx.can('own')
+  // Sin el perfil no se sabe qué decir: el texto genérico ("te encuentran en el directorio") sería falso si no sale
+  if (profile.isPending) return <RequestListSkeleton />
 
   const title = tab === 'nuevas' ? 'No hay solicitudes nuevas' : tab === 'abiertas' ? 'No hay solicitudes abiertas' : 'Todavía no has recibido solicitudes'
   const description = notListed
     ? isOwner
       ? 'Tu taller no aparece en el directorio, así que los particulares no pueden enviarte solicitudes. Actívalo en Ajustes.'
       : 'Tu taller no aparece en el directorio, así que los particulares no pueden enviarte solicitudes. Solo el propietario puede activarlo.'
-    : 'Los particulares te encuentran en el directorio de CarCare y te piden presupuesto desde aquí. Cuando llegue una, la verás en esta lista.'
+    : listed
+      ? 'Los particulares te encuentran en el directorio de CarCare y te piden presupuesto desde aquí. Cuando llegue una, la verás en esta lista.'
+      : // El perfil no se pudo cargar: no se afirma nada sobre el directorio
+        'Cuando un particular te envíe una solicitud de reparación, la verás en esta lista.'
 
   return (
     <EmptyState

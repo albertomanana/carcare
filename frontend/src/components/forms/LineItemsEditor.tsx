@@ -111,7 +111,8 @@ export function LineItemsEditor<T extends FieldValues & WithItems>({ form, showP
                 showPrices ? '@3xl:grid-cols-[148px_minmax(0,1fr)_110px_72px_104px_92px_40px]' : '@3xl:grid-cols-[148px_minmax(0,1fr)_110px_72px_40px]',
               )}
             >
-              <label className="flex min-w-0 flex-col gap-1">
+              {/* En móvil el tipo ocupa las dos columnas menos el hueco de la papelera: a 360 px "Mano de obra" no cabía en una */}
+              <label className="col-span-2 col-start-1 row-start-1 flex min-w-0 flex-col gap-1 pr-14 @3xl:col-span-1 @3xl:col-start-auto @3xl:row-start-auto @3xl:pr-0">
                 <span className="text-xs text-fg-muted @3xl:sr-only">Tipo (línea {n})</span>
                 <Select disabled={disabled} {...f.register(`items.${i}.kind`)}>
                   {(Object.keys(ITEM_KIND_LABEL) as ItemKind[]).map((k) => (
@@ -148,7 +149,7 @@ export function LineItemsEditor<T extends FieldValues & WithItems>({ form, showP
                   {total === null ? <span className="text-fg-subtle">Sin precio</span> : <span className="text-fg">{formatMoney(centsToMoney(total))}</span>}
                 </div>
               )}
-              <div className="col-start-2 row-start-1 flex justify-end @3xl:col-start-auto @3xl:row-start-auto">
+              <div className="col-start-2 row-start-1 flex justify-self-end @3xl:col-start-auto @3xl:row-start-auto">
                 <IconButton label={`Quitar la línea ${n}`} onClick={() => remove(i)} disabled={disabled}>
                   <Trash2 aria-hidden />
                 </IconButton>
