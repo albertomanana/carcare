@@ -152,9 +152,15 @@ it('siembra el directorio de talleres y las 4 solicitudes de demo@ (E16, §5)', 
         ])
         ->and($profiles->map->phone->filter()->all())->toBe(['Taller Demo' => '973 000 000'])
         ->and($profiles['Taller Demo']->services)->toEqualCanonicalizing(['maintenance', 'mechanics', 'tyres', 'brakes', 'electrical', 'ac', 'pre_itv']);
-    foreach (['taller2@carcare.test', 'taller3@carcare.test', 'taller4@carcare.test'] as $email) {
-        expect(workshopOf(User::where('email', $email)->sole())->workshopProfile->listed)->toBeTrue();
+    foreach (DemoSeeder::DIRECTORY_EMAILS as $email) {
+        $owner = User::where('email', $email)->sole();
+        expect(workshopOf($owner)->workshopProfile->listed)->toBeTrue()
+            ->and($owner->roleIn(workshopOf($owner))?->value)->toBe('owner')
+            ->and(\Illuminate\Support\Facades\Hash::check(DemoSeeder::PASSWORD, $owner->password))->toBeTrue();
     }
+    expect($profiles['Taller Demo']->address)->toBe('C/ Inventada, 12')
+        ->and($profiles['Taller Demo']->services)->not->toContain('bodywork')
+        ->and($profiles->map->address->filter()->count())->toBe(4);
 
     // Las 4 solicitudes: una abierta por pareja vehículo‑taller.
     $demo = User::where('email', 'demo@carcare.test')->sole();
@@ -198,6 +204,64 @@ it('se puede ejecutar varias veces sin duplicar datos', function () {
 
     expect(demoCounts())->toBe($first)
         ->and(User::whereIn('email', DemoSeeder::EMAILS)->count())->toBe(4);
+});
+
+/**
+ * Textos de la demo que ve una persona. Petición 11 del tablero (I8): sin restos como "Prueba QA frontend (archivar)".
+ *
+ * @return array<string, list<string>> tabla => columnas
+ */
+function demoTextColumns(): array
+{
+    return [
+        'activities' => ['summary'], 'maintenance_records' => ['title', 'description'], 'expenses' => ['description'],
+        'reminders' => ['title', 'notes'], 'documents' => ['title'], 'mileage_logs' => ['note'],
+        'work_orders' => ['title', 'complaint', 'diagnosis'], 'customers' => ['name', 'notes'], 'repair_requests' => ['title', 'description', 'reject_reason'],
+        'repair_quotes' => ['note'], 'notifications' => ['data'],
+    ];
+}
+
+it('la demo sembrada no contiene restos de pruebas (petición 11)', function () {
+    $this->seed(DemoSeeder::class);
+
+    foreach (demoTextColumns() as $table => $columns) {
+        expect(\Illuminate\Support\Facades\DB::table($table)->count())->toBeGreaterThan(0, "{$table} debería tener datos");
+        foreach ($columns as $column) {
+            foreach ([...DemoSeeder::TEST_RESIDUE_PATTERNS, 'lorem ipsum', 'asdf'] as $pattern) {
+                expect(\Illuminate\Support\Facades\DB::table($table)->where($column, 'like', "%{$pattern}%")->count())
+                    ->toBe(0, "{$table}.{$column} contiene «{$pattern}»");
+            }
+        }
+    }
+});
+
+it('volver a sembrar borra los restos de pruebas de los espacios demo y no toca los de otras cuentas', function () {
+    $this->seed(DemoSeeder::class);
+    $personal = User::where('email', 'demo@carcare.test')->sole()->personalWorkspace();
+    $car = $personal->vehicles()->orderBy('id')->firstOrFail();
+    $km = $car->current_mileage;
+    loginAs(User::where('email', 'demo@carcare.test')->sole());
+    // Lo que deja una prueba manual, por la API: una intervención con su gasto vinculado y una actividad que la nombra.
+    $record = $this->postJson("/api/v1/vehicles/{$car->id}/maintenance", [
+        'type' => 'repair', 'zone' => 'body', 'title' => 'Prueba QA frontend (archivar)', 'service_date' => day(), 'total_cost' => '10.00', 'mileage' => $km + 500,
+    ])->assertCreated()->json('data');
+    $expense = \App\Models\Expense::query()->where('maintenance_record_id', $record['id'])->sole();
+    expect(\App\Models\Activity::query()->where('workspace_id', $personal->id)->where('summary', 'like', '%Prueba QA%')->count())->toBeGreaterThan(0)
+        ->and($car->fresh()->current_mileage)->toBe($km + 500);
+    // El mismo texto en una cuenta real no es asunto de la demo.
+    $real = makeUser('Cuenta Real');
+    $realCar = makeVehicle($real->personalWorkspace());
+    $realRecord = app(\App\Services\MaintenanceService::class)->create($realCar, [
+        'type' => 'repair', 'zone' => 'body', 'title' => 'Prueba QA frontend (archivar)', 'service_date' => day(),
+    ]);
+
+    $this->seed(DemoSeeder::class);
+
+    expect(MaintenanceRecord::find($record['id']))->toBeNull()
+        ->and(Expense::find($expense->id))->toBeNull()
+        ->and(\App\Models\Activity::query()->where('workspace_id', $personal->id)->where('summary', 'like', '%Prueba QA%')->count())->toBe(0)
+        ->and($car->fresh()->current_mileage)->toBe($km)
+        ->and(MaintenanceRecord::find($realRecord->id))->not->toBeNull();
 });
 
 it('no siembra datos demo en producción', function () {

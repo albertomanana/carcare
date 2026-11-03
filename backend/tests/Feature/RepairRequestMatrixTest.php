@@ -256,6 +256,20 @@ it('borrar el coche no toca las solicitudes cerradas: conservan su estado y la c
         ->and(DB::table('notifications')->count())->toBe(0);
 })->with(['rejected', 'cancelled', 'converted']);
 
+it('borrar un coche sin archivar da 409: la solicitud sigue abierta y el taller no recibe aviso', function (string $state) {
+    $w = e16World();
+    [$id] = requestInState($w, $state);
+    DB::table('notifications')->delete();
+    loginAs($w->client);
+
+    $this->deleteJson("/api/v1/vehicles/{$w->car->id}")->assertConflict()
+        ->assertExactJson(['message' => 'Archiva el vehículo antes de eliminarlo.']);
+
+    expect(RepairRequest::find($id)->status->value)->toBe($state)
+        ->and(RepairRequest::find($id)->vehicle_id)->toBe($w->car->id)
+        ->and(DB::table('notifications')->count())->toBe(0);
+})->with(['pending', 'accepted', 'quoted']);
+
 // ───────────────────────── Retirar el consentimiento ─────────────────────────
 
 it('retirar el historial también se puede en todos los estados abiertos y corta el acceso del taller', function (string $state) {

@@ -198,6 +198,18 @@ it('quote_id es obligatorio y entero (422)', function (array $body) {
     $this->postJson(rq($id, '/quote/reject'), $body + ['reason' => 'x'])->assertUnprocessable()->assertJsonValidationErrors('quote_id');
 })->with([[[]], [['quote_id' => 'v1']], [['quote_id' => null]]]);
 
+it('el motivo del cliente al rechazar admite hasta 500 caracteres y es opcional (422 si se pasa)', function () {
+    $w = e16World();
+    [$id, $quoteId] = quotedRequest($w);
+
+    $this->postJson(rq($id, '/quote/reject'), ['quote_id' => $quoteId, 'reason' => str_repeat('a', 501)])
+        ->assertUnprocessable()->assertJsonValidationErrors('reason');
+    expect(RepairRequest::find($id)->status->value)->toBe('quoted');
+
+    $this->postJson(rq($id, '/quote/reject'), ['quote_id' => $quoteId, 'reason' => str_repeat('a', 500)])->assertOk()
+        ->assertJsonPath('data.quotes.0.client_reason', str_repeat('a', 500));
+});
+
 it('un presupuesto caducado no se puede aceptar (409), pero sí rechazar', function () {
     $w = e16World();
     [$id, $quoteId] = quotedRequest($w);
@@ -316,6 +328,64 @@ it('nunca enlaza por email con un cliente dado de alta a mano; por matrícula re
         ->and($samePlate->fresh()->customer_id)->toBe($manual->id)          // no se le cambia el cliente
         ->and($samePlate->fresh()->source_vehicle_id)->toBe($w->car->id)   // pero queda enlazado
         ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->count())->toBe(1);
+});
+
+it('el enlace con el coche del particular gana a la matrícula: si cambia la matrícula, sigue siendo la misma copia', function () {
+    $w = e16World();
+    [$first, $v1] = quotedRequest($w);
+    $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk();
+    $copy = Vehicle::query()->where('workspace_id', $w->wws->id)->sole();
+    // El taller ya tiene otro coche con la matrícula nueva: no debe confundirlo con la copia enlazada.
+    $other = makeVehicle($w->wws, ['plate' => '5678DEF']);
+    $this->patchJson("/api/v1/vehicles/{$w->car->id}", ['plate' => '5678DEF'])->assertOk();
+    [$second, $v1b] = quotedRequest($w);
+
+    $order = $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk()->json('data.work_order');
+
+    expect(WorkOrder::find($order['id'])->vehicle_id)->toBe($copy->id)
+        ->and($other->fresh()->source_vehicle_id)->toBeNull()
+        ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->count())->toBe(2);
+});
+
+it('un vehículo del taller enlazado a otro coche se reutiliza por matrícula y conserva su enlace', function () {
+    $w = e16World();
+    $otherCar = makeVehicle($w->intruder->personalWorkspace(), ['plate' => '0001AAA']);
+    $samePlate = makeVehicle($w->wws, ['plate' => '1234ABC']);
+    $samePlate->forceFill(['source_vehicle_id' => $otherCar->id])->save();
+    [$id, $quoteId] = quotedRequest($w);
+
+    $order = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order');
+
+    expect(WorkOrder::find($order['id'])->vehicle_id)->toBe($samePlate->id)
+        ->and($samePlate->fresh()->source_vehicle_id)->toBe($otherCar->id)
+        ->and(Vehicle::query()->where('workspace_id', $w->wws->id)->count())->toBe(1);
+});
+
+it('el cliente se reutiliza por la cuenta, no por el email: cambiar de email no crea otra ficha y otro particular tiene la suya', function () {
+    $w = e16World();
+    [$first, $v1] = quotedRequest($w);
+    $this->postJson(rq($first, '/quote/accept'), ['quote_id' => $v1])->assertOk();
+    $customer = RepairRequest::find($first)->customer_id;
+
+    $this->patchJson('/api/v1/me', ['email' => 'lucia.nueva@ejemplo.test'])->assertOk();
+    [$second, $v1b] = quotedRequest($w);
+    $this->postJson(rq($second, '/quote/accept'), ['quote_id' => $v1b])->assertOk();
+
+    expect(RepairRequest::find($second)->customer_id)->toBe($customer);
+
+    // Otra cuenta en el mismo taller: su propia ficha, aunque traiga el coche con la misma matrícula.
+    $pablo = makeUser('Pablo Otro');
+    $car = makeVehicle($pablo->personalWorkspace(), ['plate' => '1234ABC']);
+    $client = $w->client;
+    $w->client = $pablo;
+    $w->pws = $pablo->personalWorkspace();
+    [$third, $v1c] = quotedRequest($w, ['vehicle_id' => $car->id, 'mileage' => 0]);
+    $w->client = $client;
+    $this->postJson(rq($third, '/quote/accept'), ['quote_id' => $v1c])->assertOk();
+
+    expect(RepairRequest::find($third)->customer_id)->not->toBe($customer)
+        ->and(Customer::query()->where('workspace_id', $w->wws->id)->count())->toBe(2)
+        ->and(Customer::find(RepairRequest::find($third)->customer_id)->name)->toBe('Pablo Otro');
 });
 
 it('si el cliente de la solicitud anterior está anonimizado, crea uno nuevo', function () {
@@ -528,6 +598,39 @@ it('si el taller borra la orden, work_order pasa a null y la solicitud sigue con
     $this->getJson(rq($id))->assertOk()
         ->assertJsonPath('data.status', 'converted')
         ->assertJsonPath('data.work_order', null);
+});
+
+it('cancelar una solicitud convertida cuya orden borró el taller sigue dando 409, ya sin número', function () {
+    $w = e16World();
+    [$id, $quoteId] = quotedRequest($w);
+    $order = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order');
+    loginAs($w->owner);
+    $this->deleteJson("/api/v1/work-orders/{$order['id']}")->assertNoContent();
+    loginAs($w->client);
+
+    $this->postJson(rq($id, '/cancel'))->assertConflict()
+        ->assertExactJson(['message' => 'Esta solicitud ya se convirtió en una orden del taller. Para cancelarla, llama al taller.']);
+    expect(RepairRequest::find($id)->status->value)->toBe('converted');
+});
+
+it('si el taller borra su copia del coche, la solicitud sigue convertida y el coche del particular no cambia', function () {
+    $w = e16World();
+    [$id, $quoteId] = quotedRequest($w);
+    $order = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order');
+    $copy = WorkOrder::find($order['id'])->vehicle;
+    loginAs($w->owner);
+    $this->postJson("/api/v1/work-orders/{$order['id']}/status", ['status' => 'delivered'])->assertOk();
+    $this->postJson("/api/v1/vehicles/{$copy->id}/archive")->assertOk();
+
+    $this->deleteJson("/api/v1/vehicles/{$copy->id}")->assertNoContent();
+
+    loginAs($w->client);
+    $this->getJson(rq($id))->assertOk()
+        ->assertJsonPath('data.status', 'converted')
+        ->assertJsonPath('data.work_order', null)
+        ->assertJsonPath('data.vehicle_id', $w->car->id)
+        ->assertJsonPath('data.vehicle.plate', '1234ABC');
+    expect($w->car->fresh()->current_mileage)->toBe(84200);
 });
 
 it('el particular sigue el estado de la orden desde su solicitud', function () {

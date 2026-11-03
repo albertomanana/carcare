@@ -98,6 +98,8 @@ it('valida la solicitud (422 con el campo)', function (Closure $override, string
     'km negativos' => [fn () => ['mileage' => -1], 'mileage'],
     'km por encima del máximo' => [fn () => ['mileage' => 2000001], 'mileage'],
     'km menores que el último anotado' => [fn () => ['mileage' => 84199], 'mileage', 'No puede ser menor que el último kilometraje anotado (84.200 km).'],
+    // §3.13.3: aquí no existe confirm_mileage_drop. Si la última lectura está mal, se corrige en el diario.
+    'km menores aunque se pida confirmar' => [fn () => ['mileage' => 84199, 'confirm_mileage_drop' => true], 'mileage', 'No puede ser menor que el último kilometraje anotado (84.200 km).'],
     'teléfono con letras' => [fn () => ['contact_phone' => '600 ABC'], 'contact_phone'],
     'share_history no booleano' => [fn () => ['share_history' => 'quizá'], 'share_history'],
 ]);
