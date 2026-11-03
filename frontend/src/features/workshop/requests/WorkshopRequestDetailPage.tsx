@@ -1,6 +1,6 @@
-import { FilePlus2, Lock, Mail, Phone, SquareKanban, X } from 'lucide-react'
+import { CircleSlash, FilePlus2, Lock, Mail, Phone, SquareKanban, X } from 'lucide-react'
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { Navigate, useParams } from 'react-router'
 import { isApiError } from '@/api/client'
 import { useRepairRequest } from '@/api/hooks/repairRequests'
 import type { RepairRequest } from '@/api/types'
@@ -11,11 +11,12 @@ import { Disclosure } from '@/components/ui/Disclosure'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Section } from '@/components/ui/Section'
 import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
-import { ErrorState } from '@/components/ui/States'
+import { EmptyState, ErrorState } from '@/components/ui/States'
 import { VehicleSwatch, VehicleThumb } from '@/components/vehicles/VehicleVisuals'
+import { useAuth } from '@/features/auth/auth-context'
 import { QuoteCard } from '@/features/requests/components/QuoteCard'
 import { SharedHistoryList } from '@/features/requests/components/SharedHistoryList'
-import { currentQuote, isOpenRequest, requestStatusDescriptor } from '@/features/requests/requestStatus'
+import { currentQuote, isOpenRequest, requestStatusDescriptor, requestWorkspaceId } from '@/features/requests/requestStatus'
 import { mailHref } from '@/features/workshop/components/customerForm'
 import { telHref } from '@/features/workshop/components/floor'
 import { useWorkspace } from '@/features/workspace/workspace-context'
@@ -37,6 +38,7 @@ type OpenDialog = 'accept' | 'reject' | 'quote' | null
  */
 export default function WorkshopRequestDetailPage() {
   const ctx = useWorkspace()
+  const { workspaces } = useAuth()
   const { requestId } = useParams()
   const id = Number(requestId) || undefined
   const query = useRepairRequest(id)
@@ -46,18 +48,26 @@ export default function WorkshopRequestDetailPage() {
 
   if (query.isPending) return <DetailSkeleton back={back} />
   if (query.isError || !request) {
-    const notFound = isApiError(query.error) && query.error.status === 404
+    // 404: no existe o no es de este taller (el aislamiento no distingue). Reintentar no lo arregla: se ofrece volver.
+    const notFound = !id || (isApiError(query.error) && query.error.status === 404)
     return (
       <>
         <PageHeader title="Solicitud" back={back} />
-        <ErrorState
-          error={query.error}
-          title={notFound ? 'Esta solicitud ya no existe' : undefined}
-          onRetry={() => void query.refetch()}
-        />
+        {notFound ? (
+          <EmptyState
+            icon={<CircleSlash />}
+            title="Esta solicitud ya no existe"
+            description="Puede que el cliente borrara su cuenta, o que el enlace no sea correcto o no sea de este taller."
+            action={<ButtonLink to={back.to}>Ver las solicitudes</ButtonLink>}
+          />
+        ) : (
+          <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+        )}
       </>
     )
   }
+  const home = requestWorkspaceId(request, workspaces)
+  if (home !== null && home !== ctx.id) return <Navigate to={`/app/${home}/solicitudes/${request.id}`} replace />
   return <RequestDetail request={request} back={back} />
 }
 

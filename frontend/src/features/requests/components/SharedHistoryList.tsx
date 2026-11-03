@@ -3,7 +3,7 @@ import type { ID } from '@/api/types'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
 import { formatDate, formatKm } from '@/lib/format'
-import { RECORD_TYPE_LABEL, SERVICE_KIND_LABEL, ZONE_LABEL } from '@/lib/labels'
+import { sharedHistoryFacts } from '../requestStatus'
 
 /**
  * Historial compartido de una solicitud (§3.13.7): fecha, tipo, zona, título, km y taller. Sin importes, descripciones,
@@ -36,7 +36,7 @@ export function SharedHistoryList({ requestId, enabled = true }: { requestId: ID
           <p className="text-fg-muted">
             <span className="tabular">{formatDate(e.service_date)}</span>
             {' · '}
-            {[RECORD_TYPE_LABEL[e.type], ZONE_LABEL[e.zone], e.service_kind ? SERVICE_KIND_LABEL[e.service_kind] : null].filter(Boolean).join(' · ')}
+            {sharedHistoryFacts(e).join(' · ')}
             {e.mileage !== null && (
               <>
                 {' · '}

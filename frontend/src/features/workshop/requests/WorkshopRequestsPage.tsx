@@ -105,7 +105,7 @@ function RequestRow({ request: r, to }: { request: RepairRequest; to: string }) 
   const sub = [r.requester.name, r.zone ? ZONE_LABEL[r.zone] : null, `quiere venir el ${formatDate(r.preferred_date)}`].filter(Boolean).join(' · ')
   return (
     <li className="border-b border-line">
-      <Link to={to} className="group flex items-center gap-3 px-1 py-2.5 transition-colors duration-150 hover:bg-surface-2/60">
+      <Link to={to} className="group flex items-center gap-3 px-1 py-2.5 transition-[background-color] duration-150 hover:bg-surface-2/60">
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <span className="min-w-0 truncate text-sm font-medium text-fg">{r.title}</span>
@@ -118,7 +118,7 @@ function RequestRow({ request: r, to }: { request: RepairRequest; to: string }) 
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-xs text-fg-muted">
+          <p className="mt-0.5 text-xs text-fg-muted sm:truncate">
             {r.vehicle.display_name}
             {r.vehicle.plate && (
               <>

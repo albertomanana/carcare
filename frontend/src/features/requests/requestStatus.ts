@@ -3,10 +3,10 @@
  * de las pantallas del particular y del taller. El estado nunca va solo con color: icono + texto.
  */
 import { Ban, CircleCheck, CircleX, FileText, Hourglass, Inbox, type LucideIcon, Send, Wrench } from 'lucide-react'
-import type { BodyType, FuelType, RepairQuote, RepairQuoteStatus, RepairRequest, RepairRequestStatus, WorkshopService } from '@/api/types'
+import type { BodyType, FuelType, ID, RepairQuote, RepairQuoteStatus, RepairRequest, RepairRequestStatus, SharedHistoryEntry, Workspace, WorkshopService } from '@/api/types'
 import { vehicleColorName } from '@/lib/colors'
 import { formatPlate } from '@/lib/format'
-import { BODY_LABEL, FUEL_LABEL } from '@/lib/labels'
+import { BODY_LABEL, FUEL_LABEL, RECORD_TYPE_LABEL, SERVICE_KIND_LABEL, ZONE_LABEL } from '@/lib/labels'
 import type { Tone } from '@/lib/status'
 
 export type RequestPerspective = RepairRequest['perspective']
@@ -55,6 +55,16 @@ export function requestStatusText(request: Pick<RepairRequest, 'status' | 'persp
   if (request.status !== 'converted') return base
   if (!request.work_order) return request.perspective === 'requester' ? 'En el taller · orden eliminada' : 'Orden eliminada'
   return request.perspective === 'requester' ? `${base} · ${request.work_order.number}` : `${base} ${request.work_order.number}`
+}
+
+/**
+ * Espacio desde el que se abre una solicitud: el taller, para su equipo; el personal, para quien la envió.
+ * Una misma persona puede ser las dos cosas en solicitudes distintas: abierta desde el espacio equivocado, la pantalla
+ * ofrecería las acciones de la otra parte y la API respondería 403.
+ */
+export function requestWorkspaceId(request: Pick<RepairRequest, 'perspective' | 'workshop'>, workspaces: Pick<Workspace, 'id' | 'type'>[]): ID | null {
+  if (request.perspective === 'workshop') return request.workshop.id
+  return workspaces.find((w) => w.type === 'personal')?.id ?? null
 }
 
 /** ¿Le toca actuar a quien mira? Particular: presupuesto recibido. Taller: nueva o aceptada sin presupuesto. */
@@ -148,6 +158,14 @@ export function vehicleCopyFacts(v: VehicleLook): string[] {
     vehicleColorName(v.color_hex),
     v.plate ? formatPlate(v.plate) : null,
   ].filter((x): x is string => !!x)
+}
+
+// ───────── Historial compartido (§3.13.7) ─────────
+
+/** Tipo, zona y clase de una intervención, sin repetir: "Neumáticos", no "Neumáticos · Neumáticos · Neumáticos". */
+export function sharedHistoryFacts(entry: Pick<SharedHistoryEntry, 'type' | 'zone' | 'service_kind'>): string[] {
+  const labels = [RECORD_TYPE_LABEL[entry.type], ZONE_LABEL[entry.zone], entry.service_kind ? SERVICE_KIND_LABEL[entry.service_kind] : null]
+  return [...new Set(labels.filter((x): x is string => !!x))]
 }
 
 // ───────── Consentimiento (§3.13.7) ─────────

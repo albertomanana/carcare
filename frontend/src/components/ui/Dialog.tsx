@@ -1,6 +1,6 @@
 import * as RD from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import type { ComponentProps, ReactNode } from 'react'
+import { type ComponentProps, type ReactNode, useRef } from 'react'
 import { cn } from '@/lib/cn'
 
 export const Dialog = RD.Root
@@ -25,6 +25,17 @@ export interface DialogContentProps extends Omit<ComponentProps<typeof RD.Conten
 
 const SIZES = { sm: 'md:max-w-sm', md: 'md:max-w-lg', lg: 'md:max-w-2xl', xl: 'md:max-w-4xl' }
 
+/**
+ * Último elemento con foco fuera de un diálogo o un menú. Hace falta porque un campo con `autoFocus` se enfoca antes
+ * de que Radix avise de la apertura, y porque el elemento de menú que abre un diálogo desaparece al cerrarse el menú.
+ */
+let lastFocusOutside: HTMLElement | null = null
+if (typeof document !== 'undefined') {
+  document.addEventListener('focusin', (event) => {
+    if (event.target instanceof HTMLElement && !event.target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]')) lastFocusOutside = event.target
+  })
+}
+
 export function DialogContent({
   title,
   description,
@@ -34,8 +45,12 @@ export function DialogContent({
   headerAside,
   className,
   children,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: DialogContentProps) {
+  // Radix solo devuelve el foco a un `RD.Trigger`, y aquí los diálogos se abren con `open`: sin esto, al cerrar se queda en <body>
+  const returnFocusTo = useRef<HTMLElement | null>(null)
   const placement = {
     center:
       'left-1/2 top-1/2 w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-hero data-[state=open]:animate-pop-in',
@@ -59,6 +74,21 @@ export function DialogContent({
           className,
         )}
         {...props}
+        onOpenAutoFocus={(event) => {
+          const active = document.activeElement
+          // Un diálogo abierto desde otro vuelve al de fuera; con `autoFocus`, el foco ya está dentro y se usa el último de fuera
+          const opener = active instanceof HTMLElement && !(event.currentTarget as Node).contains(active) ? active : null
+          returnFocusTo.current = opener
+          onOpenAutoFocus?.(event)
+        }}
+        onCloseAutoFocus={(event) => {
+          onCloseAutoFocus?.(event)
+          if (event.defaultPrevented) return
+          event.preventDefault()
+          // Si el botón que lo abrió ya no existe (la acción lo ha quitado), el foco sigue en el contenido de la página
+          const target = [returnFocusTo.current, lastFocusOutside].find((el) => el?.isConnected) ?? document.getElementById('contenido')
+          target?.focus()
+        }}
       >
         {variant !== 'center' && <div aria-hidden className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-line-strong md:hidden" />}
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 pb-4 pt-4 md:px-6 md:pt-5">

@@ -86,7 +86,7 @@ export function LineItemsEditor<T extends FieldValues & WithItems>({ form, showP
           aria-hidden
           className={cn(
             'hidden gap-2 px-1 pb-2 text-xs font-medium text-fg-subtle @3xl:grid',
-            showPrices ? '@3xl:grid-cols-[120px_minmax(0,1fr)_110px_72px_104px_92px_40px]' : '@3xl:grid-cols-[120px_minmax(0,1fr)_110px_72px_40px]',
+            showPrices ? '@3xl:grid-cols-[148px_minmax(0,1fr)_110px_72px_104px_92px_40px]' : '@3xl:grid-cols-[148px_minmax(0,1fr)_110px_72px_40px]',
           )}
         >
           <span>Tipo</span>
@@ -108,7 +108,7 @@ export function LineItemsEditor<T extends FieldValues & WithItems>({ form, showP
               key={field.id}
               className={cn(
                 'grid grid-cols-2 gap-2 rounded-card border border-line bg-surface-2/40 p-3 @3xl:items-start @3xl:rounded-control @3xl:border-0 @3xl:bg-transparent @3xl:p-0',
-                showPrices ? '@3xl:grid-cols-[120px_minmax(0,1fr)_110px_72px_104px_92px_40px]' : '@3xl:grid-cols-[120px_minmax(0,1fr)_110px_72px_40px]',
+                showPrices ? '@3xl:grid-cols-[148px_minmax(0,1fr)_110px_72px_104px_92px_40px]' : '@3xl:grid-cols-[148px_minmax(0,1fr)_110px_72px_40px]',
               )}
             >
               <label className="flex min-w-0 flex-col gap-1">

@@ -132,7 +132,7 @@ function CustomerList({ customers }: { customers: Customer[] }) {
         {customers.map((c) => (
           <li
             key={c.id}
-            className="relative flex items-center gap-3 border-b border-line px-1 py-2.5 transition-colors hover:bg-surface-2/60 has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-accent"
+            className="relative flex items-center gap-3 border-b border-line px-1 py-2.5 transition-[background-color] hover:bg-surface-2/60 has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-accent"
           >
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2">

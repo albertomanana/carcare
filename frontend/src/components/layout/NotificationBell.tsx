@@ -144,7 +144,7 @@ function NotificationRow({ notification: n, onMarkRead, onClose }: { notificatio
     </>
   )
   const rowClasses = 'flex w-full items-start gap-2.5 px-4 py-3 text-left'
-  const interactive = 'transition-colors duration-150 hover:bg-surface-3 focus-visible:bg-surface-3'
+  const interactive = 'transition-[background-color] duration-150 hover:bg-surface-3 focus-visible:bg-surface-3'
 
   if (href)
     return (

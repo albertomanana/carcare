@@ -101,7 +101,7 @@ export default function MyRequestsPage() {
 /** Fila: coche y asunto a la izquierda; taller, fecha y estado debajo (móvil) o a la derecha (escritorio). */
 function RequestRow({ request: r, href }: { request: RepairRequest; href: string }) {
   return (
-    <li className="relative flex flex-col gap-1.5 px-1 py-3 transition-colors hover:bg-surface-2/60 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-accent sm:flex-row sm:items-center sm:gap-4">
+    <li className="relative flex flex-col gap-1.5 px-1 py-3 transition-[background-color] hover:bg-surface-2/60 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-accent sm:flex-row sm:items-center sm:gap-4">
       <div className="min-w-0 flex-1">
         <p className="flex min-w-0 items-baseline gap-2">
           <Link to={href} className="min-w-0 truncate font-medium text-fg outline-none after:absolute after:inset-0 after:content-['']">

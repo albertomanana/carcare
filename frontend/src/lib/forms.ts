@@ -6,6 +6,7 @@ import { errorMessage, isApiError } from '@/api/client'
  * Lleva los errores 422 del servidor a los campos del formulario.
  * `map` traduce nombres de campo del API a nombres del formulario (p. ej. 'items.0.name').
  * Devuelve los mensajes que no se pudieron asociar a ningún campo conocido.
+ * El foco va al primer campo con error: el botón de enviar suele estar lejos y el error quedaría fuera de la vista.
  */
 export function applyServerErrors<T extends FieldValues>(
   error: unknown,
@@ -15,11 +16,13 @@ export function applyServerErrors<T extends FieldValues>(
 ): string[] {
   if (!isApiError(error) || error.status !== 422) return []
   const orphan: string[] = []
+  let focused = false
   for (const [field, messages] of Object.entries(error.errors)) {
     const target = map[field] ?? field
     const root = target.split('.')[0]
     if (knownFields.includes(target) || knownFields.includes(root)) {
-      setError(target as Path<T>, { type: 'server', message: messages[0] })
+      setError(target as Path<T>, { type: 'server', message: messages[0] }, { shouldFocus: !focused })
+      focused = true
     } else {
       orphan.push(...messages)
     }

@@ -204,7 +204,7 @@ function VehicleRow({ vehicle }: { vehicle: Vehicle }) {
   const ctx = useWorkspace()
   const open = vehicle.stats.open_work_order
   return (
-    <li className="relative flex flex-col gap-0.5 py-3 transition-colors hover:bg-surface-2/60 has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-accent sm:flex-row sm:items-baseline sm:gap-4">
+    <li className="relative flex flex-col gap-0.5 py-3 transition-[background-color] hover:bg-surface-2/60 has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-accent sm:flex-row sm:items-baseline sm:gap-4">
       <Link to={`${ctx.base}/vehiculos/${vehicle.id}`} className="stretched min-w-0 truncate font-medium text-fg outline-none after:absolute after:inset-0 after:content-[''] sm:flex-1">
         {vehicle.display_name}
       </Link>

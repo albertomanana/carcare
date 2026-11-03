@@ -1,6 +1,6 @@
 import { CircleSlash } from 'lucide-react'
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { Navigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { errorMessage, isApiError } from '@/api/client'
 import { useAcceptQuote, useCancelRepairRequest, useRejectQuote, useRepairRequest, useUpdateRepairRequest } from '@/api/hooks/repairRequests'
@@ -17,6 +17,7 @@ import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { VehicleThumb } from '@/components/vehicles/VehicleVisuals'
+import { useAuth } from '@/features/auth/auth-context'
 import { telHref } from '@/features/workshop/components/floor'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -27,7 +28,7 @@ import { plural } from '@/lib/text'
 import { QuoteCard } from './components/QuoteCard'
 import { RequestStatusLabel } from './components/RequestStatusLabel'
 import { SharedHistoryList } from './components/SharedHistoryList'
-import { isOpenRequest, vehicleCopyFacts } from './requestStatus'
+import { isOpenRequest, requestWorkspaceId, vehicleCopyFacts } from './requestStatus'
 
 /**
  * E16 · detalle de una solicitud para el particular: estado, presupuesto (aceptar o rechazar), cancelar,
@@ -35,6 +36,7 @@ import { isOpenRequest, vehicleCopyFacts } from './requestStatus'
  */
 export default function RequestDetailPage() {
   const ctx = useWorkspace()
+  const { workspaces } = useAuth()
   const { requestId } = useParams()
   const id = Number(requestId) || undefined
   const query = useRepairRequest(id)
@@ -61,6 +63,8 @@ export default function RequestDetailPage() {
   }
 
   if (query.isPending) return <DetailSkeleton back={back} />
+  const home = requestWorkspaceId(query.data, workspaces)
+  if (home !== null && home !== ctx.id) return <Navigate to={`/app/${home}/solicitudes/${id}`} replace />
   return <RequestDetail request={query.data} back={back} />
 }
 
@@ -182,7 +186,10 @@ function OrderTracking({ request: r }: { request: RepairRequest }) {
     )
   const status = WORK_ORDER_STATUS[wo.status]
   const Icon = status.icon
-  const date = (value: string | null) => (value ? <span className="tabular">{formatDate(value)}</span> : 'Pendiente')
+  const cancelled = wo.status === 'cancelled'
+  const date = (value: string | null) => (value ? <span className="tabular">{formatDate(value)}</span> : cancelled ? 'No aplica' : 'Pendiente')
+  // Solo se avisa al pasar a `ready` (§3.13.6): una vez lista, entregada o cancelada ya no hay nada que prometer
+  const willNotify = !cancelled && wo.status !== 'ready' && wo.status !== 'delivered'
   return (
     <Section id="orden" title="Seguimiento de la orden" description={`Aceptaste el presupuesto y ${r.workshop.name} abrió una orden con sus líneas.`}>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -200,7 +207,7 @@ function OrderTracking({ request: r }: { request: RepairRequest }) {
           { label: 'Entregado', value: date(wo.delivered_at), empty: !wo.delivered_at },
         ]}
       />
-      <p className="mt-2 text-xs text-fg-subtle">El estado lo cambia el taller. Te avisaremos cuando esté listo.</p>
+      <p className="mt-2 text-xs text-fg-subtle">El estado lo cambia el taller.{willNotify && ' Te avisaremos cuando esté listo.'}</p>
     </Section>
   )
 }
