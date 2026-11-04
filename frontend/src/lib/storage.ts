@@ -22,5 +22,7 @@ export const STORAGE_KEYS = {
   sidebarCollapsed: 'carcare.sidebarCollapsed',
   zoneView: 'carcare.zoneView',
   ordersView: 'carcare.ordersView',
+  /** 'off' si en la portada se pulsó "Detener animación": el coche 3D ya no se monta solo. */
+  landing3d: 'carcare.landing3d',
   lastVehicle: (ws: number) => `carcare.lastVehicle.${ws}`,
 } as const

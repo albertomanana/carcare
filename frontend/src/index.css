@@ -225,6 +225,16 @@
     font-feature-settings: 'cv11', 'ss01';
   }
 
+  /*
+   * Portada: la cabecera es fija (sticky, 4rem + 1px de borde). Al volver con Shift+Tab a un control que había quedado
+   * por encima de la ventana, el navegador lo dejaba pegado arriba, tapado del todo por la cabecera (WCAG 2.4.11, visto
+   * a 768 px el 04/11). Con este margen queda debajo, con el anillo de foco entero. Las anclas de sección compensan los
+   * 0,5rem de más con -scroll-mt-2 para seguir llegando justo bajo la cabecera.
+   */
+  :root:has([data-portada]) {
+    scroll-padding-top: 4.5rem;
+  }
+
   /* Foco visible: anillo lima de 2px con 2px de separación */
   :focus-visible {
     outline: 2px solid var(--accent);

@@ -13,6 +13,7 @@ import { Logo, LogoMark } from './Logo'
 import { MobileNav } from './MobileNav'
 import { navItems, SETTINGS_ITEM, type NavItem } from './nav'
 import { NotificationBell } from './NotificationBell'
+import { SkipLink } from './SkipLink'
 import { UserMenu } from './UserMenu'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
@@ -133,14 +134,7 @@ export function AppShell() {
     window.scrollTo({ top: 0 })
   }, [location.pathname])
 
-  const skipLink = (
-    <a
-      href="#contenido"
-      className="sr-only z-[70] rounded-control bg-accent px-4 py-2 text-sm font-semibold text-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
-    >
-      Saltar al contenido
-    </a>
-  )
+  const skipLink = <SkipLink />
 
   const content = (
     <Suspense fallback={<PageSpinner />}>
