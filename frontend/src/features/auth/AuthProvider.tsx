@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useMemo } from 'react'
 import { onUnauthorized } from '@/api/client'
-import { useMeQuery } from '@/api/hooks/auth'
+import { clearAuthenticatedQueries, useMeQuery } from '@/api/hooks/auth'
 import { qk } from '@/api/keys'
 import { type AuthContextValue, AuthContext } from './auth-context'
 
@@ -14,8 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () =>
       onUnauthorized(() => {
         if (qc.getQueryData(qk.me)) {
-          qc.clear()
-          qc.setQueryData(qk.me, null)
+          clearAuthenticatedQueries(qc)
         }
       }),
     [qc],

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { api, ensureCsrfCookie, isApiError } from '../client'
 import { qk } from '../keys'
@@ -20,6 +20,12 @@ export function useMeQuery() {
     staleTime: 5 * 60_000,
     retry: (count, err) => !(isApiError(err) && err.status < 500 && err.status !== 0) && count < 2,
   })
+}
+
+/** Limpia datos privados sin eliminar la consulta de sesión que observa AuthProvider. */
+export function clearAuthenticatedQueries(qc: QueryClient): void {
+  qc.removeQueries({ predicate: (query) => query.queryKey[0] !== qk.me[0] })
+  qc.setQueryData(qk.me, null)
 }
 
 export function useLogin() {
@@ -77,10 +83,16 @@ export function useResetPassword() {
 export function useLogout() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => api.post<void>('/auth/logout'),
+    mutationFn: async () => {
+      await ensureCsrfCookie()
+      await api.post<void>('/auth/logout')
+    },
+    onMutate: async () => {
+      await qc.cancelQueries()
+      clearAuthenticatedQueries(qc)
+    },
     onSettled: () => {
-      qc.clear()
-      qc.setQueryData(qk.me, null)
+      clearAuthenticatedQueries(qc)
     },
   })
 }
@@ -105,8 +117,7 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: (input: { password: string }) => api.delete<void>('/me', input),
     onSuccess: () => {
-      qc.clear()
-      qc.setQueryData(qk.me, null)
+      clearAuthenticatedQueries(qc)
     },
   })
 }
