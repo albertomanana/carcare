@@ -1,0 +1,148 @@
+Comprobación final · 2026-11-04T09:25:37.455Z · http://localhost:5186/
+
+── 1280×800 · tema oscuro
+OK   sin desbordes horizontales · {"scrollW":1280,"clientW":1280,"out":[]}
+OK   contenido visible desde el principio (98 bloques de texto) · El coche, por zonas / El historial y los gastos de cada coche / Órdenes, elevadores y equipo del taller / Pide presupuesto a un taller sin salir de CarCare / Cómo trata tus datos / Crea tu cuenta y añade tu primer coche
+OK   escritorio: el coche 3D se monta solo, en reposo, con "Detener animación" · {"canvas":1,"button":"Detener animación","storage":null,"caption":"Modelo genérico, sin marca.","three":[{"url":"HeroCanvas-DNveNZ9N.js","t":3302},{"url":"three-D-zc2tF-.js","t":3302}]}
+     captura portada-1280-3d.webp (45 KB)
+OK   las 7 capturas de la app cargan y tienen texto alternativo · particular-zonas-640.webp, particular-gastos-640.webp, taller-tablero-640.webp, taller-3d-640.webp, solicitudes-directorio-640.webp, solicitudes-recibida-640.webp, solicitudes-presupuesto-640.webp
+OK   teclado 1280: Tab, 13 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Particulares → Talleres → Presupuestos → Principios → Cambiar a tema claro → Entrar → Crear cuenta → Ver capturas → Detener animación → Crear cuenta → Ya tengo cuenta
+OK   teclado 1280: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 1280: Shift+Tab desde el final, 13 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 1280: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 1280: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 1280: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":197,"cabeceraBottom":65}
+OK   contraste del pie "Modelo genérico, sin marca." calculado a mano: 8.28:1 (AA pide 4,5:1 a 12px) · {"texto":"Modelo genérico, sin marca.","color":"rgb(165, 176, 181)","fondo":"rgb(17, 21, 24)","fondoDe":"el propio texto","ratio":8.28,"size":"12px"}
+OK   "Detener animación" (Enter) quita la escena, guarda la preferencia y el foco sigue en el botón · {"canvas":0,"button":"Ver en 3D","storage":"off","caption":"Modelo genérico, sin marca.","foco":"Ver en 3D"}
+OK   axe 1280 oscuro: 24 reglas pasan, 0 incumplidas
+OK   cambio de tema con el teclado ("Cambiar a tema claro") · {"antes":"dark","theme":"light","foco":"Cambiar a tema oscuro"}
+OK   sin errores en la consola · []
+
+── 768×1024 · tema oscuro
+OK   sin desbordes horizontales · {"scrollW":768,"clientW":768,"out":[]}
+OK   contenido visible desde el principio (98 bloques de texto) · El coche, por zonas / El historial y los gastos de cada coche / Órdenes, elevadores y equipo del taller / Pide presupuesto a un taller sin salir de CarCare / Cómo trata tus datos / Crea tu cuenta y añade tu primer coche
+OK   sin 3D al cargar (ni descarga de three.js) y con "Ver en 3D" · {"canvas":0,"button":"Ver en 3D","storage":null,"caption":"Modelo genérico, sin marca."}
+     captura portada-768-arriba.webp (39 KB)
+OK   las 7 capturas de la app cargan y tienen texto alternativo · particular-zonas-640.webp, particular-gastos-640.webp, taller-tablero-640.webp, taller-3d-640.webp, solicitudes-directorio-640.webp, solicitudes-recibida-640.webp, solicitudes-presupuesto-640.webp
+OK   teclado 768: Tab, 13 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Particulares → Talleres → Presupuestos → Principios → Cambiar a tema claro → Entrar → Crear cuenta → Ver capturas → Ver en 3D → Crear cuenta → Ya tengo cuenta
+OK   teclado 768: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 768: Shift+Tab desde el final, 13 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 768: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 768: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 768: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":165,"cabeceraBottom":65}
+OK   contraste del pie "Modelo genérico, sin marca." calculado a mano: 8.28:1 (AA pide 4,5:1 a 12px) · {"texto":"Modelo genérico, sin marca.","color":"rgb(165, 176, 181)","fondo":"rgb(17, 21, 24)","fondoDe":"el propio texto","ratio":8.28,"size":"12px"}
+OK   "Ver en 3D" (Enter) descarga la escena a petición y el foco sigue en el botón · {"durante":"Cargando 3D…","despues":"Detener animación","foco":"Detener animación","three":[{"url":"HeroCanvas-DNveNZ9N.js","t":18428},{"url":"three-D-zc2tF-.js","t":18428}]}
+OK   "Detener animación" (Enter) quita la escena, guarda la preferencia y el foco sigue en el botón · {"canvas":0,"button":"Ver en 3D","storage":"off","caption":"Modelo genérico, sin marca.","foco":"Ver en 3D"}
+OK   axe 768 oscuro: 24 reglas pasan, 0 incumplidas
+     axe 768 oscuro: por revisar a mano: color-contrast: .px-2 → Element's background color could not be determined because it is overlapped by another element
+     el "por revisar" de color-contrast es el pie del coche: 8.28:1 con su propio fondo (rgb(17, 21, 24))
+OK   sin errores en la consola · []
+
+── 360×780 · tema oscuro
+OK   sin desbordes horizontales · {"scrollW":360,"clientW":360,"out":[]}
+OK   contenido visible desde el principio (98 bloques de texto) · El coche, por zonas / El historial y los gastos de cada coche / Órdenes, elevadores y equipo del taller / Pide presupuesto a un taller sin salir de CarCare / Cómo trata tus datos / Crea tu cuenta y añade tu primer coche
+OK   sin 3D al cargar (ni descarga de three.js) y con "Ver en 3D" · {"canvas":0,"button":"Ver en 3D","storage":null,"caption":"Modelo genérico, sin marca."}
+     captura portada-360-arriba.webp (26 KB)
+OK   las 7 capturas de la app cargan y tienen texto alternativo · particular-zonas-640.webp, particular-gastos-640.webp, taller-tablero-640.webp, taller-3d-640.webp, solicitudes-directorio-640.webp, solicitudes-recibida-640.webp, solicitudes-presupuesto-640.webp
+OK   teclado 360: Tab, 9 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Cambiar a tema claro → Entrar → Crear cuenta → Ver capturas → Ver en 3D → Crear cuenta → Ya tengo cuenta
+OK   teclado 360: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 360: Shift+Tab desde el final, 9 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 360: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 360: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 360: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":165,"cabeceraBottom":65}
+OK   contraste del pie "Modelo genérico, sin marca." calculado a mano: 8.28:1 (AA pide 4,5:1 a 12px) · {"texto":"Modelo genérico, sin marca.","color":"rgb(165, 176, 181)","fondo":"rgb(17, 21, 24)","fondoDe":"el propio texto","ratio":8.28,"size":"12px"}
+OK   "Ver en 3D" (Enter) descarga la escena a petición y el foco sigue en el botón · {"durante":"Cargando 3D…","despues":"Detener animación","foco":"Detener animación","three":[{"url":"HeroCanvas-DNveNZ9N.js","t":15967},{"url":"three-D-zc2tF-.js","t":15967}]}
+     captura portada-360-ver-en-3d.webp (26 KB)
+OK   "Detener animación" (Enter) quita la escena, guarda la preferencia y el foco sigue en el botón · {"canvas":0,"button":"Ver en 3D","storage":"off","caption":"Modelo genérico, sin marca.","foco":"Ver en 3D"}
+OK   axe 360 oscuro: 24 reglas pasan, 0 incumplidas
+OK   sin errores en la consola · []
+
+── 1280×800 · tema claro
+OK   sin desbordes horizontales · {"scrollW":1280,"clientW":1280,"out":[]}
+OK   contenido visible desde el principio (98 bloques de texto) · El coche, por zonas / El historial y los gastos de cada coche / Órdenes, elevadores y equipo del taller / Pide presupuesto a un taller sin salir de CarCare / Cómo trata tus datos / Crea tu cuenta y añade tu primer coche
+OK   escritorio: el coche 3D se monta solo, en reposo, con "Detener animación" · {"canvas":1,"button":"Detener animación","storage":null,"caption":"Modelo genérico, sin marca.","three":[{"url":"HeroCanvas-DNveNZ9N.js","t":646},{"url":"three-D-zc2tF-.js","t":646}]}
+     captura portada-1280-claro.webp (45 KB)
+OK   las 7 capturas de la app cargan y tienen texto alternativo · particular-zonas-640.webp, particular-gastos-640.webp, taller-tablero-640.webp, taller-3d-640.webp, solicitudes-directorio-640.webp, solicitudes-recibida-640.webp, solicitudes-presupuesto-640.webp
+OK   teclado 1280: Tab, 13 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Particulares → Talleres → Presupuestos → Principios → Cambiar a tema oscuro → Entrar → Crear cuenta → Ver capturas → Detener animación → Crear cuenta → Ya tengo cuenta
+OK   teclado 1280: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 1280: Shift+Tab desde el final, 13 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 1280: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 1280: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 1280: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":197,"cabeceraBottom":65}
+OK   contraste del pie "Modelo genérico, sin marca." calculado a mano: 6.49:1 (AA pide 4,5:1 a 12px) · {"texto":"Modelo genérico, sin marca.","color":"rgb(79, 90, 96)","fondo":"rgb(246, 245, 241)","fondoDe":"el propio texto","ratio":6.49,"size":"12px"}
+OK   "Detener animación" (Enter) quita la escena, guarda la preferencia y el foco sigue en el botón · {"canvas":0,"button":"Ver en 3D","storage":"off","caption":"Modelo genérico, sin marca.","foco":"Ver en 3D"}
+OK   axe 1280 claro: 24 reglas pasan, 0 incumplidas
+OK   cambio de tema con el teclado ("Cambiar a tema oscuro") · {"antes":"light","theme":"dark","foco":"Cambiar a tema claro"}
+OK   sin errores en la consola · []
+
+── 768×1024 · tema claro
+OK   sin desbordes horizontales · {"scrollW":768,"clientW":768,"out":[]}
+OK   contenido visible desde el principio (98 bloques de texto) · El coche, por zonas / El historial y los gastos de cada coche / Órdenes, elevadores y equipo del taller / Pide presupuesto a un taller sin salir de CarCare / Cómo trata tus datos / Crea tu cuenta y añade tu primer coche
+OK   sin 3D al cargar (ni descarga de three.js) y con "Ver en 3D" · {"canvas":0,"button":"Ver en 3D","storage":null,"caption":"Modelo genérico, sin marca."}
+     captura portada-768-claro.webp (40 KB)
+OK   las 7 capturas de la app cargan y tienen texto alternativo · particular-zonas-640.webp, particular-gastos-640.webp, taller-tablero-640.webp, taller-3d-640.webp, solicitudes-directorio-640.webp, solicitudes-recibida-640.webp, solicitudes-presupuesto-640.webp
+OK   teclado 768: Tab, 13 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Particulares → Talleres → Presupuestos → Principios → Cambiar a tema oscuro → Entrar → Crear cuenta → Ver capturas → Ver en 3D → Crear cuenta → Ya tengo cuenta
+OK   teclado 768: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 768: Shift+Tab desde el final, 13 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 768: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 768: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 768: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":165,"cabeceraBottom":65}
+OK   contraste del pie "Modelo genérico, sin marca." calculado a mano: 6.49:1 (AA pide 4,5:1 a 12px) · {"texto":"Modelo genérico, sin marca.","color":"rgb(79, 90, 96)","fondo":"rgb(246, 245, 241)","fondoDe":"el propio texto","ratio":6.49,"size":"12px"}
+OK   axe 768 claro: 24 reglas pasan, 0 incumplidas
+     axe 768 claro: por revisar a mano: color-contrast: .px-2 → Element's background color could not be determined because it is overlapped by another element
+     el "por revisar" de color-contrast es el pie del coche: 6.49:1 con su propio fondo (rgb(246, 245, 241))
+OK   sin errores en la consola · []
+
+── 360×780 · tema claro
+OK   sin desbordes horizontales · {"scrollW":360,"clientW":360,"out":[]}
+OK   contenido visible desde el principio (98 bloques de texto) · El coche, por zonas / El historial y los gastos de cada coche / Órdenes, elevadores y equipo del taller / Pide presupuesto a un taller sin salir de CarCare / Cómo trata tus datos / Crea tu cuenta y añade tu primer coche
+OK   sin 3D al cargar (ni descarga de three.js) y con "Ver en 3D" · {"canvas":0,"button":"Ver en 3D","storage":null,"caption":"Modelo genérico, sin marca."}
+     captura portada-360-claro.webp (27 KB)
+OK   las 7 capturas de la app cargan y tienen texto alternativo · particular-zonas-640.webp, particular-gastos-640.webp, taller-tablero-640.webp, taller-3d-640.webp, solicitudes-directorio-640.webp, solicitudes-recibida-640.webp, solicitudes-presupuesto-640.webp
+OK   teclado 360: Tab, 9 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Cambiar a tema oscuro → Entrar → Crear cuenta → Ver capturas → Ver en 3D → Crear cuenta → Ya tengo cuenta
+OK   teclado 360: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 360: Shift+Tab desde el final, 9 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 360: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 360: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 360: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":165,"cabeceraBottom":65}
+OK   contraste del pie "Modelo genérico, sin marca." calculado a mano: 6.49:1 (AA pide 4,5:1 a 12px) · {"texto":"Modelo genérico, sin marca.","color":"rgb(79, 90, 96)","fondo":"rgb(246, 245, 241)","fondoDe":"el propio texto","ratio":6.49,"size":"12px"}
+OK   axe 360 claro: 24 reglas pasan, 0 incumplidas
+OK   sin errores en la consola · []
+
+── 1280×800 con "Detener animación" guardado
+OK   al volver, el 3D no se monta solo ni se descarga three.js · {"canvas":0,"button":"Ver en 3D","storage":"off","caption":"Modelo genérico, sin marca."}
+OK   "Ver en 3D" vuelve a montarlo y borra la preferencia · {"canvas":1,"button":"Detener animación","storage":null,"caption":"Modelo genérico, sin marca."}
+OK   sin errores en la consola · []
+
+── 1280×800 con prefers-reduced-motion: reduce · tema oscuro
+OK   movimiento reducido: a los 8 s sigue la imagen fija, sin three.js, con "Ver en 3D" · {"canvas":0,"button":"Ver en 3D","storage":null,"caption":"Modelo genérico, sin marca."}
+OK   teclado 1280 reducido: Tab, 13 paradas, todas con foco visible, en pantalla y sin tapar (ni en parte) · Saltar al contenido → CarCare, inicio → Particulares → Talleres → Presupuestos → Principios → Cambiar a tema claro → Entrar → Crear cuenta → Ver capturas → Ver en 3D → Crear cuenta → Ya tengo cuenta
+OK   teclado 1280 reducido: la primera parada es "Saltar al contenido" · Saltar al contenido
+OK   teclado 1280 reducido: Shift+Tab desde el final, 13 paradas, todas visibles y sin tapar por la cabecera fija
+OK   teclado 1280 reducido: "Saltar al contenido" no se ve sin foco y con foco sale entero, con su relleno · {"sinFoco":{"bottom":-4},"conFoco":{"text":"Saltar al contenido","top":12,"height":36,"padding":"16px 8px"}}
+OK   teclado 1280 reducido: Enter en "Saltar al contenido" lleva el foco al contenido principal · {"active":"contenido","hash":"#contenido"}
+OK   teclado 1280 reducido: "Ver capturas" (Enter) baja a Particulares y el título queda bajo la cabecera, no tapado · {"hash":"#particulares","tituloTop":197,"cabeceraBottom":65}
+OK   a petición (Enter) sí se monta; con movimiento reducido la escena no gira sola · {"canvas":1,"button":"Detener animación","storage":null,"caption":"Modelo genérico, sin marca."}
+OK   sin errores en la consola · []
+
+── 1280×800 con prefers-reduced-motion: reduce · tema claro
+OK   movimiento reducido: a los 8 s sigue la imagen fija, sin three.js, con "Ver en 3D" · {"canvas":0,"button":"Ver en 3D","storage":null,"caption":"Modelo genérico, sin marca."}
+OK   axe 1280 claro reducido: 24 reglas pasan, 0 incumplidas
+OK   sin errores en la consola · []
+
+── 1280×800 sin el JS del 3D (three/HeroCanvas/Stage bloqueados)
+OK   todo el texto y la imagen del coche siguen visibles · {"ok":true,"opacity":"1","textos":98}
+OK   a los 20 s avisa de que se queda la imagen y quita el botón · {"canvas":0,"button":null,"storage":null,"caption":"No se ha podido cargar el 3D; se queda la imagen."}
+     errores de consola esperables (chunk bloqueado a propósito): Failed to load resource: net::ERR_FAILED | Failed to load resource: net::ERR_FAILED | Failed to load resource: net::ERR_FAILED | TypeError: Failed to fetch dynamically imported module: http://localhost:5186/assets/HeroCanvas-DNveNZ9N.js
+
+── 1280×800 sin WebGL (?sin3d)
+OK   solo la imagen, sin botón y sin three.js · {"canvas":0,"button":null,"storage":null,"caption":"Modelo genérico, sin marca."}
+OK   sin errores en la consola · []
+
+── capturas
+     captura portada-1280-zonas.webp (65 KB)
+     captura portada-1280-solicitudes.webp (56 KB)
+     captura portada-1280-saltar.webp (4 KB)
+     captura portada-360-completa.webp (273 KB)
+
+TODO OK

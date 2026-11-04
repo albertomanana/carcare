@@ -1,0 +1,71 @@
+#1 despues-1280 FCP=248 LCP=416 load=180 KB=704 (antes de load 215, 3D 283, img 114) (IMG /img/portada-coche-1280.webp) canvas=756 three=453ms /assets/HeroCanvas-DNveNZ9N.js (5 KB) overflowX=false
+#2 despues-1280 FCP=352 LCP=596 load=284 KB=704 (antes de load 215, 3D 283, img 114) (IMG /img/portada-coche-1280.webp) canvas=965 three=652ms /assets/HeroCanvas-DNveNZ9N.js (5 KB) overflowX=false
+#3 despues-1280 FCP=252 LCP=512 load=183 KB=704 (antes de load 215, 3D 283, img 114) (IMG /img/portada-coche-1280.webp) canvas=847 three=544ms /assets/HeroCanvas-DNveNZ9N.js (5 KB) overflowX=false
+#4 despues-1280 FCP=244 LCP=420 load=176 KB=704 (antes de load 215, 3D 283, img 114) (IMG /img/portada-coche-1280.webp) canvas=761 three=458ms /assets/HeroCanvas-DNveNZ9N.js (5 KB) overflowX=false
+#5 despues-1280 FCP=248 LCP=436 load=179 KB=704 (antes de load 215, 3D 283, img 114) (IMG /img/portada-coche-1280.webp) canvas=793 three=486ms /assets/HeroCanvas-DNveNZ9N.js (5 KB) overflowX=false
+{
+  "label": "despues-1280",
+  "viewport": "1280x800",
+  "reduced": false,
+  "throttle": false,
+  "runs": 5,
+  "medianFCP": 248,
+  "medianLCP": 436,
+  "medianCanvasAt": 793,
+  "medianLoad": 180,
+  "medianTotalKB": 704,
+  "medianBeforeLoadKB": 215,
+  "fresh": true,
+  "last": {
+    "fcp": 248,
+    "lcp": 436,
+    "lcpEl": "IMG /img/portada-coche-1280.webp",
+    "canvasAt": 793,
+    "canvas": 1,
+    "overflowX": false,
+    "loadAt": 179,
+    "totalKB": 704,
+    "beforeLoadKB": 215,
+    "threeKB": 283,
+    "imgKB": 114,
+    "jsKbBeforeLoadEnd": null,
+    "js": [
+      "31ms /assets/index-U952dBMt.js (58 KB)",
+      "31ms /assets/rolldown-runtime-XKyaHtl9.js (1 KB)",
+      "31ms /assets/react-CUypX6EQ.js (66 KB)",
+      "31ms /assets/preload-helper-BLdHbfdN.js (1 KB)",
+      "31ms /assets/createLucideIcon-usY-dVhU.js (2 KB)",
+      "33ms /assets/vendor-BWeId8my.js (10 KB)",
+      "34ms /assets/Button-D9Opc4fY.js (42 KB)",
+      "34ms /assets/dist-BChCYwpf.js (4 KB)",
+      "35ms /assets/es2015-DM4FBfJP.js (8 KB)",
+      "35ms /assets/storage-V9NUpwXD.js (1 KB)",
+      "35ms /assets/labels-Bl_ECS0A.js (4 KB)",
+      "208ms /assets/LandingPage-DC6vZVyz.js (8 KB)",
+      "208ms /assets/arrow-right-F7p0wHW0.js (1 KB)",
+      "208ms /assets/printer-DVLIOT7P.js (1 KB)",
+      "208ms /assets/visor3d-Cn5RCIam.js (13 KB)",
+      "486ms /assets/HeroCanvas-DNveNZ9N.js (5 KB)",
+      "486ms /assets/three-D-zc2tF-.js (263 KB)",
+      "486ms /assets/Stage-fCqLb-tT.js (13 KB)",
+      "487ms /assets/useCanvasLabel-XPhzOAMG.js (1 KB)",
+      "487ms /assets/fit-DO-Qiclh.js (1 KB)"
+    ],
+    "three": [
+      "486ms /assets/HeroCanvas-DNveNZ9N.js (5 KB)",
+      "486ms /assets/three-D-zc2tF-.js (263 KB)"
+    ],
+    "other": [
+      "0ms document / (1 KB)",
+      "35ms stylesheet /assets/index-BCXmTJmH.css (16 KB)",
+      "225ms font /assets/inter-latin-wght-normal-Dx4kXJAl.woff2 (47 KB)",
+      "232ms fetch /api/v1/me (1 KB)",
+      "266ms image /img/portada-coche-1280.webp (39 KB)",
+      "399ms font /assets/space-grotesk-latin-wght-normal-BhU9QXUp.woff2 (22 KB)",
+      "399ms image /img/portada/particular-zonas-640.webp (17 KB)",
+      "399ms image /img/portada/particular-gastos-640.webp (16 KB)",
+      "399ms image /img/portada/taller-tablero-640.webp (22 KB)",
+      "399ms image /img/portada/taller-3d-640.webp (20 KB)"
+    ]
+  }
+}

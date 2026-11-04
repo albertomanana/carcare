@@ -1,0 +1,6 @@
+#1 canvas=- tareas largas=[[127,58]] suma=58 bloqueo(>50)=8 max=58
+#2 canvas=- tareas largas=[] suma=0 bloqueo(>50)=0 max=0
+#3 canvas=- tareas largas=[] suma=0 bloqueo(>50)=0 max=0
+#4 canvas=- tareas largas=[] suma=0 bloqueo(>50)=0 max=0
+#5 canvas=- tareas largas=[[105,52]] suma=52 bloqueo(>50)=2 max=52
+{"medianaBloqueo":0,"medianaMax":0,"medianaSuma":0}

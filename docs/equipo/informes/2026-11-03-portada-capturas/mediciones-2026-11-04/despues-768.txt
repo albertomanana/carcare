@@ -1,0 +1,66 @@
+#1 despues-768 FCP=396 LCP=652 load=320 KB=579 (antes de load 215, 3D 0, img 272) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#2 despues-768 FCP=240 LCP=440 load=167 KB=579 (antes de load 215, 3D 0, img 272) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#3 despues-768 FCP=156 LCP=272 load=108 KB=579 (antes de load 215, 3D 0, img 272) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#4 despues-768 FCP=160 LCP=260 load=107 KB=579 (antes de load 215, 3D 0, img 272) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#5 despues-768 FCP=276 LCP=492 load=199 KB=579 (antes de load 215, 3D 0, img 272) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+{
+  "label": "despues-768",
+  "viewport": "768x1024",
+  "reduced": false,
+  "throttle": false,
+  "runs": 5,
+  "medianFCP": 240,
+  "medianLCP": 440,
+  "medianCanvasAt": null,
+  "medianLoad": 167,
+  "medianTotalKB": 579,
+  "medianBeforeLoadKB": 215,
+  "fresh": true,
+  "last": {
+    "fcp": 276,
+    "lcp": 492,
+    "lcpEl": "IMG /img/portada-coche-1280.webp",
+    "canvasAt": null,
+    "canvas": 0,
+    "overflowX": false,
+    "loadAt": 199,
+    "totalKB": 579,
+    "beforeLoadKB": 215,
+    "threeKB": 0,
+    "imgKB": 272,
+    "jsKbBeforeLoadEnd": null,
+    "js": [
+      "30ms /assets/index-U952dBMt.js (58 KB)",
+      "30ms /assets/rolldown-runtime-XKyaHtl9.js (1 KB)",
+      "30ms /assets/react-CUypX6EQ.js (66 KB)",
+      "30ms /assets/preload-helper-BLdHbfdN.js (1 KB)",
+      "30ms /assets/createLucideIcon-usY-dVhU.js (2 KB)",
+      "30ms /assets/vendor-BWeId8my.js (10 KB)",
+      "30ms /assets/Button-D9Opc4fY.js (42 KB)",
+      "30ms /assets/dist-BChCYwpf.js (4 KB)",
+      "33ms /assets/es2015-DM4FBfJP.js (8 KB)",
+      "33ms /assets/storage-V9NUpwXD.js (1 KB)",
+      "33ms /assets/labels-Bl_ECS0A.js (4 KB)",
+      "225ms /assets/LandingPage-DC6vZVyz.js (8 KB)",
+      "225ms /assets/arrow-right-F7p0wHW0.js (1 KB)",
+      "225ms /assets/printer-DVLIOT7P.js (1 KB)",
+      "225ms /assets/visor3d-Cn5RCIam.js (13 KB)"
+    ],
+    "three": [],
+    "other": [
+      "0ms document / (1 KB)",
+      "33ms stylesheet /assets/index-BCXmTJmH.css (16 KB)",
+      "249ms font /assets/inter-latin-wght-normal-Dx4kXJAl.woff2 (47 KB)",
+      "255ms fetch /api/v1/me (1 KB)",
+      "292ms image /img/portada-coche-1280.webp (39 KB)",
+      "457ms font /assets/space-grotesk-latin-wght-normal-BhU9QXUp.woff2 (22 KB)",
+      "457ms image /img/portada/particular-zonas-1200.webp (41 KB)",
+      "457ms image /img/portada/particular-gastos-1200.webp (39 KB)",
+      "459ms image /img/portada/taller-tablero-1200.webp (56 KB)",
+      "459ms image /img/portada/taller-3d-1200.webp (47 KB)",
+      "459ms image /img/portada/solicitudes-directorio-640.webp (13 KB)",
+      "459ms image /img/portada/solicitudes-recibida-640.webp (20 KB)",
+      "459ms image /img/portada/solicitudes-presupuesto-640.webp (17 KB)"
+    ]
+  }
+}

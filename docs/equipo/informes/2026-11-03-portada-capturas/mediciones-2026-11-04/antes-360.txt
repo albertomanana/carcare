@@ -1,0 +1,58 @@
+#1 antes-360 FCP=1948 LCP=2828 load=1753 KB=340 (antes de load 214, 3D 0, img 39) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#2 antes-360 FCP=2308 LCP=3224 load=2083 KB=340 (antes de load 214, 3D 0, img 39) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#3 antes-360 FCP=1920 LCP=2696 load=1707 KB=340 (antes de load 214, 3D 0, img 39) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#4 antes-360 FCP=1876 LCP=2636 load=1677 KB=340 (antes de load 214, 3D 0, img 39) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+#5 antes-360 FCP=1872 LCP=2720 load=1694 KB=340 (antes de load 214, 3D 0, img 39) (IMG /img/portada-coche-1280.webp) canvas=- three=- overflowX=false
+{
+  "label": "antes-360",
+  "viewport": "360x780",
+  "reduced": false,
+  "throttle": true,
+  "runs": 5,
+  "medianFCP": 1920,
+  "medianLCP": 2720,
+  "medianCanvasAt": null,
+  "medianLoad": 1707,
+  "medianTotalKB": 340,
+  "medianBeforeLoadKB": 214,
+  "fresh": true,
+  "last": {
+    "fcp": 1872,
+    "lcp": 2720,
+    "lcpEl": "IMG /img/portada-coche-1280.webp",
+    "canvasAt": null,
+    "canvas": 0,
+    "overflowX": false,
+    "loadAt": 1694,
+    "totalKB": 340,
+    "beforeLoadKB": 214,
+    "threeKB": 0,
+    "imgKB": 39,
+    "jsKbBeforeLoadEnd": null,
+    "js": [
+      "233ms /assets/index-DIvE6Bv-.js (58 KB)",
+      "234ms /assets/rolldown-runtime-XKyaHtl9.js (1 KB)",
+      "234ms /assets/react-CUypX6EQ.js (66 KB)",
+      "234ms /assets/preload-helper-BLdHbfdN.js (1 KB)",
+      "234ms /assets/createLucideIcon-usY-dVhU.js (2 KB)",
+      "236ms /assets/vendor-BWeId8my.js (10 KB)",
+      "236ms /assets/Button-D9Opc4fY.js (42 KB)",
+      "236ms /assets/dist-BChCYwpf.js (4 KB)",
+      "236ms /assets/es2015-DM4FBfJP.js (8 KB)",
+      "236ms /assets/storage-SFBsJ4EH.js (1 KB)",
+      "236ms /assets/labels-B1u-rIYu.js (4 KB)",
+      "1794ms /assets/LandingPage-CdGTyspi.js (4 KB)",
+      "1794ms /assets/arrow-right-F7p0wHW0.js (1 KB)",
+      "1794ms /assets/visor3d-DFnzu9Pn.js (13 KB)"
+    ],
+    "three": [],
+    "other": [
+      "0ms document / (1 KB)",
+      "236ms stylesheet /assets/index-CZt8cCvV.css (15 KB)",
+      "1856ms font /assets/inter-latin-wght-normal-Dx4kXJAl.woff2 (47 KB)",
+      "1888ms fetch /api/v1/me (1 KB)",
+      "2174ms image /img/portada-coche-1280.webp (39 KB)",
+      "2586ms font /assets/space-grotesk-latin-wght-normal-BhU9QXUp.woff2 (22 KB)"
+    ]
+  }
+}

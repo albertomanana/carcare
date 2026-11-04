@@ -1,0 +1,6 @@
+#1 [{"start":782,"delay":3,"dur":32}]
+#2 [{"start":957,"delay":7,"dur":64}]
+#3 [{"start":887,"delay":4,"dur":48}]
+#4 [{"start":822,"delay":5,"dur":64}]
+#5 [{"start":4957,"delay":10,"dur":56}]
+{"medianaRetraso":5,"medianaDuracion":56,"max":64}
