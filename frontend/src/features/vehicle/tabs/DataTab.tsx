@@ -155,10 +155,10 @@ export default function DataTab() {
     <div className="space-y-10">
       <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
         <Section title="Identificación" action={editLink}>
-          <DataList items={identity} className="border-y border-line" />
+          <DataList items={identity} className="rounded-card border border-line px-4" />
         </Section>
         <Section title="Mecánica y aspecto">
-          <DataList items={mechanics} className="border-y border-line" />
+          <DataList items={mechanics} className="rounded-card border border-line px-4" />
         </Section>
         <Section
           title="Compra y kilometraje"
@@ -171,10 +171,10 @@ export default function DataTab() {
             </Link>
           }
         >
-          <DataList items={usage} className="border-y border-line" />
+          <DataList items={usage} className="rounded-card border border-line px-4" />
         </Section>
         <Section title="Registro">
-          <DataList items={record} className="border-y border-line" />
+          <DataList items={record} className="rounded-card border border-line px-4" />
         </Section>
       </div>
       <DocumentsSection vehicle={v} />

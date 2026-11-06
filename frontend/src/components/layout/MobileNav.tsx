@@ -58,7 +58,7 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
         end={item.end}
         aria-label={item.mobileLabel ? item.label : undefined}
         className={({ isActive }) =>
-          cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium', isActive ? 'text-fg' : 'text-fg-subtle')
+          cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-[color,scale] duration-150 active:scale-95', isActive ? 'text-accent-ink' : 'text-fg-subtle')
         }
       >
         {({ isActive }) => (
@@ -73,19 +73,19 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
 
   return (
     <>
-      <nav aria-label="Navegación principal" className="no-print safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:hidden">
+      <nav aria-label="Navegación principal" className="no-print safe-bottom glass fixed inset-x-0 bottom-0 z-30 border-t border-line/60 md:hidden">
         <div className="mx-auto flex max-w-lg items-stretch px-1">
           {primary.slice(0, 2).map(tab)}
           <button
             type="button"
             onClick={() => setAddOpen(true)}
             disabled={!ctx}
-            className="flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium text-fg-subtle disabled:opacity-50"
+            className="group flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium text-fg-subtle disabled:opacity-50"
           >
             <span
               aria-hidden
               className={cn(
-                'grid size-8 place-items-center rounded-full transition-colors',
+                'grid size-8 place-items-center rounded-full transition-[background-color,scale] duration-150 group-active:scale-90',
                 primaryTaken ? 'border border-line-strong text-fg' : 'bg-accent text-on-accent',
               )}
             >

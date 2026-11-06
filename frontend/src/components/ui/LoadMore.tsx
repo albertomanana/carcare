@@ -15,7 +15,8 @@ export interface LoadMoreProps {
 
 /** "Cargar más" para listados paginados del contrato (meta.current_page / last_page). */
 export function LoadMore({ hasNextPage, isFetchingNextPage, fetchNextPage, shown, total, what = 'elementos', label = 'Cargar más', className }: LoadMoreProps) {
-  if (!total) return null
+  // Con todo ya en pantalla, «Mostrando 2 de 2» no informa de nada
+  if (!total || (!hasNextPage && !isFetchingNextPage)) return null
   return (
     <div className={cn('mt-6 flex flex-col items-center gap-2', className)}>
       <p className="text-xs text-fg-subtle tabular" aria-live="polite">

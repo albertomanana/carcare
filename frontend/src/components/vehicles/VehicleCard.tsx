@@ -31,9 +31,9 @@ export function VehicleCard({
   return (
     <Link
       to={to}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface transition-colors duration-150 hover:border-line-strong"
+      className="lift surface-card group flex min-w-0 flex-col overflow-hidden rounded-card border border-line"
     >
-      <div className="relative aspect-[16/9] overflow-hidden border-b border-line bg-surface-2">
+      <div className="relative aspect-[16/9] overflow-hidden border-b border-line bg-surface-2 [&>*]:transition-transform [&>*]:duration-500 [&>*]:ease-out-soft group-hover:[&>*]:scale-[1.05]">
         <VehicleThumb
           vehicle={vehicle}
           className="absolute inset-0 h-full w-full min-h-0 rounded-none border-0 bg-transparent object-contain p-3"
@@ -96,7 +96,7 @@ export function VehicleCardSkeleton() {
   return (
     <div
       aria-hidden
-      className="overflow-hidden rounded-card border border-line bg-surface"
+      className="surface-card overflow-hidden rounded-card border border-line"
     >
       <div className="skeleton aspect-[16/9]" />
       <div className="space-y-3 p-4">

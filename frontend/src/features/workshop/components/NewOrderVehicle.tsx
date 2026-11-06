@@ -124,7 +124,7 @@ function ExistingVehiclePicker({ form, presetCustomerId, onCreateNew }: { form: 
   if (vehicleId) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-3 border-y border-line py-2.5">
+        <div className="flex items-center gap-3 rounded-card border border-line px-3 py-2.5">
           {selected.isPending ? (
             <div className="flex-1" role="status">
               <span className="sr-only">Cargando vehículo…</span>
@@ -312,7 +312,7 @@ function CustomerChooser({ form }: { form: Form }) {
       {mode === 'none' && <p className="text-sm text-fg-muted">El vehículo quedará sin cliente. Puedes asignárselo más tarde desde su ficha.</p>}
       {mode === 'existing' &&
         (customerId ? (
-          <div className="flex items-center gap-3 border-y border-line py-2.5">
+          <div className="flex items-center gap-3 rounded-card border border-line px-3 py-2.5">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{selected.data?.name ?? (selected.isError ? 'No se pudo cargar el cliente' : 'Cargando cliente…')}</p>
               {selected.data && (

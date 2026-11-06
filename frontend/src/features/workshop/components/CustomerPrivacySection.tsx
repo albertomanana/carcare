@@ -67,7 +67,7 @@ export function CustomerPrivacySection({ customer }: { customer: Customer }) {
       </h2>
       <p className="mt-0.5 text-sm text-fg-muted">Lo que puedes hacer si el cliente ejerce sus derechos de protección de datos.</p>
 
-      <div className="mt-3 divide-y divide-line border-y border-line">
+      <div className="mt-3 list-panel">
         <PrivacyRow
           title="Exportar datos"
           text="Descarga un archivo JSON con su contacto, sus vehículos y sus órdenes con las líneas, para entregárselo."

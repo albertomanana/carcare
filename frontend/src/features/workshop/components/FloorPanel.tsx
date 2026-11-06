@@ -378,7 +378,7 @@ function OrderSheet({
           </Link>
         </p>
 
-        <dl className="divide-y divide-line border-y border-line text-sm">
+        <dl className="list-panel text-sm">
           {details.map((d) => (
             <div key={d.label} className="flex items-baseline justify-between gap-3 px-1 py-2">
               <dt className="shrink-0 text-fg-muted">{d.label}</dt>

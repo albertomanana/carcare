@@ -17,7 +17,7 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof RT.Tr
   return (
     <RT.Trigger
       className={cn(
-        'inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-[6px] px-3 text-sm font-medium text-fg-muted transition-colors md:min-h-9',
+        'inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-[6px] px-3 text-sm font-medium text-fg-muted transition-[color,background-color,box-shadow] duration-200 active:scale-[0.97] md:min-h-9',
         'hover:text-fg data-[state=active]:bg-surface data-[state=active]:text-fg data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-line',
         '[&_svg]:size-4',
         className,

@@ -305,7 +305,7 @@ export function DocumentsSection({ vehicle }: { vehicle: Vehicle }) {
         />
       ) : (
         <ul
-          className="divide-y divide-line border-y border-line"
+          className="list-panel"
           aria-label="Documentos del vehículo"
         >
           {docs.map((doc) => (

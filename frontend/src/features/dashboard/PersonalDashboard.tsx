@@ -147,7 +147,7 @@ function Pending({ data, canOperate }: { data: PersonalDashboardData; canOperate
           ))}
         </ReminderList>
       ) : (
-        <p className="border-y border-line py-3 text-sm text-fg-muted">
+        <p className="rounded-card border border-line px-4 py-3 text-sm text-fg-muted">
           Nada vencido ni próximo.{' '}
           {canOperate && (
             <button type="button" onClick={() => quick.run('reminder')} className="font-medium text-accent-ink underline-offset-4 hover:underline">
@@ -175,7 +175,7 @@ function VehiclesSection({ vehicles, canOperate }: { vehicles: Vehicle[]; canOpe
         )
       }
     >
-      <ul className="divide-y divide-line border-y border-line">
+      <ul className="list-panel">
         {vehicles.map((v) => {
           const details = [v.nickname ? `${v.make} ${v.model}` : v.version, v.year].filter(Boolean).join(' · ')
           return (
@@ -246,9 +246,9 @@ function SpendSection({ data }: { data: PersonalDashboardData }) {
 
 function ActivityList({ items }: { items: Activity[] }) {
   const ctx = useWorkspace()
-  if (!items.length) return <p className="border-y border-line py-3 text-sm text-fg-muted">Aquí verás lo último que registres.</p>
+  if (!items.length) return <p className="rounded-card border border-line px-4 py-3 text-sm text-fg-muted">Aquí verás lo último que registres.</p>
   return (
-    <ol className="divide-y divide-line border-y border-line">
+    <ol className="list-panel">
       {items.slice(0, 3).map((a) => (
         <li key={a.id} className="flex items-baseline justify-between gap-3 py-2.5 text-sm">
           {a.vehicle_id ? (

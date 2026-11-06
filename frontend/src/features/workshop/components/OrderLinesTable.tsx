@@ -13,7 +13,7 @@ export function OrderLinesTable({ items, showPrices }: { items: LineItem[]; show
   if (!items.length) return <p className="text-sm text-fg-muted">Esta orden no tiene líneas.</p>
   return (
     <>
-      <ul className="divide-y divide-line border-y border-line md:hidden">
+      <ul className="list-panel md:hidden">
         {items.map((it, i) => (
           <li key={it.id ?? i} className="flex items-start justify-between gap-3 px-1 py-2.5 text-sm">
             <div className="min-w-0">

@@ -46,7 +46,7 @@ export function WorkspacesCard({ user, workspaces }: { user: User; workspaces: W
     <Card id="espacios" className="scroll-mt-24">
       <CardHeader title="Espacios" description="Tu garaje personal y los talleres a los que perteneces." />
       <CardBody className="space-y-6">
-        <ul className="divide-y divide-line border-y border-line">
+        <ul className="list-panel">
           {sorted.map((w) => (
             <WorkspaceRow key={w.id} workspace={w} onEdit={setEditing} onLeave={setLeaving} onDelete={setDeleting} />
           ))}

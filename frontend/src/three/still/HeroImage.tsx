@@ -1,8 +1,8 @@
 /**
  * Imagen fija de la portada (regla R11 del informe de UX: la portada no descarga three.js al cargar).
- * Es un render del propio coche procedural (berlina, sin marca ni logotipos, D16), generado con el laboratorio 3D
- * (`/three-lab.html?tab=debug&still=1&body=sedan&color=%231f3a5f&az=34&el=8&dist=8.8&ty=0.6&tx=0.35`) a 2× y
- * reducido a 1280 y 640 px. Se regenera con el script descrito en el informe 2026-10-23-experto-3d-rendimiento.
+ * Es un render del propio coche procedural (berlina, sin marca ni logotipos, D16), a 2× y reducido a 1280 y 640 px.
+ * El laboratorio 3D con el que se generó se retiró del repositorio (consultable en el historial de git, antes del
+ * commit de limpieza de 06/11/2026); el procedimiento está en el informe 2026-10-23-experto-3d-rendimiento.
  */
 import type { HeroImageProps } from '../types'
 

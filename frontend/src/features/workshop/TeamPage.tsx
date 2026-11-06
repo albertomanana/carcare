@@ -305,7 +305,7 @@ function RolesGuide() {
         <ChevronRight aria-hidden className="size-4 shrink-0 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" />
         ¿Qué puede hacer cada rol?
       </summary>
-      <dl className="mt-2 max-w-2xl divide-y divide-line border-y border-line">
+      <dl className="mt-2 max-w-2xl list-panel">
         {ROLE_ORDER.map((r) => (
           <div key={r} className="grid gap-1 py-2.5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
             <dt className="font-medium text-fg">{ROLE_LABEL[r]}</dt>

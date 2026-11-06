@@ -105,8 +105,8 @@ export function HeroVisual({ stage, className }: HeroVisualProps) {
             {shown ? 'Detener animación' : loading ? 'Cargando 3D…' : 'Ver en 3D'}
           </Button>
         )}
-        <p className="rounded-control bg-canvas px-2 py-1 text-xs text-fg-muted" aria-live="polite">
-          {canvas === 'failed' ? 'No se ha podido cargar el 3D; se queda la imagen.' : 'Modelo genérico, sin marca.'}
+        <p className="rounded-control bg-canvas px-2 py-1 text-xs text-fg-muted empty:hidden" aria-live="polite">
+          {canvas === 'failed' ? 'No se ha podido cargar el 3D; se queda la imagen.' : null}
         </p>
       </div>
     </div>

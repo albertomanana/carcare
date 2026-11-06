@@ -1,4 +1,5 @@
 import { PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
+import { motion } from 'motion/react'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { IconButton } from '@/components/ui/Button'
@@ -17,6 +18,9 @@ import { SkipLink } from './SkipLink'
 import { UserMenu } from './UserMenu'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
+/** Muelle del indicador de sección activa: se desliza de una sección a otra sin rebote apreciable. */
+const NAV_SPRING = { type: 'spring', duration: 0.35, bounce: 0.12 } as const
+
 function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const Icon = item.icon
   return (
@@ -27,16 +31,20 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
       className={({ isActive }) =>
         cn(
           'relative flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors duration-150',
-          isActive ? 'bg-surface-2 text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+          isActive ? 'text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
           collapsed ? 'justify-center' : 'lg:justify-start max-lg:justify-center',
         )
       }
     >
       {({ isActive }) => (
         <>
-          {isActive && <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-fg" />}
-          <Icon aria-hidden className="size-5 shrink-0" />
-          <span className={cn(collapsed ? 'sr-only' : 'max-lg:sr-only')}>{item.label}</span>
+          {isActive && (
+            <motion.span layoutId="sidebar-pill" aria-hidden transition={NAV_SPRING} className="absolute inset-0 rounded-control bg-accent-soft">
+              <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-full bg-accent" />
+            </motion.span>
+          )}
+          <Icon aria-hidden className={cn('relative size-5 shrink-0 transition-colors duration-150', isActive && 'text-accent-ink')} />
+          <span className={cn('relative', collapsed ? 'sr-only' : 'max-lg:sr-only')}>{item.label}</span>
         </>
       )}
     </NavLink>
@@ -51,12 +59,17 @@ function TopNavLink({ item }: { item: NavItem }) {
       end={item.end}
       className={({ isActive }) =>
         cn(
-          'inline-flex min-h-10 shrink-0 items-center rounded-control px-2 text-sm font-medium transition-colors duration-150 xl:px-3',
-          isActive ? 'bg-surface-2 text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+          'relative inline-flex min-h-10 shrink-0 items-center rounded-control px-2 text-sm font-medium transition-colors duration-150 xl:px-3',
+          isActive ? 'text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
         )
       }
     >
-      {item.label}
+      {({ isActive }) => (
+        <>
+          {isActive && <motion.span layoutId="topnav-pill" aria-hidden transition={NAV_SPRING} className="absolute inset-0 rounded-control bg-surface-2 ring-1 ring-inset ring-line" />}
+          <span className="relative">{item.label}</span>
+        </>
+      )}
     </NavLink>
   )
 }
@@ -138,7 +151,9 @@ export function AppShell() {
 
   const content = (
     <Suspense fallback={<PageSpinner />}>
-      <Outlet />
+      <div className="stagger contents">
+        <Outlet />
+      </div>
     </Suspense>
   )
 
@@ -153,7 +168,7 @@ export function AppShell() {
               {/* Taller: barra lateral */}
               <aside
                 className={cn(
-                  'fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-line bg-surface md:flex',
+                  'fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-line bg-surface/80 backdrop-blur-xl md:flex',
                   collapsed ? 'w-[76px]' : 'w-[76px] lg:w-[220px]',
                 )}
                 aria-label="Navegación principal"
@@ -192,7 +207,7 @@ export function AppShell() {
               </aside>
 
               <div className={cn('flex min-h-dvh flex-col', collapsed ? 'md:pl-[76px]' : 'md:pl-[76px] lg:pl-[220px]')}>
-                <header className="no-print sticky top-0 z-20 border-b border-line bg-canvas">
+                <header className="glass no-print sticky top-0 z-20 border-b border-line/60">
                   <div className="flex h-16 items-center gap-2 px-3 md:gap-3 md:px-6">
                     <Link to={home} className="rounded-control md:hidden" aria-label="CarCare: inicio">
                       <LogoMark />
@@ -220,7 +235,7 @@ export function AppShell() {
           ) : (
             <div className="flex min-h-dvh flex-col">
               {/* Particular: barra superior con las secciones */}
-              <header className="no-print sticky top-0 z-20 border-b border-line bg-canvas">
+              <header className="glass no-print sticky top-0 z-20 border-b border-line/60">
                 <div className="mx-auto flex h-16 w-full max-w-[1100px] items-center gap-2 px-4 sm:px-6 xl:gap-3">
                   <Link to={home} className="shrink-0 rounded-control" aria-label="CarCare: inicio">
                     <span className="hidden lg:inline-flex">

@@ -215,7 +215,7 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
       </Link>
 
       {archived && (
-        <div role="status" className="mb-4 flex flex-wrap items-center gap-3 border-y border-line py-3 text-sm">
+        <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-line px-4 py-3 text-sm">
           <Archive aria-hidden className="size-4 text-fg-muted" />
           <span className="flex-1 text-fg">Vehículo archivado el {formatDate(vehicle.archived_at)}. No aparece en el panel, pero conserva su historial.</span>
           {canManage && (

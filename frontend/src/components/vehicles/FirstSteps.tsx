@@ -45,7 +45,7 @@ export function FirstSteps({
         Con estos datos CarCare empieza a calcular tus avisos, tus kilómetros y
         tus gastos.
       </p>
-      <ol className="mt-3 divide-y divide-line border-y border-line">
+      <ol className="mt-3 list-panel">
         {steps.map((s) => (
           <li
             key={s.key}

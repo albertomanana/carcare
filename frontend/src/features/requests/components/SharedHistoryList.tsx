@@ -15,7 +15,7 @@ export function SharedHistoryList({ requestId, enabled = true }: { requestId: ID
 
   if (query.isPending)
     return (
-      <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
+      <div role="status" aria-live="polite" className="list-panel">
         <span className="sr-only">Cargando el historial…</span>
         {Array.from({ length: 3 }, (_, i) => (
           <div key={i} aria-hidden className="space-y-1.5 py-2.5">
@@ -29,7 +29,7 @@ export function SharedHistoryList({ requestId, enabled = true }: { requestId: ID
   if (query.data.length === 0) return <p className="text-sm text-fg-muted">Este coche no tiene intervenciones anotadas.</p>
 
   return (
-    <ul className="divide-y divide-line border-y border-line" aria-label="Historial compartido">
+    <ul className="list-panel" aria-label="Historial compartido">
       {query.data.map((e, i) => (
         <li key={i} className="py-2.5 text-sm">
           <p className="font-medium text-fg">{e.title}</p>

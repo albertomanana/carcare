@@ -124,7 +124,7 @@ export default function ExpensesTab() {
         }
       >
         {list.isPending ? (
-          <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
+          <div role="status" aria-live="polite" className="list-panel">
             <span className="sr-only">Cargando gastos…</span>
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} aria-hidden className="space-y-2 py-3">
@@ -149,7 +149,7 @@ export default function ExpensesTab() {
           )
         ) : (
           <>
-            <ul className="divide-y divide-line border-y border-line">
+            <ul className="list-panel">
               {expenses.map((e) => (
                 <ExpenseRow key={e.id} expense={e} highlighted={hashId === String(e.id)} canWrite={canWrite} historyHref={`${ctx.base}/vehiculos/${vehicle.id}/historial?ver=intervenciones#intervencion-${e.maintenance_record_id}`} onEdit={setEditing} onDelete={setDeleting} />
               ))}
@@ -252,11 +252,11 @@ function Charts({ summary: s }: { summary: VehicleSummary }) {
         {anySpend ? (
           <MonthlyBars data={s.by_month} label="Gasto por mes" height={200} />
         ) : (
-          <p className="border-y border-line py-3 text-sm text-fg-muted">Sin gastos en estos 12 meses.</p>
+          <p className="rounded-card border border-line px-4 py-3 text-sm text-fg-muted">Sin gastos en estos 12 meses.</p>
         )}
       </Section>
       <Section title="Por categoría" description="En el periodo elegido.">
-        {s.by_category.length ? <CategoryBreakdown data={s.by_category} /> : <p className="border-y border-line py-3 text-sm text-fg-muted">Sin gastos en este periodo.</p>}
+        {s.by_category.length ? <CategoryBreakdown data={s.by_category} /> : <p className="rounded-card border border-line px-4 py-3 text-sm text-fg-muted">Sin gastos en este periodo.</p>}
       </Section>
     </div>
   )

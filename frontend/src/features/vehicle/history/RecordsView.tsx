@@ -197,7 +197,7 @@ export function RecordsView({ vehicle }: { vehicle: Vehicle }) {
               ? "La intervención enlazada está archivada"
               : "La intervención enlazada no está en esta lista"}
           </h2>
-          <ul className="border-y border-line">
+          <ul className="list-panel">
             <RecordRow
               record={pinned}
               base={base}
@@ -257,7 +257,7 @@ export function RecordsView({ vehicle }: { vehicle: Vehicle }) {
                 {g.year}
               </h2>
               <ul
-                className="divide-y divide-line border-y border-line"
+                className="list-panel"
                 aria-label={`Intervenciones de ${g.year}, de la más reciente a la más antigua`}
               >
                 {g.items.map((r) => (

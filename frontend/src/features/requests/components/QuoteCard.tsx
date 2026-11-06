@@ -75,7 +75,7 @@ export function QuoteCard({ quote, perspective = 'requester', actions, as: Headi
       </p>
 
       {/* Líneas: lista en móvil, tabla en escritorio */}
-      <ul className="mt-4 divide-y divide-line border-y border-line md:hidden" aria-label={`Líneas del presupuesto v${quote.version}`}>
+      <ul className="mt-4 list-panel md:hidden" aria-label={`Líneas del presupuesto v${quote.version}`}>
         {quote.items.map((it, i) => (
           <li key={i} className="flex items-start justify-between gap-3 px-1 py-2.5 text-sm">
             <div className="min-w-0">

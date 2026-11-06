@@ -101,7 +101,7 @@ export default function DirectoryPage() {
             {filtered ? plural(total ?? workshops.length, 'taller coincide', 'talleres coinciden') : plural(total ?? workshops.length, 'taller', 'talleres')}
             {total !== null && total > workshops.length && ` · se muestran los ${workshops.length} primeros: afina la búsqueda`}
           </p>
-          <ul className="divide-y divide-line border-y border-line" aria-label="Talleres del directorio">
+          <ul className="list-panel" aria-label="Talleres del directorio">
             {workshops.map((w) => (
               <WorkshopRow key={w.id} workshop={w} action={canRequest && !w.is_member ? requestHref(w) : null} />
             ))}
@@ -153,7 +153,7 @@ function WorkshopRow({ workshop: w, action }: { workshop: DirectoryWorkshop; act
 
 function DirectorySkeleton() {
   return (
-    <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
+    <div role="status" aria-live="polite" className="list-panel">
       <span className="sr-only">Cargando talleres…</span>
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} aria-hidden className="space-y-2 py-4">

@@ -59,15 +59,6 @@ function SuspenseOutlet() {
   )
 }
 
-const devRoutes: RouteObject[] = import.meta.env.DEV
-  ? [
-      {
-        path: '/dev/3d',
-        Component: lazy(() => import('@/features/dev/ThreeLabPage')),
-      },
-    ]
-  : []
-
 export const routes: RouteObject[] = [
   {
     errorElement: <RouteError />,
@@ -141,7 +132,6 @@ export const routes: RouteObject[] = [
           },
         ],
       },
-      ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],
   },

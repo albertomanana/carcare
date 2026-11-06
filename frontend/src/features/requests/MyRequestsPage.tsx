@@ -79,7 +79,7 @@ export default function MyRequestsPage() {
         )
       ) : (
         <>
-          <ul className="divide-y divide-line border-y border-line" aria-label="Solicitudes enviadas">
+          <ul className="list-panel" aria-label="Solicitudes enviadas">
             {requests.map((r) => (
               <RequestRow key={r.id} request={r} href={`${ctx.base}/solicitudes/${r.id}`} />
             ))}
@@ -130,7 +130,7 @@ function RequestRow({ request: r, href }: { request: RepairRequest; href: string
 
 function RequestsSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
+    <div role="status" aria-live="polite" className="list-panel">
       <span className="sr-only">Cargando solicitudes…</span>
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} aria-hidden className="space-y-2 px-1 py-3.5">

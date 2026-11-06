@@ -137,14 +137,22 @@
   --radius-card: 16px;
   --radius-hero: 24px;
 
-  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Curvas de movimiento (Emil Kowalski): salida fuerte para entradas y respuestas, entrada-salida para lo que se mueve en pantalla */
+  --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 1px 2px hsl(var(--shadow-color) / 0.18);
+  --shadow-lift: 0 10px 28px -12px hsl(var(--shadow-color) / 0.55), 0 2px 6px hsl(var(--shadow-color) / 0.2);
+  --shadow-pop: 0 18px 48px -16px hsl(var(--shadow-color) / 0.6), 0 4px 12px hsl(var(--shadow-color) / 0.25);
 
   --animate-fade-in: cc-fade-in 180ms var(--ease-out-soft) both;
-  --animate-fade-out: cc-fade-out 150ms ease-in both;
-  --animate-pop-in: cc-pop-in 220ms var(--ease-out-soft) both;
-  --animate-sheet-in: cc-sheet-in 260ms var(--ease-out-soft) both;
-  --animate-drawer-in: cc-drawer-in 260ms var(--ease-out-soft) both;
-  --animate-rise: cc-rise 260ms var(--ease-out-soft) both;
+  --animate-fade-out: cc-fade-out 150ms ease-out both;
+  --animate-pop-in: cc-pop-in 200ms var(--ease-out-soft) both;
+  --animate-sheet-in: cc-sheet-in 320ms var(--ease-drawer) both;
+  --animate-drawer-in: cc-drawer-in 320ms var(--ease-drawer) both;
+  --animate-rise: cc-rise 420ms var(--ease-out-strong) both;
   --animate-shimmer: cc-shimmer 1.4s linear infinite;
 
   @keyframes cc-fade-in {
@@ -166,7 +174,7 @@
   @keyframes cc-pop-in {
     from {
       opacity: 0;
-      transform: translateY(6px) scale(0.98);
+      transform: translateY(6px) scale(0.95);
     }
     to {
       opacity: 1;
@@ -192,11 +200,38 @@
   @keyframes cc-rise {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(14px);
+      filter: blur(3px);
     }
     to {
       opacity: 1;
       transform: none;
+      filter: none;
+    }
+  }
+  @keyframes cc-draw {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes cc-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes cc-sheen {
+    from {
+      background-position: 160% 0;
+    }
+    to {
+      background-position: -60% 0;
     }
   }
   @keyframes cc-shimmer {
@@ -211,7 +246,11 @@
 
 @layer base {
   html {
-    background: var(--base);
+    /* Garaje nocturno: una luz suave de lima arriba sobre el grafito. Es ambiente, no un halo en una caja. */
+    background:
+      radial-gradient(70rem 36rem at 50% -12rem, var(--glow), transparent 70%) no-repeat,
+      var(--base);
+    background-attachment: fixed, scroll;
     color: var(--fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -221,8 +260,14 @@
 
   body {
     min-height: 100dvh;
-    background: var(--base);
+    background: transparent;
     font-feature-settings: 'cv11', 'ss01';
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 
   /*
@@ -275,6 +320,39 @@
   }
 }
 
+@layer components {
+  /*
+   * Lista en panel: las filas viven dentro de una tarjeta con esquinas redondeadas y se separan con una línea fina.
+   * Sustituye a las listas planas "divide-y border-y". Cada fila aporta solo su alto; el margen lateral lo pone el panel.
+   */
+  .list-panel {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface) 42%);
+    box-shadow: var(--shadow-card);
+  }
+  :root[data-theme='light'] .list-panel {
+    background: var(--surface);
+  }
+  .list-panel > * {
+    padding-inline: 1rem;
+  }
+  .list-panel > * + * {
+    border-top: 1px solid var(--line);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .list-panel > li,
+    .list-panel > div {
+      transition: background-color 150ms ease;
+    }
+    .list-panel > li:hover,
+    .list-panel > div:hover {
+      background: color-mix(in srgb, var(--surface-3) 45%, transparent);
+    }
+  }
+}
+
 @layer utilities {
   /* Cifras de importes y kilómetros alineadas */
   .tabular {
@@ -301,6 +379,112 @@
 
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* ───────── Movimiento ───────── */
+
+  /* Entrada al cargar la pantalla. `--i` ordena la cascada (50-70 ms entre elementos); no se usa al hacer scroll. */
+  .enter {
+    animation: cc-rise 520ms var(--ease-out-strong) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  /* Los hijos directos entran en cascada: se aplica a la raíz de una pantalla o de una lista. */
+  .stagger > * {
+    animation: cc-rise 420ms var(--ease-out-strong) both;
+  }
+  .stagger > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .stagger > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .stagger > :nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .stagger > :nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .stagger > :nth-child(n + 6) {
+    animation-delay: 250ms;
+  }
+
+  /* Tarjeta enlazada: sube 2 px y el borde toma lima. Solo con puntero fino (en táctil, el hover se queda pegado). */
+  .lift {
+    transition:
+      transform 220ms var(--ease-out-strong),
+      border-color 220ms ease,
+      box-shadow 220ms ease,
+      background-color 220ms ease;
+  }
+  .lift:active {
+    transform: scale(0.99);
+    transition-duration: 100ms;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .lift:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      box-shadow: var(--shadow-lift);
+    }
+  }
+
+  /* Foto o captura dentro de su marco: se acerca un 3 % sin salirse. */
+  .zoom {
+    overflow: hidden;
+  }
+  .zoom > img {
+    transition: transform 500ms var(--ease-out-strong);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .zoom:hover > img {
+      transform: scale(1.03);
+    }
+  }
+
+  /* Subrayado que se dibuja de izquierda a derecha. */
+  .link-draw {
+    position: relative;
+    text-decoration: none;
+  }
+  .link-draw::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -3px 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 260ms var(--ease-out-strong);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .link-draw:hover::after {
+      transform: scaleX(1);
+    }
+  }
+  .link-draw:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  /* Cabeceras fijas: cristal sobre el contenido que pasa por debajo (función, no adorno). */
+  .glass {
+    background: color-mix(in srgb, var(--base) 72%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass {
+      background: var(--base);
+    }
+  }
+
+  /* Superficie de tarjeta con un filo de luz arriba. */
+  .surface-card {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface) 42%);
+    box-shadow: var(--shadow-card);
+  }
+  :root[data-theme='light'] .surface-card {
+    background: var(--surface);
   }
 
   .scrollbar-none {

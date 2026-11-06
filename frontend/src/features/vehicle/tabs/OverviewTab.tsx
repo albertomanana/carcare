@@ -105,7 +105,7 @@ function Pending({ vehicle, summary: s, actions }: { vehicle: Vehicle; summary: 
           ))}
         </ReminderList>
       ) : (
-        <p className="border-y border-line py-3 text-sm text-fg-muted">
+        <p className="rounded-card border border-line px-4 py-3 text-sm text-fg-muted">
           {vehicle.stats.pending_reminders > 0 ? 'Nada vencido ni próximo.' : 'Este vehículo no tiene recordatorios.'}{' '}
           {canOperate && vehicle.stats.pending_reminders === 0 && (
             <button type="button" onClick={() => quick.run('reminder', vehicle.id)} className="font-medium text-accent-ink underline-offset-4 hover:underline">
@@ -148,7 +148,7 @@ function Mileage({ vehicle, summary: s }: { vehicle: Vehicle; summary: VehicleSu
         </Link>
       }
     >
-      <dl className="divide-y divide-line border-y border-line text-sm">
+      <dl className="list-panel text-sm">
         {rows.map((r) => (
           <div key={r.label} className="flex items-baseline justify-between gap-3 py-2.5">
             <dt className="text-fg-muted">{r.label}</dt>
@@ -172,7 +172,7 @@ function SinceLast({ vehicle, summary: s, canOperate }: { vehicle: Vehicle; summ
         </Link>
       }
     >
-      <ul className="divide-y divide-line border-y border-line text-sm">
+      <ul className="list-panel text-sm">
         {s.since_last.map((item) => (
           <li key={item.kind} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2.5">
             <span className="min-w-0">

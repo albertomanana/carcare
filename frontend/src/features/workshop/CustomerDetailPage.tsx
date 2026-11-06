@@ -190,7 +190,7 @@ function CustomerVehicles({ customer, canAdd }: { customer: Customer; canAdd: bo
           action={addButton}
         />
       ) : (
-        <ul className="divide-y divide-line border-y border-line">
+        <ul className="list-panel">
           {vehicles.data.map((v) => (
             <VehicleRow key={v.id} vehicle={v} />
           ))}

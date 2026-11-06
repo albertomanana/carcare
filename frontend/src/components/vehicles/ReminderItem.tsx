@@ -22,7 +22,7 @@ export interface ReminderActions {
 
 /** Lista de recordatorios: filas con separador fino, sin cajas (reglas R3 y R4 del informe de UX). */
 export function ReminderList({ className, ...props }: ComponentProps<'ul'>) {
-  return <ul className={cn('divide-y divide-line border-y border-line', className)} {...props} />
+  return <ul className={cn('list-panel', className)} {...props} />
 }
 
 /**
@@ -156,7 +156,7 @@ export function ReminderItem({
 
 export function ReminderListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <div role="status" aria-live="polite" className="divide-y divide-line border-y border-line">
+    <div role="status" aria-live="polite" className="list-panel">
       <span className="sr-only">Cargando recordatorios…</span>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} aria-hidden className="space-y-2 py-3">

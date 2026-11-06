@@ -23,7 +23,6 @@ const CarViewerCanvas = lazy(() => import('./scenes/CarViewerCanvas'))
 const CarPreviewCanvas = lazy(() => import('./scenes/CarPreviewCanvas'))
 const WorkshopCanvas = lazy(() => import('./scenes/WorkshopCanvas'))
 const HeroCanvas = lazy(() => import('./scenes/HeroCanvas'))
-const ThreeLabImpl = lazy(() => import('./lab/ThreeLab'))
 
 export { useWebGLAvailable } from './env'
 
@@ -123,14 +122,5 @@ export function HeroScene(props: HeroSceneProps) {
         <HeroCanvas {...props} />
       </Suspense>
     </ThreeBoundary>
-  )
-}
-
-/** Laboratorio de revisión visual (solo desarrollo, ruta /dev/3d): todas las carrocerías, estados y escenas. */
-export function ThreeLab() {
-  return (
-    <Suspense fallback={<p className="p-6 text-sm text-fg-subtle">Cargando laboratorio 3D…</p>}>
-      <ThreeLabImpl />
-    </Suspense>
   )
 }

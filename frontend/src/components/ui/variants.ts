@@ -3,17 +3,20 @@ import { cn } from '@/lib/cn'
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
+// Pulsar encoge el botón un 3 % (respuesta inmediata); al soltar vuelve rápido. Solo se anima transform y lo que cambia de color.
 const BASE =
-  'relative inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium ' +
-  'transition-[background-color,color,border-color,box-shadow,transform,filter] duration-150 ease-out-soft ' +
-  'active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 ' +
+  'group relative inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium ' +
+  'transition-[background-color,color,border-color,box-shadow,transform,translate,scale,filter] duration-200 ease-out-soft ' +
+  'active:scale-[0.97] active:duration-100 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 ' +
   '[&_svg]:size-4 [&_svg]:shrink-0'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  // Plano: sin brillo ni sombra de color (regla R8 del informe de UX)
-  primary: 'bg-accent text-on-accent hover:brightness-[0.96] active:brightness-90',
+  // Primario: sube 1 px y gana una sombra con la altura de un botón, no un halo de color
+  primary:
+    'bg-accent text-on-accent shadow-[0_1px_0_0_rgb(255_255_255/0.35)_inset,0_1px_2px_hsl(var(--shadow-color)/0.35)] ' +
+    'hover:-translate-y-px hover:brightness-[1.04] hover:shadow-[0_1px_0_0_rgb(255_255_255/0.35)_inset,0_8px_18px_-8px_hsl(var(--shadow-color)/0.7)] active:brightness-90',
   secondary: 'border border-line bg-surface-2 text-fg hover:border-line-strong hover:bg-surface-3',
-  outline: 'border border-line-strong bg-transparent text-fg hover:bg-surface-2',
+  outline: 'border border-line-strong bg-transparent text-fg hover:border-fg-subtle hover:bg-surface-2',
   ghost: 'text-fg-muted hover:bg-surface-2 hover:text-fg',
   danger: 'bg-danger text-on-danger hover:brightness-110 active:brightness-95',
 }
@@ -53,4 +56,4 @@ export const inputClasses =
   'hover:border-fg-subtle focus-visible:border-accent focus-visible:outline-offset-0 ' +
   'aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-surface'
 
-export const cardClasses = 'rounded-card border border-line bg-surface'
+export const cardClasses = 'surface-card rounded-card border border-line'
