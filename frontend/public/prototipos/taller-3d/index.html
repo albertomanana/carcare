@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CarCare · Taller 3D (prototipo)</title>
+<meta name="description" content="Prototipo de dashboard espacial para un taller mecánico: escena WebGL procedural, paneles con perspectiva CSS 3D y cámara animada con GSAP. Todos los datos son de demostración.">
+<meta name="color-scheme" content="dark">
+
+<!-- Prototipo aislado: carga todo por CDN (versiones fijas). La app real de CarCare NO depende de estas librerías. -->
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+  :root {
+    --bg: #07090e;
+    --cyan: #22d3ee;
+    --blue: #3b82f6;
+    --ok: #34d399;
+    --bad: #ff4d5e;
+    --ink: #e6f6ff;
+    --muted: #8fa6b8;
+  }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); overflow: hidden; font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; touch-action: none; }
+  #labels { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  .zone-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); background: rgba(7,9,14,.55); border: 1px solid rgba(34,211,238,.35); padding: 3px 8px; border-radius: 999px; white-space: nowrap; backdrop-filter: blur(4px); }
+  .zone-label { opacity: var(--fade, 1); }
+  .tip-label.floater { opacity: calc(var(--fade, 1) * var(--on, 0)); transition: opacity .3s; }
+  body[data-view="4"] .tip-label.floater { --on: 1; }
+  .tip-label { font-size: 12px; color: var(--ink); background: rgba(7,9,14,.8); border: 1px solid rgba(255,255,255,.18); padding: 2px 7px; border-radius: 6px; white-space: nowrap; opacity: 0; transition: opacity .15s ease-out; }
+  .tip-label.on { opacity: 1; }
+
+  /* Tarjetas: glassmorfismo + perspectiva CSS 3D real */
+  #panels { perspective: 1000px; perspective-origin: 100% 40%; pointer-events: none; }
+  .panel { transform-style: preserve-3d; pointer-events: auto; will-change: transform, opacity; }
+  .tilt {
+    position: relative; transform-style: preserve-3d;
+    background: linear-gradient(160deg, rgba(20,32,48,.62), rgba(8,14,24,.5));
+    border: 1px solid rgba(120,200,255,.2); border-radius: 18px;
+    backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: 0 24px 50px -20px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.08);
+    padding: 16px;
+  }
+  .tilt::after { /* reflejo de luz que sigue al cursor */
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(circle at var(--mx, 50%) var(--my, 0%), rgba(255,255,255,.2), transparent 46%);
+    opacity: var(--glare, 0); transition: opacity .25s ease-out;
+  }
+  .tilt .z1 { transform: translateZ(18px); }
+  .tilt .z2 { transform: translateZ(34px); }
+
+  /* Barras y anillos que se elevan en Z al pasar el cursor */
+  .bars { display: flex; align-items: flex-end; gap: 8px; height: 112px; transform-style: preserve-3d; }
+  .bar { flex: 1; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, #67e8f9, #2563eb); box-shadow: 0 10px 18px -8px rgba(34,211,238,.6);
+         transform: translateZ(0); transition: transform .28s cubic-bezier(.23,1,.32,1), filter .28s; position: relative; cursor: default; }
+  .bar:hover, .bar:focus-visible { transform: translateZ(46px) translateY(-4px); filter: brightness(1.25); outline: none; }
+  .bar span { position: absolute; left: 50%; top: -20px; transform: translateX(-50%); font-size: 11px; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+  .bar:hover span, .bar:focus-visible span { opacity: 1; }
+  .ring { transition: transform .28s cubic-bezier(.23,1,.32,1), filter .28s; transform-style: preserve-3d; }
+  .ring:hover { transform: translateZ(40px) scale(1.06); filter: drop-shadow(0 0 10px rgba(34,211,238,.7)); }
+
+  .menu-btn { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid transparent; color: var(--muted);
+              transition: transform .15s ease-out, background-color .2s, color .2s, border-color .2s; }
+  .menu-btn:hover { color: var(--ink); background: rgba(34,211,238,.08); }
+  .menu-btn:active { transform: scale(.97); }
+  .menu-btn[aria-pressed="true"] { color: var(--ink); background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.5); box-shadow: 0 0 24px -6px rgba(34,211,238,.6); }
+  .menu-btn:focus-visible, .part-btn:focus-visible, .bar:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .menu-btn .n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: rgba(255,255,255,.06); font-size: 13px; font-weight: 600; flex: none; }
+  .menu-btn[aria-pressed="true"] .n { background: var(--cyan); color: #04141a; }
+
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  .dot.bad { background: var(--bad); box-shadow: 0 0 10px var(--bad); animation: blink 1s steps(1, end) infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .part-btn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); transition: background-color .2s, transform .15s ease-out; }
+  .part-btn:hover { background: rgba(34,211,238,.1); }
+  .part-btn:active { transform: scale(.98); }
+  .part-btn[aria-pressed="true"] { border-color: var(--cyan); background: rgba(34,211,238,.14); }
+
+  .chip-demo { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #fbbf24; border: 1px solid rgba(251,191,36,.45); padding: 2px 8px; border-radius: 999px; }
+  .meter { height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .meter > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--cyan)); transition: width .4s ease-out; }
+
+  @media (max-width: 767px) {
+    #panels { left: 8px !important; right: 8px !important; top: auto !important; bottom: 88px !important; width: auto !important; max-height: 38vh; perspective-origin: 50% 100%; }
+    #menu { left: 8px !important; right: 8px !important; top: auto !important; bottom: 8px !important; width: auto !important; transform: none !important; flex-direction: row !important; padding: 6px !important; }
+    #menu .menu-btn { flex-direction: column; gap: 4px; padding: 8px 4px; text-align: center; font-size: 11px; }
+    #menu .menu-btn .sub { display: none; }
+    #brand { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tilt, .bar, .ring, .menu-btn { transition: none; }
+    .dot.bad { animation: none; }
+  }
+</style>
+</head>
+
+<body>
+<canvas id="gl" role="img" aria-label="Maqueta 3D de un taller con recepción, elevadores, cabina de diagnóstico e inventario. La misma información está en los paneles de texto."></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<noscript><p class="fixed inset-0 grid place-items-center p-6 text-center">Este prototipo necesita JavaScript y WebGL.</p></noscript>
+<p id="nogl" class="hidden fixed left-1/2 top-4 z-30 -translate-x-1/2 rounded-xl border border-red-400/50 bg-black/70 px-4 py-2 text-sm text-red-200" role="alert">Tu navegador no puede crear un contexto WebGL: se muestran solo los paneles, que contienen la misma información.</p>
+
+<!-- Marca -->
+<header id="brand" class="fixed left-4 top-4 z-20 flex items-center gap-3">
+  <div class="grid size-9 place-items-center rounded-xl bg-cyan-300 text-slate-900 font-bold">C</div>
+  <div>
+    <h1 class="text-[15px] font-semibold leading-tight">CarCare · Taller 3D</h1>
+    <p class="text-xs text-slate-400">Prototipo · <span class="chip-demo">Datos de demostración</span></p>
+  </div>
+</header>
+
+<!-- Reloj de la simulación -->
+<div class="fixed right-4 top-4 z-20 hidden text-right text-xs text-slate-400 md:block" aria-hidden="true">
+  Simulación en directo · <span id="clock" class="tabular-nums text-cyan-200">--:--:--</span>
+</div>
+
+<!-- Menú lateral: 4 vistas -->
+<nav id="menu" aria-label="Vistas del taller" class="fixed left-4 top-1/2 z-20 flex w-56 -translate-y-1/2 flex-col gap-2 rounded-2xl border border-cyan-300/20 bg-slate-950/55 p-2 backdrop-blur-xl">
+  <button class="menu-btn" data-view="1" aria-pressed="true"><span class="n">1</span><span><span class="block text-sm font-medium">Vista global</span><span class="sub block text-xs opacity-70">Todo el taller</span></span></button>
+  <button class="menu-btn" data-view="2" aria-pressed="false"><span class="n">2</span><span><span class="block text-sm font-medium">Escáner 360°</span><span class="sub block text-xs opacity-70">Diagnóstico holográfico</span></span></button>
+  <button class="menu-btn" data-view="3" aria-pressed="false"><span class="n">3</span><span><span class="block text-sm font-medium">Flujo de clientes</span><span class="sub block text-xs opacity-70">Recepción y entregas</span></span></button>
+  <button class="menu-btn" data-view="4" aria-pressed="false"><span class="n">4</span><span><span class="block text-sm font-medium">Inventario</span><span class="sub block text-xs opacity-70">Piezas en 3D</span></span></button>
+</nav>
+<p id="status" class="sr-only" role="status" aria-live="polite">Vista global del taller</p>
+
+<!-- Paneles flotantes (CSS 3D) -->
+<section id="panels" aria-label="Paneles de información" class="fixed right-4 top-16 bottom-4 z-20 flex w-[22rem] flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1">
+
+  <!-- Vista 1 -->
+  <article class="panel" data-views="1">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Ingresos del taller <span class="chip-demo ml-1">demo</span></h2>
+      <p class="z1 mt-0.5 text-xs text-slate-400">Miles de euros por mes (cifras inventadas). Pasa el cursor por una barra.</p>
+      <div class="bars z1 mt-6" role="list" aria-label="Ingresos por mes">
+        <div class="bar" role="listitem" tabindex="0" style="height:44%"><span>3,2 mil €</span></div>
+        <div class="bar" role="listitem" tabindex="0" style="height:62%"><span>4,5 mil €</span></div>
+        <div class="bar" role="listitem" tabindex="0" style="height:54%"><span>3,9 mil €</span></div>
+        <div class="bar" role="listitem" tabindex="0" style="height:80%"><span>5,8 mil €</span></div>
+        <div class="bar" role="listitem" tabindex="0" style="height:90%"><span>6,4 mil €</span></div>
+        <div class="bar" role="listitem" tabindex="0" style="height:72%"><span>5,2 mil €</span></div>
+        <div class="bar" role="listitem" tabindex="0" style="height:100%"><span>7,1 mil €</span></div>
+      </div>
+      <div class="mt-1 flex justify-between text-[11px] text-slate-500"><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span></div>
+    </div>
+  </article>
+
+  <article class="panel" data-views="1">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Rendimiento <span class="chip-demo ml-1">demo</span></h2>
+      <div class="z1 mt-3 grid grid-cols-3 gap-2 text-center">
+        <div class="ring"><svg viewBox="0 0 80 80" class="mx-auto size-20" role="img" aria-label="Ocupación de elevadores, 78 por ciento"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/><circle cx="40" cy="40" r="32" fill="none" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" stroke-dasharray="157 201" transform="rotate(-90 40 40)"/><text x="40" y="45" text-anchor="middle" fill="#e6f6ff" font-size="15" font-weight="600">78%</text></svg><p class="text-[11px] text-slate-400">Elevadores</p></div>
+        <div class="ring"><svg viewBox="0 0 80 80" class="mx-auto size-20" role="img" aria-label="Órdenes entregadas a tiempo, 92 por ciento"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/><circle cx="40" cy="40" r="32" fill="none" stroke="#34d399" stroke-width="8" stroke-linecap="round" stroke-dasharray="185 201" transform="rotate(-90 40 40)"/><text x="40" y="45" text-anchor="middle" fill="#e6f6ff" font-size="15" font-weight="600">92%</text></svg><p class="text-[11px] text-slate-400">A tiempo</p></div>
+        <div class="ring"><svg viewBox="0 0 80 80" class="mx-auto size-20" role="img" aria-label="Clientes satisfechos, 85 por ciento"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/><circle cx="40" cy="40" r="32" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" stroke-dasharray="171 201" transform="rotate(-90 40 40)"/><text x="40" y="45" text-anchor="middle" fill="#e6f6ff" font-size="15" font-weight="600">85%</text></svg><p class="text-[11px] text-slate-400">Clientes OK</p></div>
+      </div>
+    </div>
+  </article>
+
+  <article class="panel" data-views="1">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Telemetría de elevadores <span class="chip-demo ml-1">simulada</span></h2>
+      <ul class="z1 mt-3 space-y-3 text-xs">
+        <li><div class="mb-1 flex justify-between"><span>Elevador 1</span><span id="t-lift-0" class="tabular-nums text-cyan-200">0%</span></div><div class="meter"><i id="m-lift-0" style="width:0%"></i></div></li>
+        <li><div class="mb-1 flex justify-between"><span>Elevador 2</span><span id="t-lift-1" class="tabular-nums text-cyan-200">0%</span></div><div class="meter"><i id="m-lift-1" style="width:0%"></i></div></li>
+        <li><div class="mb-1 flex justify-between"><span>Elevador 3</span><span id="t-lift-2" class="tabular-nums text-cyan-200">0%</span></div><div class="meter"><i id="m-lift-2" style="width:0%"></i></div></li>
+      </ul>
+    </div>
+  </article>
+
+  <!-- Vista 2 -->
+  <article class="panel" data-views="2">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Diagnóstico del vehículo <span class="chip-demo ml-1">simulado</span></h2>
+      <p class="z1 mt-0.5 text-xs text-slate-400">Elige una pieza o haz clic en el bloque brillante del coche. Rojo = avería simulada, verde = correcto.</p>
+      <ul id="parts" class="z1 mt-3 space-y-1.5"></ul>
+      <p id="part-detail" class="z1 mt-3 rounded-lg border border-white/10 bg-white/5 p-2 text-xs text-slate-300">Selecciona una pieza para ver su estado.</p>
+    </div>
+  </article>
+
+  <article class="panel" data-views="2">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Sensores <span class="chip-demo ml-1">simulados</span></h2>
+      <dl class="z1 mt-3 grid grid-cols-3 gap-2 text-center">
+        <div class="rounded-lg bg-white/5 p-2"><dt class="text-[11px] uppercase tracking-wider text-slate-400">Régimen</dt><dd id="s-rpm" class="mt-1 text-lg font-semibold tabular-nums text-cyan-200">—</dd><dd class="text-[11px] text-slate-500">rpm</dd></div>
+        <div class="rounded-lg bg-white/5 p-2"><dt class="text-[11px] uppercase tracking-wider text-slate-400">Temp.</dt><dd id="s-temp" class="mt-1 text-lg font-semibold tabular-nums text-cyan-200">—</dd><dd class="text-[11px] text-slate-500">°C</dd></div>
+        <div class="rounded-lg bg-white/5 p-2"><dt class="text-[11px] uppercase tracking-wider text-slate-400">Batería</dt><dd id="s-volt" class="mt-1 text-lg font-semibold tabular-nums text-cyan-200">—</dd><dd class="text-[11px] text-slate-500">V</dd></div>
+      </dl>
+    </div>
+  </article>
+
+  <!-- Vista 3 -->
+  <article class="panel" data-views="3">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Fichas de clientes <span class="chip-demo ml-1">ficticios</span></h2>
+      <p class="z1 mt-0.5 text-xs text-slate-400">Nombres y vehículos inventados.</p>
+    </div>
+  </article>
+  <article class="panel" data-views="3">
+    <div class="tilt"><div class="z1 flex items-center gap-3"><div class="grid size-10 place-items-center rounded-full bg-cyan-300/90 font-semibold text-slate-900">LM</div><div class="min-w-0 flex-1"><p class="truncate text-sm font-medium">Lucía M.</p><p class="truncate text-xs text-slate-400">Berlina gris · cambio de aceite</p></div><span class="rounded-full border border-amber-300/50 px-2 py-0.5 text-[11px] text-amber-200">Esperando</span></div><div class="meter z1 mt-3"><i style="width:15%"></i></div></div>
+  </article>
+  <article class="panel" data-views="3">
+    <div class="tilt"><div class="z1 flex items-center gap-3"><div class="grid size-10 place-items-center rounded-full bg-blue-400/90 font-semibold text-slate-900">MR</div><div class="min-w-0 flex-1"><p class="truncate text-sm font-medium">Marcos R.</p><p class="truncate text-xs text-slate-400">SUV azul · frenos</p></div><span class="rounded-full border border-cyan-300/50 px-2 py-0.5 text-[11px] text-cyan-200">En elevador 2</span></div><div class="meter z1 mt-3"><i style="width:55%"></i></div></div>
+  </article>
+  <article class="panel" data-views="3">
+    <div class="tilt"><div class="z1 flex items-center gap-3"><div class="grid size-10 place-items-center rounded-full bg-emerald-300/90 font-semibold text-slate-900">IP</div><div class="min-w-0 flex-1"><p class="truncate text-sm font-medium">Irene P.</p><p class="truncate text-xs text-slate-400">Compacto rojo · revisión</p></div><span class="rounded-full border border-emerald-300/50 px-2 py-0.5 text-[11px] text-emerald-200">Para entrega</span></div><div class="meter z1 mt-3"><i style="width:100%"></i></div></div>
+  </article>
+
+  <!-- Vista 4 -->
+  <article class="panel" data-views="4">
+    <div class="tilt">
+      <h2 class="z2 text-sm font-semibold">Inventario de piezas <span class="chip-demo ml-1">demo</span></h2>
+      <p class="z1 mt-0.5 text-xs text-slate-400">Unidades en stock inventadas. Pasa el cursor por una barra.</p>
+      <ul class="z1 mt-4 space-y-3 text-xs" id="stock"></ul>
+    </div>
+  </article>
+</section>
+
+<p class="pointer-events-none fixed bottom-1 left-1/2 z-10 hidden -translate-x-1/2 text-[11px] text-slate-500 md:block">Arrastra para orbitar · rueda para acercar · todos los datos son de demostración · modelos procedurales, sin marcas</p>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarse = matchMedia('(pointer: coarse)').matches;
+const COL = { cyan: 0x22d3ee, blue: 0x3b82f6, ok: 0x34d399, bad: 0xff4d5e, amber: 0xfbbf24 };
+
+/* ───────────── Renderer, escena, cámara ───────────── */
+const canvas = document.getElementById('gl');
+let renderer = null;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+} catch (e) {
+  document.getElementById('nogl').classList.remove('hidden');
+}
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07090e);
+scene.fog = new THREE.FogExp2(0x07090e, 0.0105);
+const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 400);
+const VIEWS = {
+  1: { pos: new THREE.Vector3(0, 40, 62), target: new THREE.Vector3(0, 0, -6), name: 'Vista global del taller' },
+  2: { pos: new THREE.Vector3(36, 6.5, 12), target: new THREE.Vector3(26, 2.2, 0), name: 'Escáner de coche 360°' },
+  3: { pos: new THREE.Vector3(-26, 10, 19), target: new THREE.Vector3(-26, 1.4, 1), name: 'Flujo de clientes en 3D' },
+  4: { pos: new THREE.Vector3(0, 11, 9), target: new THREE.Vector3(0, 3.2, -25), name: 'Inventario de piezas en 3D' },
+};
+camera.position.copy(VIEWS[1].pos);
+
+if (renderer) {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+}
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.inset = '0';
+document.getElementById('labels').appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer ? renderer.domElement : canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 5;
+controls.maxDistance = 95;
+controls.maxPolarAngle = Math.PI * 0.48;
+controls.target.copy(VIEWS[1].target);
+controls.update();
+
+/* ───────────── Luces ───────────── */
+scene.add(new THREE.HemisphereLight(0x6fa8ff, 0x05070b, 0.55));
+const key = new THREE.DirectionalLight(0xbfe9ff, 0.9);
+key.position.set(-20, 40, 30);
+scene.add(key);
+const lightA = new THREE.PointLight(COL.cyan, 90, 60, 1.6); lightA.position.set(-26, 7, 4); scene.add(lightA);
+const lightB = new THREE.PointLight(0x7c5cff, 70, 55, 1.6); lightB.position.set(0, 9, 3); scene.add(lightB);
+const lightC = new THREE.PointLight(COL.cyan, 110, 50, 1.6); lightC.position.set(26, 8, 2); scene.add(lightC);
+const lightD = new THREE.PointLight(COL.blue, 70, 45, 1.6); lightD.position.set(0, 8, -22); scene.add(lightD);
+
+/* ───────────── Utilidades ───────────── */
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const rnd = mulberry32(20261106);
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const ease = (t) => 1 - Math.pow(1 - t, 3);
+
+function neon(mesh, color = COL.cyan, opacity = 0.9, angle = 30) {
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, angle), new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+  mesh.add(e);
+  return e;
+}
+const fadeLabels = [];
+function label(text, cls = 'zone-label') {
+  const d = document.createElement('div');
+  d.className = cls;
+  d.textContent = text;
+  const o = new CSS2DObject(d);
+  if (cls !== 'tip-label' || d.classList.contains('floater')) fadeLabels.push(o);
+  return o;
+}
+function solid(color, opts = {}) {
+  return new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.4, ...opts });
+}
+function box(w, h, d, mat, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  return m;
+}
+function pad(x, z, w, d, color = COL.cyan) {
+  const g = new THREE.Group();
+  const slab = box(w, 0.24, d, solid(0x0f1c2e, { metalness: 0.7, roughness: 0.35 }), 0, 0.12, 0);
+  neon(slab, color, 0.85);
+  g.add(slab);
+  g.position.set(x, 0, z);
+  scene.add(g);
+  return g;
+}
+function gearGeometry(teeth = 10, rOut = 1, rIn = 0.78, depth = 0.34) {
+  const s = new THREE.Shape();
+  const da = (Math.PI * 2) / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const a0 = i * da;
+    const pts = [[rIn, a0], [rOut, a0 + da * 0.2], [rOut, a0 + da * 0.5], [rIn, a0 + da * 0.7]];
+    pts.forEach(([r, a], k) => { const x = Math.cos(a) * r, y = Math.sin(a) * r; (i === 0 && k === 0) ? s.moveTo(x, y) : s.lineTo(x, y); });
+  }
+  s.closePath();
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, rIn * 0.36, 0, Math.PI * 2, true);
+  s.holes.push(hole);
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2 });
+  g.translate(0, 0, -depth / 2);
+  return g;
+}
+
+/* ───────────── Suelo con cuadrícula neón ───────────── */
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), new THREE.MeshStandardMaterial({ color: 0x080c14, metalness: 0.85, roughness: 0.32 }));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+const grid = new THREE.GridHelper(260, 130, COL.cyan, 0x0f3b57);
+grid.position.y = 0.02;
+grid.material.transparent = true;
+grid.material.opacity = 0.45;
+scene.add(grid);
+
+/* ───────────── Coche procedural (ExtrudeGeometry + ruedas) ───────────── */
+function carProfile() {
+  const s = new THREE.Shape();
+  s.moveTo(-2.2, 0.35); s.lineTo(-2.2, 0.85); s.quadraticCurveTo(-2.15, 1.0, -1.8, 1.05); s.lineTo(-1.1, 1.1);
+  s.quadraticCurveTo(-0.7, 1.58, -0.1, 1.58); s.lineTo(0.55, 1.58); s.quadraticCurveTo(1.0, 1.52, 1.3, 1.1);
+  s.lineTo(2.0, 0.95); s.quadraticCurveTo(2.25, 0.9, 2.2, 0.7); s.lineTo(2.2, 0.35); s.closePath();
+  return s;
+}
+function glassProfile() {
+  const s = new THREE.Shape();
+  s.moveTo(-0.92, 1.13); s.lineTo(-0.62, 1.49); s.lineTo(0.5, 1.49); s.lineTo(1.1, 1.13); s.closePath();
+  return s;
+}
+const BODY_GEO = new THREE.ExtrudeGeometry(carProfile(), { depth: 1.8, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 2, curveSegments: 10 });
+BODY_GEO.translate(0, 0, -0.9);
+const GLASS_GEO = new THREE.ExtrudeGeometry(glassProfile(), { depth: 1.9, bevelEnabled: false });
+GLASS_GEO.translate(0, 0, -0.95);
+
+function makeCar({ color = 0x8aa0b4, holo = false } = {}) {
+  const car = new THREE.Group();
+  const wheels = [];
+  const bodyMat = holo
+    ? new THREE.MeshPhysicalMaterial({ color: COL.cyan, emissive: 0x0891b2, emissiveIntensity: 0.55, transparent: true, opacity: 0.1, roughness: 0.2, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false })
+    : new THREE.MeshPhysicalMaterial({ color, metalness: 0.75, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08 });
+  const body = new THREE.Mesh(BODY_GEO, bodyMat);
+  car.add(body);
+  if (holo) neon(body, COL.cyan, 0.95, 20);
+  const glass = new THREE.Mesh(GLASS_GEO, holo
+    ? new THREE.MeshBasicMaterial({ color: COL.cyan, transparent: true, opacity: 0.08, depthWrite: false })
+    : new THREE.MeshPhysicalMaterial({ color: 0x0b1118, metalness: 0.9, roughness: 0.08, clearcoat: 1 }));
+  car.add(glass);
+  if (!holo) {
+    car.add(box(0.06, 0.16, 1.3, new THREE.MeshBasicMaterial({ color: 0xeaf6ff }), 2.22, 0.78, 0));
+    car.add(box(0.06, 0.14, 1.4, new THREE.MeshBasicMaterial({ color: 0xff2a3d }), -2.22, 0.85, 0));
+  }
+  const tireMat = holo ? new THREE.MeshBasicMaterial({ color: COL.cyan, wireframe: true, transparent: true, opacity: 0.6 }) : solid(0x101214, { metalness: 0.1, roughness: 0.85 });
+  const rimMat = holo ? new THREE.MeshBasicMaterial({ color: 0x9be9ff, wireframe: true }) : solid(0xcfd8de, { metalness: 1, roughness: 0.2 });
+  for (const [x, z] of [[1.35, 1], [1.35, -1], [-1.4, 1], [-1.4, -1]]) {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, 0.43, z);
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.3, 28), tireMat);
+    tire.rotation.x = Math.PI / 2;
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.32, 5), rimMat);
+    rim.rotation.x = Math.PI / 2;
+    pivot.add(tire, rim);
+    car.add(pivot);
+    wheels.push(pivot);
+  }
+  return { group: car, wheels, body };
+}
+
+/* ───────────── Zona A · Recepción y sala de clientes ───────────── */
+const reception = pad(-26, 0, 22, 18, COL.cyan);
+const recLabel = label('Recepción y sala de clientes'); recLabel.position.set(0, 5.4, 0); reception.add(recLabel);
+const counter = box(6, 1.2, 1.3, solid(0x142233), 0, 0.84, -5);
+neon(counter, COL.cyan);
+reception.add(counter);
+const screenM = box(1.6, 0.9, 0.08, new THREE.MeshBasicMaterial({ color: 0x1b6f87 }), -1.2, 1.9, -5.2);
+screenM.rotation.x = -0.25;
+reception.add(screenM);
+for (const sx of [-7, 7]) {
+  const sofa = box(4.2, 0.7, 1.6, solid(0x1a2a40), sx, 0.6, 5);
+  neon(sofa, COL.blue, 0.7);
+  const back = box(4.2, 0.9, 0.35, solid(0x1a2a40), sx, 1.15, 5.7);
+  neon(back, COL.blue, 0.7);
+  reception.add(sofa, back);
+}
+function makeAvatar(color) {
+  const g = new THREE.Group();
+  g.scale.setScalar(1.35);
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.78, 4, 12), solid(color, { metalness: 0.2, roughness: 0.5 }));
+  body.position.y = 0.72;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 20, 16), solid(0xe8d6c4, { metalness: 0, roughness: 0.6 }));
+  head.position.y = 1.58;
+  const visor = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 8, 24), new THREE.MeshBasicMaterial({ color: COL.cyan }));
+  visor.position.y = 1.58; visor.rotation.x = Math.PI / 2;
+  const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.12), new THREE.MeshBasicMaterial({ color: COL.cyan }));
+  marker.position.y = 2.15;
+  g.add(body, head, visor, marker);
+  g.userData.marker = marker;
+  return g;
+}
+const avatars = [];
+const recept = makeAvatar(0x2dd4bf); recept.position.set(1.5, 0, -6.3); reception.add(recept);
+const walkers = [
+  { a: makeAvatar(0x60a5fa), x0: -8, x1: 7, z: 2.2, sp: 0.5, ph: 0 },
+  { a: makeAvatar(0xf472b6), x0: -4, x1: 9, z: -1.2, sp: 0.38, ph: 2 },
+  { a: makeAvatar(0xfbbf24), x0: -9, x1: 3, z: 0.4, sp: 0.44, ph: 4 },
+];
+walkers.forEach((w) => { reception.add(w.a); avatars.push(w.a); });
+avatars.push(recept);
+const seated = makeAvatar(0xa78bfa); seated.position.set(-7, 0.2, 5); seated.scale.setScalar(1.15); reception.add(seated); avatars.push(seated);
+
+/* Calzada delantera con coches que entregan y recogen */
+const road = box(150, 0.06, 5, solid(0x090d14, { metalness: 0.5, roughness: 0.5 }), 0, 0.03, 13);
+scene.add(road);
+for (let x = -70; x <= 70; x += 6) scene.add(box(2.6, 0.02, 0.16, new THREE.MeshBasicMaterial({ color: COL.cyan, transparent: true, opacity: 0.6 }), x, 0.07, 13));
+const deliverers = [
+  { car: makeCar({ color: 0xc9d6e3 }), z: 14.2, t0: 0, stopX: -33, hold: true },
+  { car: makeCar({ color: 0x3b82f6 }), z: 11.8, t0: 9, stopX: null },
+  { car: makeCar({ color: 0xef4444 }), z: 14.2, t0: 17, stopX: null },
+];
+deliverers.forEach((d) => { scene.add(d.car.group); });
+
+/* ───────────── Zona B · Elevadores ───────────── */
+const liftZone = pad(0, 0, 24, 14, 0x7c5cff);
+const lifts = [];
+const liftLabel = label('Elevadores'); liftLabel.position.set(0, 8.4, 0); liftZone.add(liftLabel);
+[-8, 0, 8].forEach((x, i) => {
+  const g = new THREE.Group();
+  g.position.set(x, 0.24, 0);
+  const postMat = solid(0x1b2740);
+  const p1 = box(0.4, 6.4, 0.4, postMat, 0, 3.2, -2.3); neon(p1, 0x7c5cff, 0.8);
+  const p2 = box(0.4, 6.4, 0.4, postMat, 0, 3.2, 2.3); neon(p2, 0x7c5cff, 0.8);
+  const base = box(1.6, 0.14, 5.6, solid(0x0e1626), 0, 0.07, 0); neon(base, 0x7c5cff, 0.8);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), new THREE.MeshBasicMaterial({ color: COL.ok }));
+  lamp.position.set(0, 6.7, -2.3);
+  g.add(p1, p2, base, lamp);
+  const platform = new THREE.Group();
+  const railMat = solid(0x2a3a5c, { metalness: 0.9, roughness: 0.25 });
+  const r1 = box(5.4, 0.2, 0.55, railMat, 0, 0, -1.0); neon(r1, COL.cyan, 0.9);
+  const r2 = box(5.4, 0.2, 0.55, railMat, 0, 0, 1.0); neon(r2, COL.cyan, 0.9);
+  const bar1 = box(0.4, 0.18, 4.7, railMat, -1.4, 0, 0);
+  platform.add(r1, r2, bar1);
+  const car = makeCar({ color: [0x94a3b8, 0x38bdf8, 0xf59e0b][i] });
+  car.group.position.y = 0.4;
+  platform.add(car.group);
+  g.add(platform);
+  g.userData = { platform, lamp, car, phase: i * 2.1, speed: 0.32 + i * 0.07, level: 0 };
+  liftZone.add(g);
+  lifts.push(g);
+});
+
+/* ───────────── Zona C · Cabina de diagnóstico ───────────── */
+const diagZone = pad(26, 0, 22, 18, COL.cyan);
+const diagLabel = label('Cabina de diagnóstico'); diagLabel.position.set(0, 7, 0); diagZone.add(diagLabel);
+const ringBase = new THREE.Mesh(new THREE.CylinderGeometry(6.2, 6.2, 0.2, 64), solid(0x0a1a24, { metalness: 0.8, roughness: 0.3 }));
+ringBase.position.y = 0.34; neon(ringBase, COL.cyan, 0.9);
+diagZone.add(ringBase);
+const scanRing = new THREE.Mesh(new THREE.TorusGeometry(5.2, 0.05, 8, 96), new THREE.MeshBasicMaterial({ color: COL.cyan, transparent: true, opacity: 0.8 }));
+scanRing.rotation.x = Math.PI / 2;
+diagZone.add(scanRing);
+const holo = makeCar({ holo: true });
+const holoRoot = new THREE.Group();
+holoRoot.position.y = 0.6;
+holoRoot.scale.setScalar(1.25);
+holoRoot.add(holo.group);
+diagZone.add(holoRoot);
+
+/* Bloques internos que laten en rojo (avería simulada) o verde (correcto) */
+const PARTS = [
+  { id: 'motor', name: 'Motor', status: 'ok', geo: new THREE.BoxGeometry(1.1, 0.7, 1.0), pos: [1.2, 0.85, 0], note: 'Compresión y temperatura en rango (simulación).' },
+  { id: 'frenos-d', name: 'Frenos delanteros', status: 'bad', geo: new THREE.TorusGeometry(0.3, 0.07, 10, 24), pos: [1.35, 0.43, 0.72], note: 'Pastillas por debajo del mínimo (avería simulada).', wheel: 0 },
+  { id: 'frenos-t', name: 'Frenos traseros', status: 'ok', geo: new THREE.TorusGeometry(0.3, 0.07, 10, 24), pos: [-1.4, 0.43, 0.72], note: 'Espesor correcto (simulación).', wheel: 2 },
+  { id: 'bateria', name: 'Batería', status: 'bad', geo: new THREE.BoxGeometry(0.55, 0.36, 0.7), pos: [0.2, 0.65, -0.45], note: 'Tensión baja en reposo (avería simulada).' },
+  { id: 'transmision', name: 'Transmisión', status: 'ok', geo: new THREE.CylinderGeometry(0.16, 0.16, 2.2, 14), pos: [-0.2, 0.55, 0.05], note: 'Sin ruidos ni holguras (simulación).', rotZ: true },
+  { id: 'deposito', name: 'Depósito', status: 'ok', geo: new THREE.BoxGeometry(0.9, 0.3, 1.1), pos: [-1.5, 0.6, 0], note: 'Sin fugas (simulación).' },
+];
+const partMeshes = [];
+PARTS.forEach((p) => {
+  const c = p.status === 'ok' ? COL.ok : COL.bad;
+  const mat = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 1, metalness: 0.2, roughness: 0.35, transparent: true, opacity: 0.92 });
+  const m = new THREE.Mesh(p.geo, mat);
+  m.position.set(...p.pos);
+  if (p.rotZ) m.rotation.z = Math.PI / 2;
+  if (p.wheel === 0 || p.wheel === 2) { m.position.set(0, 0, 0.0); holo.wheels[p.wheel].add(m); m.rotation.x = 0; m.position.z = 0; }
+  else holo.group.add(m);
+  m.userData = { part: p, phase: rnd() * 6, base: m.scale.clone() };
+  p.mesh = m;
+  partMeshes.push(m);
+});
+/* Segundo disco en el lado opuesto, para que los frenos se vean desde ambos costados */
+[[1, -0.72], [3, -0.72]].forEach(([wi]) => {
+  const p = PARTS[wi === 1 ? 1 : 2];
+  const mat = p.mesh.material;
+  const m = new THREE.Mesh(p.geo, mat);
+  m.position.set(0, 0, 0);
+  holo.wheels[wi === 1 ? 1 : 3].add(m);
+  m.userData = { part: p, phase: p.mesh.userData.phase, base: m.scale.clone() };
+  partMeshes.push(m);
+});
+let selectedPart = null;
+
+/* ───────────── Zona D · Inventario ───────────── */
+const invZone = pad(0, -26, 30, 12, COL.blue);
+const invLabel = label('Inventario de piezas'); invLabel.position.set(0, 9.2, 0); invZone.add(invLabel);
+const floaters = [];
+const STOCK = [
+  { n: 'Neumáticos', q: 24, max: 40, kind: 'tire' },
+  { n: 'Discos de freno', q: 12, max: 40, kind: 'disc' },
+  { n: 'Aceite 5W-30', q: 36, max: 40, kind: 'oil' },
+  { n: 'Baterías', q: 7, max: 40, kind: 'battery' },
+  { n: 'Engranajes de distribución', q: 15, max: 40, kind: 'gear' },
+];
+function floaterMesh(kind) {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x1a2c44, emissive: COL.cyan, emissiveIntensity: 0.35, metalness: 0.8, roughness: 0.3 });
+  let m;
+  if (kind === 'tire') { m = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.32, 16, 32), solid(0x14171b, { metalness: 0.1, roughness: 0.8 })); neon(m, COL.cyan, 0.5, 60); }
+  else if (kind === 'disc') { m = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.16, 36), mat); m.rotation.x = Math.PI / 2; neon(m, COL.cyan, 0.9); }
+  else if (kind === 'oil') { m = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.1, 20), mat); neon(m, COL.cyan, 0.9); }
+  else if (kind === 'battery') { m = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 0.8), mat); neon(m, COL.amber, 0.9); }
+  else { m = new THREE.Mesh(gearGeometry(12, 0.95, 0.75, 0.3), mat); neon(m, COL.cyan, 0.9, 20); }
+  return m;
+}
+STOCK.forEach((s, i) => {
+  const x = -12 + i * 6;
+  const rack = new THREE.Group();
+  rack.position.set(x, 0.24, -1);
+  for (const [px, pz] of [[-2.2, -0.7], [2.2, -0.7], [-2.2, 0.7], [2.2, 0.7]]) rack.add(box(0.12, 4.2, 0.12, solid(0x1b2740), px, 2.1, pz));
+  for (const y of [0.6, 1.9, 3.2]) {
+    const board = box(4.6, 0.1, 1.7, solid(0x13203a), 0, y, 0); neon(board, COL.blue, 0.6);
+    rack.add(board);
+    for (let k = 0; k < 4; k++) {
+      const h = 0.3 + rnd() * 0.55;
+      const crate = box(0.7 + rnd() * 0.3, h, 0.8, solid(new THREE.Color().setHSL(0.55 + rnd() * 0.1, 0.5, 0.25 + rnd() * 0.1), { metalness: 0.3, roughness: 0.6 }), -1.6 + k * 1.05, y + 0.05 + h / 2, 0);
+      rack.add(crate);
+    }
+  }
+  invZone.add(rack);
+  const f = floaterMesh(s.kind);
+  f.position.set(x, 6.3, -1);
+  invZone.add(f);
+  const fl = label(s.n, 'tip-label floater'); fl.element.style.opacity = ''; fl.position.set(0, -1.5, 0); f.add(fl);
+  floaters.push({ mesh: f, base: 6.3, ph: i * 1.3 });
+});
+
+/* ───────────── Barras y anillos 3D de estadísticas (demo) ───────────── */
+const statsZone = new THREE.Group();
+statsZone.position.set(30, 0, -26);
+scene.add(statsZone);
+const statsLabel = label('Ingresos (demo)'); statsLabel.position.set(0, 9, 0); statsZone.add(statsLabel);
+const INCOME = [3.2, 4.5, 3.9, 5.8, 6.4, 5.2, 7.1];
+const bars = [];
+INCOME.forEach((v, i) => {
+  const g = new THREE.Group();
+  g.position.set(-5.4 + i * 1.8, 0, 0);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, v, 1.2), new THREE.MeshStandardMaterial({ color: 0x1b4bd8, emissive: COL.cyan, emissiveIntensity: 0.25, metalness: 0.5, roughness: 0.3 }));
+  m.position.y = v / 2 + 0.3;
+  neon(m, COL.cyan, 0.9);
+  g.add(m);
+  const t = label(`${String(v).replace('.', ',')} mil €`, 'tip-label'); t.position.set(0, v + 1.1, 0); g.add(t);
+  m.userData = { kind: 'bar', group: g, tip: t.element, lift: 0 };
+  g.userData = { target: 0 };
+  statsZone.add(g);
+  bars.push(m);
+});
+const rings = [];
+[[0.78, COL.cyan, 'Elevadores 78 %'], [0.92, COL.ok, 'A tiempo 92 %'], [0.85, COL.blue, 'Clientes OK 85 %']].forEach(([val, color, txt], i) => {
+  const g = new THREE.Group();
+  g.position.set(-4 + i * 4, 3.4, 8);
+  const bg = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.12, 12, 64), new THREE.MeshBasicMaterial({ color: 0x1a2a3a }));
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.16, 12, 64, Math.PI * 2 * val), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.9 }));
+  arc.rotation.z = Math.PI / 2;
+  g.add(bg, arc);
+  const t = label(txt, 'tip-label'); t.position.set(0, -2, 0); g.add(t);
+  arc.userData = { kind: 'ring', group: g, tip: t.element, lift: 0 };
+  g.userData = { baseY: 3.4 };
+  statsZone.add(g);
+  rings.push(arc);
+});
+
+/* ───────────── Iconos 3D que giran sobre cada zona ───────────── */
+const icons = [];
+function icon(mesh, x, y, z, speed = 0.8) { mesh.position.set(x, y, z); scene.add(mesh); icons.push({ mesh, speed, y }); }
+{
+  const mat = new THREE.MeshStandardMaterial({ color: 0x0f2a3a, emissive: COL.cyan, emissiveIntensity: 0.7, metalness: 0.9, roughness: 0.2 });
+  icon(new THREE.Mesh(new THREE.TorusKnotGeometry(0.7, 0.2, 80, 12), mat), -26, 9.6, 0, 0.9);
+  icon(new THREE.Mesh(gearGeometry(10, 1.1, 0.86, 0.4), mat), 0, 11.2, 0, 0.7);
+  icon(new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), mat), 26, 10, 0, 1.1);
+}
+
+/* ───────────── Partículas flotantes ───────────── */
+const PN = 700;
+const pPos = new Float32Array(PN * 3);
+for (let i = 0; i < PN; i++) { pPos[i * 3] = (rnd() - 0.5) * 140; pPos[i * 3 + 1] = rnd() * 30; pPos[i * 3 + 2] = (rnd() - 0.5) * 100; }
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: COL.cyan, size: 0.16, transparent: true, opacity: 0.65, depthWrite: false, blending: THREE.AdditiveBlending }));
+scene.add(particles);
+
+/* ───────────── Interacción 3D (hover y clic) ───────────── */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2(9, 9);
+let hovered = null;
+const interactives = [...bars, ...rings, ...partMeshes];
+if (renderer) {
+  renderer.domElement.addEventListener('pointermove', (e) => {
+    ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  });
+  renderer.domElement.addEventListener('pointerleave', () => ndc.set(9, 9));
+  let downAt = null;
+  renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener('pointerup', (e) => {
+    if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
+    ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(partMeshes, false)[0];
+    if (hit) selectPart(hit.object.userData.part.id);
+  });
+}
+function updateHover() {
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(interactives, false)[0];
+  const obj = hit ? hit.object : null;
+  if (obj !== hovered) {
+    if (hovered?.userData.tip) hovered.userData.tip.classList.remove('on');
+    hovered = obj;
+    if (hovered?.userData.tip) hovered.userData.tip.classList.add('on');
+    canvas.style.cursor = obj && obj.userData.part ? 'pointer' : obj ? 'crosshair' : '';
+  }
+}
+
+/* ───────────── Panel de diagnóstico (HTML accesible) ───────────── */
+const partsList = document.getElementById('parts');
+const partDetail = document.getElementById('part-detail');
+PARTS.forEach((p) => {
+  const li = document.createElement('li');
+  li.innerHTML = `<button type="button" class="part-btn" data-part="${p.id}" aria-pressed="false"><span class="dot ${p.status}"></span><span class="flex-1 text-sm">${p.name}</span><span class="text-xs ${p.status === 'ok' ? 'text-emerald-300' : 'text-red-300'}">${p.status === 'ok' ? 'Correcto' : 'Avería'}</span></button>`;
+  partsList.appendChild(li);
+});
+partsList.addEventListener('click', (e) => { const b = e.target.closest('[data-part]'); if (b) selectPart(b.dataset.part); });
+function selectPart(id) {
+  selectedPart = selectedPart === id ? null : id;
+  partsList.querySelectorAll('.part-btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.part === selectedPart)));
+  const p = PARTS.find((x) => x.id === selectedPart);
+  partDetail.textContent = p ? `${p.name}: ${p.status === 'ok' ? 'correcto' : 'avería'}. ${p.note}` : 'Selecciona una pieza para ver su estado.';
+}
+
+/* Stock de demostración con barras que se elevan en Z */
+const stockList = document.getElementById('stock');
+STOCK.forEach((s) => {
+  const li = document.createElement('li');
+  li.innerHTML = `<div class="mb-1 flex justify-between"><span>${s.n}</span><span class="tabular-nums text-cyan-200">${s.q} uds</span></div><div class="meter bar" style="height:10px;border-radius:99px;background:rgba(255,255,255,.1);box-shadow:none" tabindex="0" role="img" aria-label="${s.n}: ${s.q} unidades de ${s.max}"><i style="width:${(s.q / s.max) * 100}%;background:linear-gradient(90deg,#3b82f6,#22d3ee);display:block;height:100%;border-radius:inherit"></i></div>`;
+  stockList.appendChild(li);
+});
+
+/* ───────────── Efecto Tilt 3D + reflejo de luz ───────────── */
+const tiltOn = !reduced && !coarse;
+document.querySelectorAll('.tilt').forEach((el) => {
+  gsap.set(el, { transformPerspective: 900, transformOrigin: '50% 50%' });
+  if (!tiltOn) return;
+  el.addEventListener('mousemove', (e) => {
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    gsap.to(el, { rotateY: (px - 0.5) * 16, rotateX: -(py - 0.5) * 14, duration: 0.35, ease: 'power2.out', overwrite: 'auto' });
+    el.style.setProperty('--mx', `${px * 100}%`);
+    el.style.setProperty('--my', `${py * 100}%`);
+    el.style.setProperty('--glare', '1');
+  });
+  el.addEventListener('mouseleave', () => {
+    gsap.to(el, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out', overwrite: 'auto' });
+    el.style.setProperty('--glare', '0');
+  });
+});
+
+/* ───────────── Menú de vistas: cámara cinematográfica con GSAP ───────────── */
+const panels = [...document.querySelectorAll('.panel')];
+let current = 0;
+let camTween = null;
+const holoSpeed = { v: 0.35 };
+
+function showPanels(view) {
+  const next = panels.filter((p) => p.dataset.views.split(' ').includes(String(view)));
+  const prev = panels.filter((p) => !next.includes(p) && p.style.display !== 'none' && p.dataset.shown === '1');
+  const dur = reduced ? 0.01 : 1;
+  prev.forEach((p, i) => {
+    p.dataset.shown = '0';
+    gsap.to(p, { rotateY: 75, x: 70, opacity: 0, duration: 0.45 * dur, delay: i * 0.05 * dur, ease: 'power2.in', transformOrigin: '100% 50%', transformPerspective: 1000, onComplete: () => { if (p.dataset.shown !== '1') p.style.display = 'none'; } });
+  });
+  panels.forEach((p) => { if (!next.includes(p) && p.dataset.shown !== '1' && !prev.includes(p)) p.style.display = 'none'; });
+  next.forEach((p, i) => {
+    p.style.display = '';
+    p.dataset.shown = '1';
+    gsap.fromTo(p, { rotateY: -75, x: 90, opacity: 0 }, { rotateY: 0, x: 0, opacity: 1, duration: 0.8 * dur, delay: (0.4 + i * 0.1) * dur, ease: 'power3.out', transformOrigin: '100% 50%', transformPerspective: 1000, overwrite: true });
+  });
+}
+
+function flyTo(view, instant = false) {
+  const v = VIEWS[view];
+  if (camTween) camTween.kill();
+  controls.enabled = false;
+  const fromT = controls.target.clone();
+  const fromS = new THREE.Spherical().setFromVector3(camera.position.clone().sub(fromT));
+  const toS = new THREE.Spherical().setFromVector3(v.pos.clone().sub(v.target));
+  let dTheta = toS.theta - fromS.theta;
+  dTheta = ((((dTheta + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
+  const p = { t: 0 };
+  const apply = () => {
+    const t = p.t;
+    const tgt = new THREE.Vector3().lerpVectors(fromT, v.target, t);
+    const swing = Math.sin(Math.PI * t);
+    const s = new THREE.Spherical(
+      lerp(fromS.radius, toS.radius, t) + swing * 10,
+      clamp(lerp(fromS.phi, toS.phi, t) - swing * 0.12, 0.2, 1.5),
+      fromS.theta + dTheta * t,
+    );
+    camera.position.copy(tgt).add(new THREE.Vector3().setFromSpherical(s));
+    controls.target.copy(tgt);
+    camera.lookAt(tgt);
+  };
+  if (instant || reduced) { p.t = 1; apply(); controls.enabled = true; controls.update(); return; }
+  camTween = gsap.to(p, { t: 1, duration: 2.4, ease: 'power3.inOut', onUpdate: apply, onComplete: () => { controls.enabled = true; controls.update(); } });
+}
+
+function setView(view, first = false) {
+  if (view === current) return;
+  current = view;
+  document.querySelectorAll('.menu-btn').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.view) === view)));
+  document.getElementById('status').textContent = VIEWS[view].name;
+  document.body.dataset.view = String(view);
+  gsap.to(holoSpeed, { v: view === 2 ? 1.1 : 0.3, duration: 1.2 });
+  showPanels(view);
+  flyTo(view, first);
+}
+document.getElementById('menu').addEventListener('click', (e) => { const b = e.target.closest('[data-view]'); if (b) setView(Number(b.dataset.view)); });
+addEventListener('keydown', (e) => { if (/^[1-4]$/.test(e.key) && !e.target.closest('input,textarea')) setView(Number(e.key)); });
+setView(1, true);
+
+/* Centra la escena en el hueco libre entre el menú y los paneles */
+function updateOffset() {
+  const W = innerWidth, H = innerHeight;
+  const menu = document.getElementById('menu').getBoundingClientRect();
+  const pan = document.getElementById('panels').getBoundingClientRect();
+  let x = 0, y = 0;
+  if (W >= 768) { x = ((W - pan.left + 12) - (menu.right + 12)) / 2; }
+  else { y = Math.max(0, H - pan.top) / 2; }
+  camera.setViewOffset(W, H, x, y, W, H);
+}
+updateOffset();
+
+/* ───────────── Bucle de animación ───────────── */
+const clock = new THREE.Clock();
+const els = {
+  rpm: document.getElementById('s-rpm'), temp: document.getElementById('s-temp'), volt: document.getElementById('s-volt'),
+  clock: document.getElementById('clock'),
+  lift: [0, 1, 2].map((i) => [document.getElementById('t-lift-' + i), document.getElementById('m-lift-' + i)]),
+};
+let tele = 0;
+
+function animate() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // Elevadores subiendo y bajando
+  lifts.forEach((g) => {
+    const u = g.userData;
+    const k = (Math.sin(t * u.speed + u.phase) + 1) / 2;
+    u.level = k;
+    u.platform.position.y = 0.4 + k * 3.6;
+    u.lamp.material.color.setHex(k > 0.08 ? COL.amber : COL.ok);
+  });
+
+  // Coche holográfico: giro continuo, ruedas, pulso de bloques
+  holoRoot.rotation.y += dt * holoSpeed.v;
+  holoRoot.position.y = 0.6 + Math.sin(t * 1.4) * 0.05;
+  holo.wheels.forEach((w) => { w.rotation.z -= dt * 5; });
+  scanRing.position.y = 0.6 + (Math.sin(t * 0.9) + 1) * 1.4;
+  scanRing.material.opacity = 0.35 + 0.4 * Math.abs(Math.cos(t * 0.9));
+  partMeshes.forEach((m) => {
+    const p = m.userData.part;
+    const bad = p.status === 'bad';
+    const sel = selectedPart === p.id;
+    const k = Math.sin(t * (bad ? 6 : 2.2) + m.userData.phase);
+    m.material.emissiveIntensity = (sel ? 1.8 : 0.9) + k * (bad ? 0.7 : 0.35);
+    const sc = (sel ? 1.25 : 1) * (1 + k * 0.05);
+    m.scale.set(m.userData.base.x * sc, m.userData.base.y * sc, m.userData.base.z * sc);
+  });
+
+  // Conductores: coches que llegan, entregan al cliente y se van
+  deliverers.forEach((d) => {
+    const cycle = 26;
+    const lt = ((t - d.t0) % cycle + cycle) % cycle;
+    let x;
+    if (d.stopX !== null) {
+      if (lt < 6) x = lerp(-62, d.stopX, ease(lt / 6));
+      else if (lt < 14) x = d.stopX;
+      else x = lerp(d.stopX, 62, ease(clamp((lt - 14) / 8, 0, 1)));
+    } else x = lerp(-62, 62, lt / cycle);
+    d.car.group.position.set(x, 0.12, d.z);
+    const moving = d.stopX === null || lt < 6 || lt > 14;
+    d.car.wheels.forEach((w) => { if (moving) w.rotation.z -= dt * 9; });
+  });
+
+  // Avatares paseando y marcadores
+  walkers.forEach((w) => {
+    const u = (Math.sin(t * w.sp + w.ph) + 1) / 2;
+    const x = lerp(w.x0, w.x1, u);
+    const dir = Math.cos(t * w.sp + w.ph) >= 0 ? 1 : -1;
+    w.a.position.set(x, Math.abs(Math.sin(t * 5 + w.ph)) * 0.06, w.z);
+    w.a.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+  });
+  avatars.forEach((a, i) => { a.userData.marker.rotation.y = t * 2; a.userData.marker.position.y = 2.15 + Math.sin(t * 2 + i) * 0.08; });
+
+  // Iconos, objetos flotantes del inventario y partículas
+  icons.forEach((o, i) => { o.mesh.rotation.y += dt * o.speed; o.mesh.rotation.x = Math.sin(t * 0.6 + i) * 0.3; o.mesh.position.y = o.y + Math.sin(t * 1.2 + i) * 0.25; });
+  floaters.forEach((f) => { f.mesh.rotation.y += dt * 0.9; f.mesh.rotation.x += dt * 0.25; f.mesh.position.y = f.base + Math.sin(t * 1.3 + f.ph) * 0.3; });
+  const pa = pGeo.attributes.position;
+  for (let i = 0; i < PN; i++) {
+    let y = pa.getY(i) + dt * (0.35 + (i % 5) * 0.08);
+    if (y > 30) y = 0;
+    pa.setY(i, y);
+  }
+  pa.needsUpdate = true;
+  particles.rotation.y = t * 0.01;
+
+  // Barras y anillos que se elevan en Z (eje vertical de la escena) con el cursor
+  updateHover();
+  [...bars, ...rings].forEach((m) => {
+    const target = m === hovered ? 1 : 0;
+    m.userData.lift = lerp(m.userData.lift, target, 1 - Math.pow(0.0006, dt));
+    m.userData.group.position.y = (m.userData.kind === 'ring' ? m.userData.group.userData.baseY : 0) + m.userData.lift * (m.userData.kind === 'ring' ? 0.9 : 1.1);
+    const mat = m.material;
+    if (mat.emissiveIntensity !== undefined) mat.emissiveIntensity = (m.userData.kind === 'ring' ? 0.9 : 0.25) + m.userData.lift * 0.9;
+  });
+
+  // Luces pulsando
+  lightC.intensity = 100 + Math.sin(t * 2) * 18;
+  lightB.intensity = 65 + Math.sin(t * 1.4 + 1) * 12;
+
+  // Telemetría en pantalla (4 Hz): simulada a partir de la propia animación
+  tele += dt;
+  if (tele > 0.25) {
+    tele = 0;
+    lifts.forEach((g, i) => { const pct = Math.round(g.userData.level * 100); els.lift[i][0].textContent = pct + '%'; els.lift[i][1].style.width = pct + '%'; });
+    els.rpm.textContent = String(Math.round(780 + Math.sin(t * 1.7) * 60 + Math.sin(t * 5) * 25)).replace(/(\d)(?=(\d{3})+$)/g, '$1.');
+    els.temp.textContent = (88 + Math.sin(t * 0.4) * 3).toFixed(0);
+    els.volt.textContent = (11.6 + Math.sin(t * 0.9) * 0.25).toFixed(1).replace('.', ',');
+    els.clock.textContent = new Date().toLocaleTimeString('es-ES');
+  }
+
+  // Etiquetas de zona: se desvanecen con la distancia para no tapar los paneles
+  const wp = new THREE.Vector3();
+  const fadeStart = current === 1 ? 400 : 42;
+  fadeLabels.forEach((o) => { o.getWorldPosition(wp); const d = wp.distanceTo(camera.position); o.element.style.setProperty('--fade', clamp(1 - (d - fadeStart) / 22, 0, 1).toFixed(2)); });
+
+  controls.update();
+  if (renderer) renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+if (renderer) renderer.setAnimationLoop(animate);
+else { setInterval(() => { const t = performance.now() / 1000; els.clock.textContent = new Date().toLocaleTimeString('es-ES'); }, 1000); }
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  if (renderer) renderer.setSize(innerWidth, innerHeight, false);
+  labelRenderer.setSize(innerWidth, innerHeight);
+  updateOffset();
+});
+</script>
+</body>
+</html>
