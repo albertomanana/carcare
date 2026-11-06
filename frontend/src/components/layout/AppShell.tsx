@@ -160,7 +160,8 @@ export function AppShell() {
   return (
     <QuickActionsProvider>
       <PrimaryActionContext.Provider value={primaryAction}>
-        <div className="min-h-dvh bg-canvas">
+        <div className="min-h-dvh">
+          <div aria-hidden className="floor no-print" />
           {skipLink}
 
           {sidebar ? (

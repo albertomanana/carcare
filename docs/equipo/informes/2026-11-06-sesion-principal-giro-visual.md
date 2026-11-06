@@ -19,3 +19,24 @@
 **Evidencias.** `npx tsc -b` sin errores · `npm run test`: 14 archivos, 117 tests en verde · `npm run build` correcto · `npm run lint`: solo avisos que ya existían · capturas a 1280 y 360 px de portada, Inicio, Garaje y ficha sin desborde horizontal (`scrollWidth` = ancho) con el usuario demo, contra una API :8020 con SQLite.
 
 **Limitaciones.** No se revisaron las pantallas del taller ni los diálogos; no se midió el rendimiento de las animaciones; sin E2E ni axe; el tema claro no se ha revisado a mano tras el cambio.
+
+---
+
+## Segunda pasada: «brutalmente 3D» (06/11/2026)
+
+Alberto: la primera pasada «ha empeorado un poco»; pide usar de verdad las skills de Emil (`animate`, `choreograph`, `apple-design`) y que la mayor parte de la interfaz sea 3D.
+
+**Decisión de alcance (reglas 6 y 7 de `CLAUDE.md`).** Un WebGL por tarjeta está prohibido (rendimiento). Por eso:
+- **3D real (WebGL)**: un solo lienzo por pantalla. Nuevo `Showroom` en Inicio: el coche del usuario girando en modo `showcase` de `CarViewer`, con selector de vehículo y silueta 2D si no hay WebGL.
+- **3D de interfaz (solo CSS y muelles)**: en el resto.
+
+**Cambios.**
+- `components/ui/Tilt.tsx`: inclinación con muelle hacia el puntero y brillo, solo con ratón y quieta con movimiento reducido. En tarjetas que llevan a algún sitio (garaje, funciones y capturas de la portada), no en cifras ni tablas.
+- Botones como teclas con relieve (canto de 4 px; suben al pasar el ratón y se hunden al pulsar).
+- Paneles y listas con grosor (canto + sombra proyectada); entrada de pantallas con perspectiva (`rotateX` + `translateZ`).
+- Suelo en perspectiva fijo tras la app y la portada (`.floor`, estático) y en el escaparate (`.floor-local`).
+- Capturas de la portada giradas ±17° que se enderezan al pasar el ratón.
+
+**Evidencias.** `tsc -b` limpio · 117 tests en verde · build correcto · lint sin errores. Capturas con ratón: `matrix3d` aplicado en la tarjeta bajo el puntero y paneles en perspectiva visibles.
+
+**Limitaciones.** El WebGL por software de mi entorno no llega a pintar el escaparate (la captura se queda colgada), así que **el coche 3D de Inicio no se ha visto renderizado**; sin WebGL se comprobó la silueta de respaldo. Sin medir rendimiento de las inclinaciones ni revisar el tema claro, el taller y los diálogos.

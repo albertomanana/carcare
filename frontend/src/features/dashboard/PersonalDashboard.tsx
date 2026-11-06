@@ -17,6 +17,7 @@ import { VehicleThumb } from '@/components/vehicles/VehicleVisuals'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useReminderActions } from '@/features/vehicle/useReminderActions'
 import { useWorkspace } from '@/features/workspace/workspace-context'
+import { Showroom } from './Showroom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { dashboardFirstSteps } from '@/lib/firstSteps'
 import { formatDateTime, formatKm, formatMoney, formatRelativeDate, formatRelativeTime } from '@/lib/format'
@@ -104,6 +105,8 @@ function Home({ data }: { data: PersonalDashboardData }) {
 
   return (
     <div className="space-y-10">
+      <Showroom vehicles={data.vehicles} />
+
       {guide ? <VehicleFirstSteps vehicle={guide.vehicle} steps={guide.steps} showName /> : <Pending data={data} canOperate={canOperate} />}
 
       <VehiclesSection vehicles={data.vehicles} canOperate={canOperate} />

@@ -21,6 +21,7 @@
   --fg-subtle: #8a969c;
   --accent: #c7f36b;
   --accent-ink: #c7f36b; /* lima usada como texto/icono */
+  --accent-edge: #7b9f1c; /* canto de la tecla primaria: el grosor del botón */
   --on-accent: #111518;
   --accent-soft: rgb(199 243 107 / 0.12);
   --danger: #ff6b6b;
@@ -68,6 +69,7 @@
   --fg-subtle: #5f6b72;
   --accent: #c7f36b;
   --accent-ink: #3f6600; /* la lima no contrasta como texto sobre claro */
+  --accent-edge: #6a9210;
   --on-accent: #111518;
   --accent-soft: rgb(124 170 20 / 0.14);
   --danger: #c93434;
@@ -143,7 +145,10 @@
   --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 1px 2px hsl(var(--shadow-color) / 0.18);
+  /* Losa: filo de luz arriba, canto de 3 px abajo (el grosor del panel) y sombra proyectada sobre el suelo */
+  --shadow-card:
+    0 1px 0 0 rgb(255 255 255 / 0.06) inset, 0 2px 0 0 var(--surface-3), 0 3px 0 0 var(--line),
+    0 18px 28px -18px hsl(var(--shadow-color) / 0.7);
   --shadow-lift: 0 10px 28px -12px hsl(var(--shadow-color) / 0.55), 0 2px 6px hsl(var(--shadow-color) / 0.2);
   --shadow-pop: 0 18px 48px -16px hsl(var(--shadow-color) / 0.6), 0 4px 12px hsl(var(--shadow-color) / 0.25);
 
@@ -200,7 +205,7 @@
   @keyframes cc-rise {
     from {
       opacity: 0;
-      transform: translateY(14px);
+      transform: perspective(900px) translateY(18px) translateZ(-40px) rotateX(-7deg);
       filter: blur(3px);
     }
     to {
@@ -326,10 +331,11 @@
    * Sustituye a las listas planas "divide-y border-y". Cada fila aporta solo su alto; el margen lateral lo pone el panel.
    */
   .list-panel {
-    overflow: hidden;
+    overflow: clip;
+    margin-bottom: 3px;
     border: 1px solid var(--line);
     border-radius: var(--radius-card);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface) 42%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 93%, white), var(--surface) 38%);
     box-shadow: var(--shadow-card);
   }
   :root[data-theme='light'] .list-panel {
@@ -478,9 +484,85 @@
     }
   }
 
+  /* ───────── Profundidad (3D de interfaz, solo CSS: sin un WebGL por elemento) ───────── */
+
+  /* Suelo del garaje: una rejilla en perspectiva que se pierde en el horizonte. Estático (nada se mueve solo). */
+  .floor {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: -1;
+    height: 62vh;
+    overflow: hidden;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 92%);
+    mask-image: linear-gradient(to top, #000 0%, transparent 92%);
+  }
+  .floor::before {
+    content: '';
+    position: absolute;
+    inset: -30% -60% -10%;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px);
+    background-size: 84px 84px;
+    background-position: center bottom;
+    transform: perspective(520px) rotateX(66deg);
+    transform-origin: 50% 100%;
+  }
+  :root[data-theme='light'] .floor::before {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--accent-ink) 16%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--accent-ink) 16%, transparent) 1px, transparent 1px);
+  }
+
+  /* El mismo suelo, pero dentro de un escenario (tarjeta) en vez de fijo a la ventana. */
+  .floor-local {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 0;
+    height: 64%;
+    overflow: hidden;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 95%);
+    mask-image: linear-gradient(to top, #000 0%, transparent 95%);
+  }
+  .floor-local::before {
+    content: '';
+    position: absolute;
+    inset: -30% -60% -10%;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: center bottom;
+    transform: perspective(420px) rotateX(64deg);
+    transform-origin: 50% 100%;
+  }
+  :root[data-theme='light'] .floor-local::before {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--accent-ink) 24%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--accent-ink) 24%, transparent) 1px, transparent 1px);
+  }
+
+  /* Escena: contenedor con perspectiva; sus hijos pueden girar y salir del plano. */
+  .scene {
+    perspective: 1200px;
+    transform-style: preserve-3d;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  /* Capas a distinta altura dentro de un elemento inclinado: se separan al inclinarse. */
+  .z-near {
+    transform: translateZ(28px);
+  }
+  .z-far {
+    transform: translateZ(-16px);
+  }
+
   /* Superficie de tarjeta con un filo de luz arriba. */
   .surface-card {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, white), var(--surface) 42%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 93%, white), var(--surface) 38%);
     box-shadow: var(--shadow-card);
   }
   :root[data-theme='light'] .surface-card {

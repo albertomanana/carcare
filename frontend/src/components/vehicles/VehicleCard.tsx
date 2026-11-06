@@ -2,6 +2,7 @@ import { Archive, Clock, OctagonAlert } from "lucide-react";
 import { Link } from "react-router";
 import type { Vehicle } from "@/api/types";
 import { Badge, Plate } from "@/components/ui/Badge";
+import { Tilt } from "@/components/ui/Tilt";
 import { formatKm, formatRelativeDate } from "@/lib/format";
 import { WORK_ORDER_STATUS } from "@/lib/status";
 import { VehicleThumb } from "./VehicleVisuals";
@@ -29,9 +30,10 @@ export function VehicleCard({
     .join(" · ");
   const order = stats.open_work_order;
   return (
+    <Tilt max={7} className="rounded-card">
     <Link
       to={to}
-      className="lift surface-card group flex min-w-0 flex-col overflow-hidden rounded-card border border-line"
+      className="surface-card group flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line transition-colors duration-200 hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--line))]"
     >
       <div className="relative aspect-[16/9] overflow-hidden border-b border-line bg-surface-2 [&>*]:transition-transform [&>*]:duration-500 [&>*]:ease-out-soft group-hover:[&>*]:scale-[1.05]">
         <VehicleThumb
@@ -89,6 +91,7 @@ export function VehicleCard({
         </div>
       </div>
     </Link>
+    </Tilt>
   );
 }
 

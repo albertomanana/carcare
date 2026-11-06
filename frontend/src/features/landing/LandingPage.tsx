@@ -20,6 +20,7 @@ import { Logo } from '@/components/layout/Logo'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { ThemeToggle } from '@/components/layout/UserMenu'
 import { ButtonLink } from '@/components/ui/Button'
+import { Tilt } from '@/components/ui/Tilt'
 import { buttonClasses } from '@/components/ui/variants'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/cn'
@@ -90,6 +91,7 @@ export default function LandingPage() {
 
   return (
     <div data-portada className="min-h-dvh overflow-x-clip text-fg">
+      <div aria-hidden className="floor" />
       <SkipLink />
 
       <header className="glass sticky top-0 z-40 border-b border-line/60">
@@ -162,16 +164,16 @@ export default function LandingPage() {
 
         <Band id="particulares" title="El historial y los gastos de cada coche">
           <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
-            <Screenshot shot="zonas" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
-            <Screenshot shot="gastos" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
+            <Screenshot shot="zonas" rest="left" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
+            <Screenshot shot="gastos" rest="right" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
           </div>
           <FeatureGrid items={PERSONAL} />
         </Band>
 
         <Band id="talleres" title="Órdenes, elevadores y equipo" tinted>
           <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
-            <Screenshot shot="tablero" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
-            <Screenshot shot="taller3d" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
+            <Screenshot shot="tablero" rest="left" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
+            <Screenshot shot="taller3d" rest="right" sizes="(min-width: 1280px) 600px, (min-width: 768px) 50vw, 100vw" />
           </div>
           <FeatureGrid items={WORKSHOP} />
         </Band>
@@ -179,13 +181,13 @@ export default function LandingPage() {
         <Band id="solicitudes" title="Pide presupuesto a un taller sin salir de CarCare">
           <ol className="grid gap-10 md:grid-cols-3 md:gap-6 lg:gap-8">
             <Step n={1} title="Eliges un taller" text="Solo los que han decidido publicarse, con su ciudad y sus servicios.">
-              <Screenshot shot="directorio" sizes="(min-width: 1280px) 395px, (min-width: 768px) 33vw, 100vw" />
+              <Screenshot shot="directorio" rest="left" sizes="(min-width: 1280px) 395px, (min-width: 768px) 33vw, 100vw" />
             </Step>
             <Step n={2} title="Reciben tu solicitud" text="Tu historial, solo si marcas la casilla, y sin importes ni notas.">
               <Screenshot shot="recibida" sizes="(min-width: 1280px) 395px, (min-width: 768px) 33vw, 100vw" />
             </Step>
             <Step n={3} title="Te llega el presupuesto" text="Con sus líneas y el IVA. Lo aceptas o lo rechazas tú.">
-              <Screenshot shot="presupuesto" sizes="(min-width: 1280px) 395px, (min-width: 768px) 33vw, 100vw" />
+              <Screenshot shot="presupuesto" rest="right" sizes="(min-width: 1280px) 395px, (min-width: 768px) 33vw, 100vw" />
             </Step>
           </ol>
         </Band>
@@ -250,16 +252,20 @@ function Band({ id, title, tinted, children }: { id: string; title: string; tint
 
 function FeatureGrid({ items }: { items: Feature[] }) {
   return (
-    <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map(({ icon: Icon, title, text }) => (
-        <li key={title} className="surface-card flex gap-3 rounded-card border border-line p-4">
-          <span className="grid size-9 shrink-0 place-items-center rounded-control bg-accent-soft text-accent-ink">
-            <Icon aria-hidden className="size-[18px]" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-medium text-fg">{title}</p>
-            <p className="mt-0.5 text-sm text-fg-muted">{text}</p>
-          </div>
+        <li key={title}>
+          <Tilt max={9} className="h-full rounded-card">
+            <div className="surface-card preserve-3d flex h-full gap-3 rounded-card border border-line p-4">
+              <span className="z-near grid size-10 shrink-0 place-items-center rounded-control bg-accent-soft text-accent-ink [box-shadow:0_1px_0_rgb(255_255_255/0.08)_inset,0_3px_0_color-mix(in_srgb,var(--accent)_30%,transparent)]">
+                <Icon aria-hidden className="size-[18px]" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium text-fg">{title}</p>
+                <p className="mt-0.5 text-sm text-fg-muted">{text}</p>
+              </div>
+            </div>
+          </Tilt>
         </li>
       ))}
     </ul>
