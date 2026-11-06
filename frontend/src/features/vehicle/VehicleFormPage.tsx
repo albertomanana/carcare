@@ -416,7 +416,7 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
             aria-label="Vista previa"
           >
             <div className="overflow-hidden rounded-card border border-line bg-surface-2">
-              <div className="relative h-44 sm:h-72">
+              <div className="relative h-32 sm:h-72">
                 <CarPreview
                   appearance={appearance}
                   signal={signal}

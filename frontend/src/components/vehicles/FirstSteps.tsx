@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Vehicle } from "@/api/types";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { Guide } from "@/components/ui/Guide";
 import { useQuickActions } from "@/features/quick-actions/quick-actions-context";
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { cn } from "@/lib/cn";
@@ -46,7 +47,7 @@ export function FirstSteps({
         tus gastos.
       </p>
       <ol className="mt-3 list-panel">
-        {steps.map((s) => (
+        {steps.map((s, i) => (
           <li
             key={s.key}
             className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3"
@@ -55,7 +56,10 @@ export function FirstSteps({
               <h3 className="font-medium text-fg">{s.title}</h3>
               <p className="text-sm text-fg-muted">{s.description}</p>
             </div>
-            <div className="shrink-0">{s.action}</div>
+            {/* el primer paso pendiente late tres veces: es por donde empezar */}
+            <Guide on={i === 0} cue={s.key} className="shrink-0">
+              {s.action}
+            </Guide>
           </li>
         ))}
       </ol>

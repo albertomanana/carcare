@@ -137,6 +137,27 @@ export function CarModel({
       lit.lightRear.dispose()
     }
   }, [lit, mats])
+  // Faros de aviso: esferas con halo aditivo en las cuatro esquinas, porque las luces del modelo son franjas finas y a
+  // distancia de formulario el cambio de emisivo apenas se ve. Solo existen mientras hay señal.
+  const lamps = useMemo(() => {
+    const spec = BODY_SPECS[body]
+    const hw = spec.width / 2
+    const fx = build.shape.front - 0.04
+    const rx = build.shape.rear + 0.04
+    const z = hw * 0.64
+    return [
+      [fx, spec.headlightY, z], [fx, spec.headlightY, -z], [rx, spec.taillightY, z], [rx, spec.taillightY, -z],
+    ] as [number, number, number][]
+  }, [body, build])
+  const lampMats = useMemo(
+    () => ({
+      core: new THREE.MeshBasicMaterial({ color: AMBER, toneMapped: false }),
+      halo: new THREE.MeshBasicMaterial({ color: AMBER, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+    }),
+    [],
+  )
+  useEffect(() => () => { lampMats.core.dispose(); lampMats.halo.dispose() }, [lampMats])
+  const lampGroup = useRef<THREE.Group>(null)
   const signalFrom = useRef<number | null>(null)
   const signalToken = signal?.token
   useEffect(() => {
@@ -153,6 +174,12 @@ export function CarModel({
     const e = t - signalFrom.current
     const total = signal.kind === 'hazard' ? HAZARD_SECONDS : FLASH_SECONDS
     const on = e < total && (signal.kind === 'hazard' ? e % HAZARD_PERIOD < HAZARD_PERIOD / 2 : FLASH_WINDOWS.some(([a, b]) => e >= a && e < b))
+    if (lampGroup.current) {
+      lampGroup.current.visible = on
+      lampGroup.current.children.forEach((c, i) => { c.visible = signal.kind === 'hazard' || i < 2 })
+      lampMats.core.color.set(signal.kind === 'hazard' ? AMBER : FLASH_WHITE)
+      lampMats.halo.color.set(signal.kind === 'hazard' ? AMBER : FLASH_WHITE)
+    }
     if (signal.kind === 'hazard') {
       for (const [m, base] of [[front, baseF], [rear, baseR]] as const) {
         m.emissive.set(on ? AMBER : base.emissive)
@@ -225,6 +252,20 @@ export function CarModel({
             </mesh>
           )}
         </>
+      )}
+      {hasSignal && (
+        <group ref={lampGroup} visible={false}>
+          {lamps.map((p, i) => (
+            <group key={i} position={p}>
+              <mesh material={lampMats.core} raycast={noRaycast}>
+                <sphereGeometry args={[0.1, 12, 8]} />
+              </mesh>
+              <mesh material={lampMats.halo} raycast={noRaycast} renderOrder={11}>
+                <sphereGeometry args={[0.34, 12, 8]} />
+              </mesh>
+            </group>
+          ))}
+        </group>
       )}
       {hl &&
         highlight &&

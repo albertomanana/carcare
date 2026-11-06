@@ -7,7 +7,9 @@ import { ButtonLink } from "@/components/ui/Button";
 import { SearchInput, Select } from "@/components/ui/inputs";
 import { LoadMore } from "@/components/ui/LoadMore";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Guide } from "@/components/ui/Guide";
 import { EmptyState, ErrorState, NoResults } from "@/components/ui/States";
+import { CarPreview, type CarSignal } from "@/three";
 import {
   VehicleCard,
   VehicleCardSkeleton,
@@ -24,6 +26,8 @@ const SORTS = [
 ];
 
 /** Garaje (particular) o flota de vehículos (taller). */
+const WELCOME_SIGNAL: CarSignal = { kind: "hazard", token: 1 };
+
 export default function GaragePage() {
   const ctx = useWorkspace();
   const title = ctx.isWorkshop ? "Vehículos" : "Garaje";
@@ -154,16 +158,29 @@ export default function GaragePage() {
             }
             action={
               canOperate && (
-                <ButtonLink
-                  to={`${ctx.base}/vehiculos/nuevo`}
-                  variant="primary"
-                  icon={<Plus aria-hidden />}
-                >
-                  Añadir vehículo
-                </ButtonLink>
+                <Guide on cue="add-vehicle">
+                  <ButtonLink
+                    to={`${ctx.base}/vehiculos/nuevo`}
+                    variant="primary"
+                    icon={<Plus aria-hidden />}
+                  >
+                    Añadir vehículo
+                  </ButtonLink>
+                </Guide>
               )
             }
-          />
+          >
+            {/* Coche de bienvenida: sus intermitentes avisan unos segundos de dónde empezar (no con movimiento reducido) */}
+            {canOperate && !ctx.isWorkshop && (
+              <div className="relative h-40 w-full max-w-sm">
+                <CarPreview
+                  appearance={{ bodyType: "hatchback", colorHex: null }}
+                  signal={WELCOME_SIGNAL}
+                  className="absolute inset-0 h-full w-full"
+                />
+              </div>
+            )}
+          </EmptyState>
         )
       ) : (
         <>
