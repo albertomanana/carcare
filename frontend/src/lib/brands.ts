@@ -87,3 +87,31 @@ export function searchBrands(query: string, limit = 8): string[] {
   }
   return [...starts, ...contains].slice(0, limit)
 }
+
+/**
+ * Logotipos descargados por `scripts/descargar-logos.mjs` (simple-icons, CC0) a /img/marcas/<slug>.svg.
+ * Las marcas que no están aquí (Cupra, Lexus, DS, Lancia, BYD…) muestran un monograma, nunca un logo inventado.
+ */
+const LOGO_SLUGS: Record<string, string> = {
+  'alfa romeo': 'alfaromeo', 'aston martin': 'astonmartin', audi: 'audi', bentley: 'bentley', bmw: 'bmw',
+  bugatti: 'bugatti', chevrolet: 'chevrolet', citroen: 'citroen', dacia: 'dacia', ferrari: 'ferrari', fiat: 'fiat',
+  ford: 'ford', honda: 'honda', hyundai: 'hyundai', jaguar: 'jaguar', jeep: 'jeep', kia: 'kia', lamborghini: 'lamborghini',
+  'land rover': 'landrover', maserati: 'maserati', mazda: 'mazda', mclaren: 'mclaren', 'mclaren automotive': 'mclaren',
+  'mercedes-benz': 'mercedes', mg: 'mg', mini: 'mini', mitsubishi: 'mitsubishi', nissan: 'nissan', opel: 'opel',
+  peugeot: 'peugeot', polestar: 'polestar', porsche: 'porsche', renault: 'renault', 'rolls-royce': 'rollsroyce',
+  seat: 'seat', skoda: 'skoda', smart: 'smart', subaru: 'subaru', suzuki: 'suzuki', tesla: 'tesla',
+  toyota: 'toyota', volkswagen: 'volkswagen', volvo: 'volvo',
+}
+
+/** Ruta del logotipo de una marca, o null si no hay (se usa el monograma). */
+export function brandLogoUrl(make: string): string | null {
+  const slug = LOGO_SLUGS[normalizeSearch(make)]
+  return slug ? `/img/marcas/${slug}.svg` : null
+}
+
+/** Dos letras para el monograma: «Lynk & Co» → «LC», «Seat» → «SE». */
+export function brandMonogram(make: string): string {
+  const words = make.replace(/[^\p{L}\p{N}\s-]/gu, '').split(/[\s-]+/).filter(Boolean)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return (words[0] ?? '?').slice(0, 2).toUpperCase()
+}

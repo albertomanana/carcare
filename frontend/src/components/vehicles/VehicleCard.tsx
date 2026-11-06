@@ -5,6 +5,7 @@ import { Badge, Plate } from "@/components/ui/Badge";
 import { Tilt } from "@/components/ui/Tilt";
 import { formatKm, formatRelativeDate } from "@/lib/format";
 import { WORK_ORDER_STATUS } from "@/lib/status";
+import { BrandLogo } from "./BrandLogo";
 import { VehicleThumb } from "./VehicleVisuals";
 
 /**
@@ -39,6 +40,11 @@ export function VehicleCard({
         <VehicleThumb
           vehicle={vehicle}
           className="absolute inset-0 h-full w-full min-h-0 rounded-none border-0 bg-transparent object-contain p-3"
+        />
+        {/* decorativo: el nombre de la marca ya está en el texto de la tarjeta */}
+        <BrandLogo
+          make={vehicle.make}
+          className="absolute left-3 top-3 size-6 text-fg-muted"
         />
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">
