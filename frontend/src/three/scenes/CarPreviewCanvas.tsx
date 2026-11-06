@@ -18,7 +18,7 @@ import { canvasDpr } from './dpr'
 import { useCanvasLabel } from './useCanvasLabel'
 import { CarShadow, StudioEnvironment } from './Stage'
 
-export default function CarPreviewCanvas({ appearance, className }: CarPreviewProps) {
+export default function CarPreviewCanvas({ appearance, className, signal = null }: CarPreviewProps) {
   const body = resolveBody(appearance.bodyType)
   const color = resolveColor(appearance.colorHex)
   const tokens = useThemeTokens()
@@ -46,7 +46,7 @@ export default function CarPreviewCanvas({ appearance, className }: CarPreviewPr
         <Label text={label} />
         <StudioEnvironment />
         <Turntable spin={spin}>
-          <CarModel body={body} color={color} accent={tokens.accent} detail="low" />
+          <CarModel body={body} color={color} accent={tokens.accent} detail="low" signal={reduced ? null : signal} />
           <CarShadow key={body} length={build.size.length} width={build.size.width} opacity={tokens.light ? 0.5 : 0.75} />
         </Turntable>
         <CameraRig

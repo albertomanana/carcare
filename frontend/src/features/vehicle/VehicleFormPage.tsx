@@ -43,7 +43,17 @@ import { useWorkspace } from "@/features/workspace/workspace-context";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
-import { searchBrands } from "@/lib/brands";
+import { BrandLogo } from "@/components/vehicles/BrandLogo";
+import { Guide } from "@/components/ui/Guide";
+import { normalizeSearch, searchBrands } from "@/lib/brands";
+import {
+  findBrand,
+  findModel,
+  searchModels,
+  useCatalog,
+  versionsFor,
+  type CatalogVersion,
+} from "@/lib/catalog";
 import { VEHICLE_COLORS } from "@/lib/colors";
 import { cn } from "@/lib/cn";
 import { formatDate, parseIntegerInput } from "@/lib/format";
@@ -60,7 +70,7 @@ import {
   normalizeVin,
   VIN_REGEX,
 } from "@/lib/validation";
-import { CarPreview, CarSilhouette } from "@/three";
+import { CarPreview, CarSilhouette, type CarSignal } from "@/three";
 
 const BODY_TYPES = Object.keys(BODY_LABEL) as BodyType[];
 const FUEL_TYPES = Object.keys(FUEL_LABEL) as FuelType[];
@@ -221,10 +231,18 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
     colorHex: COLOR_HEX_REGEX.test(colorHex) ? colorHex : null,
   };
 
+  // Luces del coche de la vista previa: intermitentes si algo bloquea el avance, destellos al acertar con el catálogo
+  const [signal, setSignal] = useState<CarSignal | null>(null);
+  const flash = (kind: CarSignal["kind"]) =>
+    setSignal((s) => ({ kind, token: (s?.token ?? 0) + 1 }));
+
   const goTo = async (next: number) => {
     if (next > step) {
       const ok = await trigger(steps[step].fields);
-      if (!ok) return;
+      if (!ok) {
+        flash("hazard");
+        return;
+      }
     }
     setStep(next);
     window.scrollTo({ top: 0 });
@@ -292,8 +310,8 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
   const backTo = vehicle
     ? `${ctx.base}/vehiculos/${vehicle.id}`
     : `${ctx.base}/garaje`;
-  // La vista previa 3D solo donde aporta: en el paso "Aspecto" (y al editar, que muestra todo junto) (5.5 y 5.7)
-  const showPreview = isEdit || step === 1;
+  // El coche acompaña todo el asistente: es la guía (marca elegida, luces que avisan) y no cuesta otro lienzo
+  const showPreview = true;
 
   return (
     <>
@@ -333,7 +351,9 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
             />
           )}
 
-          {(isEdit || step === 0) && <StepVehicle form={form} />}
+          {(isEdit || step === 0) && (
+            <StepVehicle form={form} onSignal={flash} />
+          )}
           {(isEdit || step === 1) && <StepLook form={form} />}
           {(isEdit || step === 2) && <StepDetails form={form} />}
           {!isEdit && step === 3 && <StepMileage form={form} />}
@@ -396,13 +416,21 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
             aria-label="Vista previa"
           >
             <div className="overflow-hidden rounded-card border border-line bg-surface-2">
-              <div className="relative h-56 sm:h-72">
+              <div className="relative h-44 sm:h-72">
                 <CarPreview
                   appearance={appearance}
+                  signal={signal}
                   className="absolute inset-0 h-full w-full"
                 />
               </div>
-              <div className="border-t border-line px-4 py-3">
+              <div className="flex items-center gap-3 border-t border-line px-4 py-3">
+                {make.trim() && (
+                  <BrandLogo
+                    make={make}
+                    className="size-8 text-fg-warm animate-pop-in"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-lg font-semibold text-fg-warm">
                   {[make, model].filter((s) => s.trim()).join(" ") ||
                     "Tu vehículo"}
@@ -413,6 +441,7 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
                     : "Carrocería sin indicar"}{" "}
                   · Modelo ilustrativo, no reproduce la marca
                 </p>
+                </div>
               </div>
             </div>
           </aside>
@@ -480,63 +509,158 @@ function Stepper({
   );
 }
 
-function StepVehicle({ form }: { form: UseFormReturn<Values> }) {
-  const { register, formState, setValue } = form;
-  const make = useWatch({ control: form.control, name: "make" });
+/** Motor de una versión del catálogo: «allroad quattro · 2.0 L 4 cil. turbo · Automático» → «2.0 L 4 cil. turbo». */
+function engineOf(v: CatalogVersion): string {
+  const parts = v.n.split(" · ");
+  if (/^(Manual|Automático)$/.test(parts[parts.length - 1])) parts.pop();
+  return parts[parts.length - 1] ?? "";
+}
+
+const VERSIONS_SHOWN = 8;
+
+function StepVehicle({
+  form,
+  onSignal,
+}: {
+  form: UseFormReturn<Values>;
+  onSignal: (kind: CarSignal["kind"]) => void;
+}) {
+  const { register, formState, setValue, getValues } = form;
+  const [make, model, version, yearText] = useWatch({
+    control: form.control,
+    name: ["make", "model", "version", "year"],
+  });
+  const catalog = useCatalog();
+  const brand = findBrand(catalog, make);
+  const modelEntry = findModel(brand, model);
+  const year = /^\d{4}$/.test(yearText.trim()) ? Number(yearText) : null;
+  const [showAll, setShowAll] = useState(false);
+  const [filled, setFilled] = useState<string | null>(null);
+
   const suggestions = useMemo(() => searchBrands(make, 10), [make]);
-  const exact = suggestions.some(
-    (b) => b.toLowerCase() === make.trim().toLowerCase(),
+  const exactBrand = normalizeSearch(make) !== "" && !!brand;
+  const modelChoices = useMemo(
+    () => (brand && !modelEntry ? searchModels(brand, model, 12) : []),
+    [brand, model, modelEntry],
   );
+  const versions = versionsFor(modelEntry, year);
+  const hasVersions = !!modelEntry?.v?.length;
+  const shownVersions = showAll ? versions : versions.slice(0, VERSIONS_SHOWN);
   const e = formState.errors;
+  const dirty = { shouldDirty: true, shouldValidate: true };
+
+  // Lo siguiente que toca (la guía luminosa late alrededor)
+  const next = !make.trim()
+    ? "make"
+    : !model.trim()
+      ? "model"
+      : hasVersions && !version.trim()
+        ? "version"
+        : null;
+
+  const pickBrand = (b: string) => {
+    setValue("make", b, dirty);
+    const nb = findBrand(catalog, b);
+    if (!findModel(nb, getValues("model"))) {
+      setValue("model", "", { shouldDirty: true });
+      setValue("version", "", { shouldDirty: true });
+    }
+    setFilled(null);
+    onSignal("flash");
+  };
+  const pickModel = (name: string) => {
+    setValue("model", name, dirty);
+    const m = findModel(brand, name);
+    setValue("version", "", { shouldDirty: true });
+    if (m?.b && !getValues("body_type")) {
+      setValue("body_type", m.b, dirty);
+      setFilled("la carrocería");
+    } else setFilled(null);
+    onSignal("flash");
+  };
+  const pickVersion = (v: CatalogVersion) => {
+    setValue("version", v.n, dirty);
+    const done: string[] = [];
+    const eng = engineOf(v);
+    if (eng) {
+      setValue("engine", eng, dirty);
+      done.push("el motor");
+    }
+    if (v.f) {
+      setValue("fuel_type", v.f, dirty);
+      done.push("el combustible");
+    }
+    if (v.t) {
+      setValue("transmission", v.t, dirty);
+      done.push("el cambio");
+    }
+    setFilled(
+      done.length ? done.join(", ").replace(/, ([^,]*)$/, " y $1") : null,
+    );
+    onSignal("flash");
+  };
+
   return (
     <Fieldset
       legend="¿Qué vehículo es?"
-      description="Escribe la marca o elige una de la lista."
+      description="Elige la marca, después el modelo y su versión. También puedes escribirlos."
     >
-      <Field label="Marca" required error={e.make?.message}>
-        <Input
-          autoComplete="off"
-          maxLength={60}
-          placeholder="P. ej. Seat"
-          {...register("make")}
-        />
-      </Field>
-      {!exact && (
+      <Guide on={next === "make"} cue="make">
+        <Field label="Marca" required error={e.make?.message}>
+          <Input
+            autoComplete="off"
+            maxLength={60}
+            placeholder="P. ej. Seat"
+            {...register("make", { onChange: () => setFilled(null) })}
+          />
+        </Field>
+      </Guide>
+      {!exactBrand && (
         <div
           role="group"
           aria-label="Sugerencias de marca"
-          className="-mt-1 flex flex-wrap gap-1.5"
+          className="-mt-1 grid grid-cols-5 gap-2"
         >
-          {suggestions.map((b) => (
+          {suggestions.map((b, i) => (
             <button
               key={b}
               type="button"
-              onClick={() =>
-                setValue("make", b, { shouldDirty: true, shouldValidate: true })
-              }
-              className="min-h-9 rounded-full border border-line bg-surface-2 px-3 text-sm text-fg-muted transition-colors hover:border-line-strong hover:text-fg"
+              onClick={() => pickBrand(b)}
+              style={{ animationDelay: `${i * 30}ms` }}
+              className="flex min-h-16 animate-rise flex-col items-center justify-center gap-1.5 rounded-card border border-line bg-surface-2 px-1 py-2 text-fg-muted transition-[transform,border-color,color] duration-150 ease-out hover:border-line-strong hover:text-fg active:scale-[0.97]"
             >
-              {b}
+              <BrandLogo make={b} className="size-6" />
+              <span className="max-w-full truncate text-[11px] leading-none">
+                {b}
+              </span>
             </button>
           ))}
         </div>
       )}
+      {exactBrand && brand && (
+        <p className="-mt-1 flex animate-fade-in items-center gap-2 text-sm text-fg-muted">
+          <BrandLogo make={make} className="size-5 text-fg-warm" />
+          {brand.n}: {brand.m.length} modelos en el catálogo
+          {brand.fuente === "editorial" && (
+            <span className="text-fg-subtle">
+              {" "}
+              · lista orientativa, sin versiones
+            </span>
+          )}
+        </p>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Modelo" required error={e.model?.message}>
-          <Input
-            autoComplete="off"
-            maxLength={80}
-            placeholder="P. ej. Ibiza"
-            {...register("model")}
-          />
-        </Field>
-        <Field
-          label="Versión"
-          error={e.version?.message}
-          hint="Opcional. P. ej. 1.0 TSI FR"
-        >
-          <Input autoComplete="off" maxLength={80} {...register("version")} />
-        </Field>
+        <Guide on={next === "model"} cue="model">
+          <Field label="Modelo" required error={e.model?.message}>
+            <Input
+              autoComplete="off"
+              maxLength={80}
+              placeholder="P. ej. Ibiza"
+              {...register("model", { onChange: () => setFilled(null) })}
+            />
+          </Field>
+        </Guide>
         <Field label="Año" error={e.year?.message}>
           <Input
             inputMode="numeric"
@@ -545,6 +669,112 @@ function StepVehicle({ form }: { form: UseFormReturn<Values> }) {
             placeholder={String(new Date().getFullYear())}
             {...register("year")}
           />
+        </Field>
+      </div>
+      {modelChoices.length > 0 && (
+        <div
+          role="group"
+          aria-label={`Modelos de ${brand?.n}`}
+          className="-mt-1 flex flex-wrap gap-1.5"
+        >
+          {modelChoices.map((m, i) => (
+            <button
+              key={m.n}
+              type="button"
+              onClick={() => pickModel(m.n)}
+              style={{ animationDelay: `${i * 25}ms` }}
+              className="min-h-9 animate-rise rounded-full border border-line bg-surface-2 px-3 text-sm text-fg-muted transition-[transform,border-color,color] duration-150 ease-out hover:border-line-strong hover:text-fg active:scale-[0.97]"
+            >
+              {m.n}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {hasVersions && (
+        <Guide on={next === "version"} cue="version">
+          <div
+            role="radiogroup"
+            aria-label="Versiones conocidas"
+            className="space-y-2"
+          >
+            <p className="text-sm font-medium text-fg">
+              Versiones conocidas de {modelEntry?.n}
+              {year ? ` en ${year}` : ""}
+            </p>
+            {versions.length === 0 ? (
+              <p className="text-sm text-fg-muted">
+                No hay versiones registradas para {year}. Puedes escribirla a
+                mano abajo.
+              </p>
+            ) : (
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {shownVersions.map((v) => {
+                  const checked = version === v.n;
+                  return (
+                    <li key={v.n + v.y[0]}>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={checked}
+                        onClick={() => pickVersion(v)}
+                        className={cn(
+                          "flex min-h-11 w-full items-center justify-between gap-2 rounded-card border px-3 py-1.5 text-left text-sm transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.98]",
+                          checked
+                            ? "border-accent bg-accent-soft text-fg"
+                            : "border-line bg-surface-2 text-fg-muted hover:border-line-strong hover:text-fg",
+                        )}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{v.n}</span>
+                        <span className="tabular shrink-0 text-xs text-fg-subtle">
+                          {v.y[0] === v.y[1] ? v.y[0] : `${v.y[0]}–${v.y[1]}`}
+                        </span>
+                        {checked && (
+                          <Check
+                            aria-hidden
+                            className="size-4 shrink-0 text-accent-ink"
+                          />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {versions.length > VERSIONS_SHOWN && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowAll((s) => !s)}
+              >
+                {showAll ? "Ver menos" : `Ver las ${versions.length} versiones`}
+              </Button>
+            )}
+            <p className="text-xs text-fg-subtle">
+              Motorizaciones del mercado estadounidense (EPA, desde 2005). Los
+              acabados comerciales de España (FR, Xcellence…) no vienen: edita
+              el texto si tu versión se llama de otra forma.
+            </p>
+          </div>
+        </Guide>
+      )}
+      {filled && (
+        <p
+          role="status"
+          className="flex animate-fade-in items-center gap-2 rounded-card border border-line bg-surface-2/50 p-3 text-sm text-fg-muted"
+        >
+          <Check aria-hidden className="size-4 shrink-0 text-accent-ink" />
+          Hemos rellenado {filled}. Puedes cambiarlo en «Aspecto» y «Detalles».
+        </p>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Versión"
+          error={e.version?.message}
+          hint="Opcional. P. ej. 1.0 TSI FR"
+        >
+          <Input autoComplete="off" maxLength={80} {...register("version")} />
         </Field>
         <Field
           label="Apodo"

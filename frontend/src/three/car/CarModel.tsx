@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { BodyType, Zone } from '@/api/types'
+import type { CarSignal } from '../types'
 import { getCarBuild } from './build'
 import type { Detail, MatKey } from './geometry'
 import { fresnelMaterial, getCarMaterials } from './materials'
@@ -22,6 +23,12 @@ export interface CarModelProps {
   ghostColor?: string
   highlight?: { zone: Zone; color: string; pulse: boolean } | null
   /**
+   * Señal luminosa para guiar al usuario: `hazard` hace parpadear los cuatro intermitentes ámbar unos segundos
+   * («mira aquí / falta esto»); `flash` da dos destellos blancos, como un coche al cerrarse («hecho»). Cada cambio de
+   * `token` la repite. Solo termina en un número finito de ciclos, así el lienzo ("demand") vuelve a dormir.
+   */
+  signal?: CarSignal | null
+  /**
    * Recorte (portada): la parte sólida y la de rayos X se reparten el coche con dos planos.
    * `ghost: null` ⇒ solo se dibuja la parte sólida recortada (cortinilla entre dos coches).
    * Los planos pueden moverse en cada fotograma (se leen al pintar); los materiales se clonan una vez por plano.
@@ -39,6 +46,7 @@ export function CarModel({
   xray = false,
   ghostColor = '#7cc4fa',
   highlight = null,
+  signal = null,
   clip = null,
   onClick,
 }: CarModelProps) {
@@ -116,6 +124,49 @@ export function CarModel({
     invalidate()
   })
 
+  // Luces propias (clonadas) solo cuando hay señal: los materiales base se comparten entre todos los coches
+  const hasSignal = !!signal
+  const lit = useMemo(() => {
+    if (!hasSignal) return mats
+    return { ...mats, lightFront: mats.lightFront.clone(), lightRear: mats.lightRear.clone() }
+  }, [mats, hasSignal])
+  useEffect(() => {
+    if (lit === mats) return
+    return () => {
+      lit.lightFront.dispose()
+      lit.lightRear.dispose()
+    }
+  }, [lit, mats])
+  const signalFrom = useRef<number | null>(null)
+  const signalToken = signal?.token
+  useEffect(() => {
+    signalFrom.current = null
+  }, [signalToken])
+  useFrame(({ clock }) => {
+    if (!signal || lit === mats) return
+    const front = lit.lightFront as THREE.MeshStandardMaterial
+    const rear = lit.lightRear as THREE.MeshStandardMaterial
+    const baseF = mats.lightFront as THREE.MeshStandardMaterial
+    const baseR = mats.lightRear as THREE.MeshStandardMaterial
+    const t = clock.getElapsedTime()
+    if (signalFrom.current === null) signalFrom.current = t
+    const e = t - signalFrom.current
+    const total = signal.kind === 'hazard' ? HAZARD_SECONDS : FLASH_SECONDS
+    const on = e < total && (signal.kind === 'hazard' ? e % HAZARD_PERIOD < HAZARD_PERIOD / 2 : FLASH_WINDOWS.some(([a, b]) => e >= a && e < b))
+    if (signal.kind === 'hazard') {
+      for (const [m, base] of [[front, baseF], [rear, baseR]] as const) {
+        m.emissive.set(on ? AMBER : base.emissive)
+        m.emissiveIntensity = on ? base.emissiveIntensity * 2.4 + 1.2 : e < total ? base.emissiveIntensity * 0.15 : base.emissiveIntensity
+      }
+    } else {
+      front.emissive.set(on ? FLASH_WHITE : baseF.emissive)
+      front.emissiveIntensity = on ? baseF.emissiveIntensity * 2.6 + 1 : e < total ? baseF.emissiveIntensity * 0.25 : baseF.emissiveIntensity
+      rear.emissive.copy(baseR.emissive)
+      rear.emissiveIntensity = baseR.emissiveIntensity
+    }
+    if (e < total + 0.05) invalidate()
+  })
+
   // Cajas invisibles para el clic (el raycasting sobre la malla real sería caro)
   const proxy = useMemo(() => {
     const sh = build.shape
@@ -147,14 +198,14 @@ export function CarModel({
     >
       {showSolid &&
         build.parts.map((p) => (
-          <mesh key={`s-${p.mat}`} geometry={p.geometry} material={mats[p.mat]} raycast={noRaycast} />
+          <mesh key={`s-${p.mat}`} geometry={p.geometry} material={lit[p.mat]} raycast={noRaycast} />
         ))}
       {showGhost &&
         build.parts.map((p) => {
           if (HIDDEN_IN_XRAY.has(p.mat)) return null
           if (SOLID_IN_XRAY.has(p.mat)) {
             // discos y pinzas se ven sólidos a través de la carrocería fantasma (con recorte, solo en la parte de rayos X)
-            return <mesh key={`x-${p.mat}`} geometry={p.geometry} material={clipGhost ? internalsMats[p.mat] : mats[p.mat]} raycast={noRaycast} />
+            return <mesh key={`x-${p.mat}`} geometry={p.geometry} material={clipGhost ? internalsMats[p.mat] : lit[p.mat]} raycast={noRaycast} />
           }
           return <mesh key={`g-${p.mat}`} geometry={p.geometry} material={ghost} renderOrder={2} raycast={noRaycast} />
         })}
@@ -183,6 +234,14 @@ export function CarModel({
     </group>
   )
 }
+
+const AMBER = '#ffa51f'
+const FLASH_WHITE = '#ffffff'
+/** Intermitentes: 1,5 Hz (por debajo del límite de 3 destellos/s de WCAG 2.3.1), 4 s y se quedan fijos. */
+const HAZARD_PERIOD = 0.66
+const HAZARD_SECONDS = 4
+const FLASH_WINDOWS: [number, number][] = [[0, 0.16], [0.32, 0.48]]
+const FLASH_SECONDS = 0.6
 
 const PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
 /** Pulso del resaltado: 2 latidos (~4 s; con coseno empieza y acaba en el máximo) y se queda a opacidad 1. */

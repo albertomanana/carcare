@@ -31,9 +31,19 @@ export interface CarViewerProps {
 }
 
 /** Vista previa ligera para formularios (cambia de carrocería/color en vivo). Sin controles. */
+/**
+ * Señal luminosa del coche para guiar al usuario. `hazard`: intermitentes ámbar unos segundos («mira aquí»).
+ * `flash`: dos destellos blancos («hecho»). Un `token` nuevo la repite. Se ignora con movimiento reducido.
+ */
+export interface CarSignal {
+  kind: 'hazard' | 'flash'
+  token: number
+}
+
 export interface CarPreviewProps {
   appearance: CarAppearance
   className?: string
+  signal?: CarSignal | null
 }
 
 /** Imagen estática del coche (render cacheado o silueta SVG). Para listados: no crea un WebGL por tarjeta. */

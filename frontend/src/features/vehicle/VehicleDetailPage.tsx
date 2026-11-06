@@ -1,4 +1,5 @@
 import { Archive, ArchiveRestore, ArrowLeft, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
+import { BrandLogo } from '@/components/vehicles/BrandLogo'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -229,6 +230,7 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-fg-warm text-balance md:text-3xl">
+            <BrandLogo make={vehicle.make} className="mr-3 size-7 align-[-0.12em] text-fg-muted md:size-8" />
             {vehicle.display_name}
             {vehicle.plate && <Plate value={vehicle.plate} className="ml-3 align-middle font-sans text-base font-normal md:text-lg" />}
           </h1>
