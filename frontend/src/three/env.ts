@@ -75,21 +75,21 @@ export interface ThemeTokens {
 }
 
 const FALLBACK: ThemeTokens = {
-  base: '#111518',
-  surface: '#1a2024',
-  surface2: '#20272b',
-  surface3: '#2a3237',
-  line: '#333b40',
-  lineStrong: '#5b666c',
-  fg: '#f5f7f7',
-  fgMuted: '#a5b0b5',
-  fgSubtle: '#8a969c',
-  accent: '#c7f36b',
-  danger: '#ff6b6b',
-  warning: '#f5b84a',
-  ok: '#5cd6c0',
-  info: '#7cc4fa',
-  light: false,
+  base: '#e4e4e1',
+  surface: '#f7f7f4',
+  surface2: '#efefeb',
+  surface3: '#e2e2dd',
+  line: '#d3d3cd',
+  lineStrong: '#7d807c',
+  fg: '#17191b',
+  fgMuted: '#4d5155',
+  fgSubtle: '#5c6064',
+  accent: '#1f4fd8',
+  danger: '#b3261e',
+  warning: '#855600',
+  ok: '#17694a',
+  info: '#1f5f99',
+  light: true,
 }
 
 let tokenCache: { key: string; tokens: ThemeTokens } | null = null
@@ -120,7 +120,7 @@ export function readThemeTokens(): ThemeTokens {
     warning: v('--warning', FALLBACK.warning),
     ok: v('--ok', FALLBACK.ok),
     info: v('--info', FALLBACK.info),
-    light: root.getAttribute('data-theme') === 'light',
+    light: root.getAttribute('data-theme') !== 'dark',
   }
   tokenCache = { key, tokens }
   return tokens

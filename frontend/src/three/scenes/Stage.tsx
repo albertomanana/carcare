@@ -70,10 +70,10 @@ export function StudioFloor({ color, radius = 10, reflect = true, strength = 1, 
       {reflect ? (
         <MeshReflectorMaterial
           color={color}
-          blur={[400, 140]}
+          blur={[300, 300]}
           resolution={512}
           mixBlur={1}
-          mixStrength={(night ? 2.4 : 0.9) * strength}
+          mixStrength={(night ? 2.4 : 0.6) * strength}
           mixContrast={1}
           roughness={0.85}
           metalness={0.35}

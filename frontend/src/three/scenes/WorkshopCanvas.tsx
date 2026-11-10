@@ -903,7 +903,7 @@ function useTextTexture(text: string, color: string, opacity: number): THREE.Tex
     g.fillStyle = color
     g.textAlign = 'center'
     g.textBaseline = 'middle'
-    g.font = `600 ${square ? 200 : 104}px "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif`
+    g.font = `600 ${square ? 200 : 104}px "Archivo Variable", system-ui, sans-serif`
     if (!square) (g as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '10px'
     g.fillText(text, c.width / 2, c.height / 2 + (square ? 8 : 4))
     const t = new THREE.CanvasTexture(c)
