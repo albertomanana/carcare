@@ -1,0 +1,834 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T19:06:07.669Z",
+  "title": "Design System: CarCare",
+  "extensions": {
+    "themes": [
+      {
+        "name": "cabina",
+        "selector": ":root",
+        "default": true,
+        "purpose": "Tema claro de uso diario."
+      },
+      {
+        "name": "cabina apagada",
+        "selector": ":root[data-theme='dark']",
+        "purpose": "La misma cabina con la luz apagada: grafito, sin neón. Valores en colorMeta.<token>.dark."
+      }
+    ],
+    "colorMeta": {
+      "gris-cabina": {
+        "role": "neutral",
+        "displayName": "Gris cabina N8",
+        "canonical": "oklch(91.8% 0.004 106.5)",
+        "dark": "#1b1d20",
+        "purpose": "Fondo de página y cabecera fija.",
+        "tonalRamp": [
+          "oklch(15% 0.001 106.5)",
+          "oklch(26% 0.002 106.5)",
+          "oklch(37% 0.003 106.5)",
+          "oklch(48% 0.004 106.5)",
+          "oklch(59% 0.004 106.5)",
+          "oklch(70% 0.003 106.5)",
+          "oklch(82% 0.002 106.5)",
+          "oklch(95% 0.001 106.5)"
+        ]
+      },
+      "cartulina": {
+        "role": "neutral",
+        "displayName": "Cartulina de muestra",
+        "canonical": "oklch(97.5% 0.004 106.5)",
+        "dark": "#25282c",
+        "purpose": "Tarjetas, paneles de lista, campos, botón secundario.",
+        "tonalRamp": [
+          "oklch(15% 0.001 106.5)",
+          "oklch(26% 0.002 106.5)",
+          "oklch(37% 0.003 106.5)",
+          "oklch(48% 0.004 106.5)",
+          "oklch(59% 0.004 106.5)",
+          "oklch(70% 0.003 106.5)",
+          "oklch(82% 0.002 106.5)",
+          "oklch(95% 0.001 106.5)"
+        ]
+      },
+      "cartulina-2": {
+        "role": "neutral",
+        "displayName": "Cartulina sombreada",
+        "canonical": "oklch(95.1% 0.005 106.5)",
+        "dark": "#2c2f34",
+        "purpose": "Hover de botones y filas; esqueletos.",
+        "tonalRamp": [
+          "oklch(15% 0.002 106.5)",
+          "oklch(26% 0.003 106.5)",
+          "oklch(37% 0.004 106.5)",
+          "oklch(48% 0.005 106.5)",
+          "oklch(59% 0.005 106.5)",
+          "oklch(70% 0.004 106.5)",
+          "oklch(82% 0.003 106.5)",
+          "oklch(95% 0.002 106.5)"
+        ]
+      },
+      "cartulina-3": {
+        "role": "neutral",
+        "displayName": "Cartulina honda",
+        "canonical": "oklch(91.1% 0.007 106.5)",
+        "dark": "#363a3f",
+        "purpose": "Fondo de etiqueta neutra; brillo del esqueleto.",
+        "tonalRamp": [
+          "oklch(15% 0.002 106.5)",
+          "oklch(26% 0.004 106.5)",
+          "oklch(37% 0.005 106.5)",
+          "oklch(48% 0.007 106.5)",
+          "oklch(59% 0.007 106.5)",
+          "oklch(70% 0.006 106.5)",
+          "oklch(82% 0.004 106.5)",
+          "oklch(95% 0.002 106.5)"
+        ]
+      },
+      "linea": {
+        "role": "neutral",
+        "displayName": "Línea de canto",
+        "canonical": "oklch(86.5% 0.008 106.6)",
+        "dark": "#3a3e43",
+        "purpose": "Separadores de fila y bordes de tarjeta.",
+        "tonalRamp": [
+          "oklch(15% 0.003 106.6)",
+          "oklch(26% 0.004 106.6)",
+          "oklch(37% 0.006 106.6)",
+          "oklch(48% 0.008 106.6)",
+          "oklch(59% 0.008 106.6)",
+          "oklch(70% 0.007 106.6)",
+          "oklch(82% 0.005 106.6)",
+          "oklch(95% 0.003 106.6)"
+        ]
+      },
+      "linea-fuerte": {
+        "role": "neutral",
+        "displayName": "Línea fuerte",
+        "canonical": "oklch(59.6% 0.007 137.8)",
+        "dark": "#767b81",
+        "purpose": "Bordes de campo y de hover; ≥ 3:1 (WCAG 1.4.11).",
+        "tonalRamp": [
+          "oklch(15% 0.002 137.8)",
+          "oklch(26% 0.004 137.8)",
+          "oklch(37% 0.005 137.8)",
+          "oklch(48% 0.007 137.8)",
+          "oklch(59% 0.007 137.8)",
+          "oklch(70% 0.006 137.8)",
+          "oklch(82% 0.004 137.8)",
+          "oklch(95% 0.002 137.8)"
+        ]
+      },
+      "tinta": {
+        "role": "neutral",
+        "displayName": "Tinta de carta",
+        "canonical": "oklch(21.2% 0.005 248.1)",
+        "dark": "#eeeeeb",
+        "purpose": "Texto principal.",
+        "tonalRamp": [
+          "oklch(15% 0.002 248.1)",
+          "oklch(26% 0.003 248.1)",
+          "oklch(37% 0.004 248.1)",
+          "oklch(48% 0.005 248.1)",
+          "oklch(59% 0.005 248.1)",
+          "oklch(70% 0.004 248.1)",
+          "oklch(82% 0.003 248.1)",
+          "oklch(95% 0.002 248.1)"
+        ]
+      },
+      "tinta-honda": {
+        "role": "neutral",
+        "displayName": "Tinta honda",
+        "canonical": "oklch(18.1% 0.005 248.1)",
+        "dark": "#f5f5f2",
+        "purpose": "Títulos, cifras grandes y tinta oscura sobre pinturas claras.",
+        "tonalRamp": [
+          "oklch(15% 0.002 248.1)",
+          "oklch(26% 0.003 248.1)",
+          "oklch(37% 0.004 248.1)",
+          "oklch(48% 0.005 248.1)",
+          "oklch(59% 0.005 248.1)",
+          "oklch(70% 0.004 248.1)",
+          "oklch(82% 0.003 248.1)",
+          "oklch(95% 0.002 248.1)"
+        ]
+      },
+      "tinta-media": {
+        "role": "neutral",
+        "displayName": "Tinta media",
+        "canonical": "oklch(43.3% 0.008 248)",
+        "dark": "#b4b8bc",
+        "purpose": "Descripciones, rótulos de dato, matrículas en lista.",
+        "tonalRamp": [
+          "oklch(15% 0.003 248)",
+          "oklch(26% 0.005 248)",
+          "oklch(37% 0.006 248)",
+          "oklch(48% 0.008 248)",
+          "oklch(59% 0.008 248)",
+          "oklch(70% 0.007 248)",
+          "oklch(82% 0.005 248)",
+          "oklch(95% 0.003 248)"
+        ]
+      },
+      "tinta-tenue": {
+        "role": "neutral",
+        "displayName": "Tinta tenue",
+        "canonical": "oklch(48.7% 0.008 248)",
+        "dark": "#9b9fa4",
+        "purpose": "Fechas relativas, notas, marcadores de campo.",
+        "tonalRamp": [
+          "oklch(15% 0.003 248)",
+          "oklch(26% 0.004 248)",
+          "oklch(37% 0.006 248)",
+          "oklch(48% 0.008 248)",
+          "oklch(59% 0.008 248)",
+          "oklch(70% 0.007 248)",
+          "oklch(82% 0.005 248)",
+          "oklch(95% 0.003 248)"
+        ]
+      },
+      "azul-calibracion": {
+        "role": "primary",
+        "displayName": "Azul de calibración",
+        "canonical": "oklch(49.1% 0.216 264.5)",
+        "dark": "#3b66f0",
+        "purpose": "Botón primario lacado, foco, guía luminosa.",
+        "tonalRamp": [
+          "oklch(15% 0.068 264.5)",
+          "oklch(26% 0.117 264.5)",
+          "oklch(37% 0.167 264.5)",
+          "oklch(48% 0.216 264.5)",
+          "oklch(59% 0.216 264.5)",
+          "oklch(70% 0.18 264.5)",
+          "oklch(82% 0.126 264.5)",
+          "oklch(95% 0.068 264.5)"
+        ]
+      },
+      "azul-calibracion-tinta": {
+        "role": "primary",
+        "displayName": "Azul de calibración (texto)",
+        "canonical": "oklch(45% 0.2 264.6)",
+        "dark": "#9db8ff",
+        "purpose": "Enlaces de acción; foco en oscuro.",
+        "tonalRamp": [
+          "oklch(15% 0.063 264.6)",
+          "oklch(26% 0.109 264.6)",
+          "oklch(37% 0.155 264.6)",
+          "oklch(48% 0.2 264.6)",
+          "oklch(59% 0.2 264.6)",
+          "oklch(70% 0.168 264.6)",
+          "oklch(82% 0.117 264.6)",
+          "oklch(95% 0.063 264.6)"
+        ]
+      },
+      "sobre-azul": {
+        "role": "primary",
+        "displayName": "Blanco sobre laca",
+        "canonical": "oklch(100% 0 89.9)",
+        "dark": "#ffffff",
+        "purpose": "Texto sobre el botón primario (y sobre el de peligro en claro; en oscuro es #1b1d20).",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(59% 0 89.9)",
+          "oklch(70% 0 89.9)",
+          "oklch(82% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "azul-calibracion-suave": {
+        "role": "primary",
+        "displayName": "Azul de calibración suave",
+        "canonical": "rgb(31 79 216 / 0.11)",
+        "dark": "rgb(91 128 255 / 0.16)",
+        "purpose": "Fondo de etiqueta de acento."
+      },
+      "estado-vencido": {
+        "role": "status",
+        "displayName": "Rojo vencido",
+        "canonical": "oklch(50.1% 0.178 28.7)",
+        "dark": "#ff7b70",
+        "purpose": "Estado vencido y acción de peligro.",
+        "tonalRamp": [
+          "oklch(15% 0.056 28.7)",
+          "oklch(26% 0.097 28.7)",
+          "oklch(37% 0.138 28.7)",
+          "oklch(48% 0.178 28.7)",
+          "oklch(59% 0.178 28.7)",
+          "oklch(70% 0.149 28.7)",
+          "oklch(82% 0.104 28.7)",
+          "oklch(95% 0.056 28.7)"
+        ]
+      },
+      "estado-vencido-suave": {
+        "role": "status",
+        "displayName": "Rojo vencido suave",
+        "canonical": "rgb(179 38 30 / 0.11)",
+        "dark": "rgb(255 123 112 / 0.13)",
+        "purpose": "Fondo de la etiqueta Vencido."
+      },
+      "estado-proximo": {
+        "role": "status",
+        "displayName": "Ámbar próximo",
+        "canonical": "oklch(49.3% 0.105 72.7)",
+        "dark": "#f2b54a",
+        "purpose": "Estado próximo.",
+        "tonalRamp": [
+          "oklch(15% 0.033 72.7)",
+          "oklch(26% 0.057 72.7)",
+          "oklch(37% 0.081 72.7)",
+          "oklch(48% 0.105 72.7)",
+          "oklch(59% 0.105 72.7)",
+          "oklch(70% 0.088 72.7)",
+          "oklch(82% 0.062 72.7)",
+          "oklch(95% 0.033 72.7)"
+        ]
+      },
+      "estado-proximo-suave": {
+        "role": "status",
+        "displayName": "Ámbar próximo suave",
+        "canonical": "rgb(214 150 20 / 0.2)",
+        "dark": "rgb(242 181 74 / 0.14)",
+        "purpose": "Fondo de la etiqueta Próximo."
+      },
+      "estado-en-plazo": {
+        "role": "status",
+        "displayName": "Verde en plazo",
+        "canonical": "oklch(46.5% 0.092 162.7)",
+        "dark": "#5cc79b",
+        "purpose": "Estado en plazo y hecho.",
+        "tonalRamp": [
+          "oklch(15% 0.029 162.7)",
+          "oklch(26% 0.05 162.7)",
+          "oklch(37% 0.071 162.7)",
+          "oklch(48% 0.092 162.7)",
+          "oklch(59% 0.092 162.7)",
+          "oklch(70% 0.077 162.7)",
+          "oklch(82% 0.054 162.7)",
+          "oklch(95% 0.029 162.7)"
+        ]
+      },
+      "estado-en-plazo-suave": {
+        "role": "status",
+        "displayName": "Verde en plazo suave",
+        "canonical": "rgb(23 105 74 / 0.11)",
+        "dark": "rgb(92 199 155 / 0.13)",
+        "purpose": "Fondo de etiqueta en plazo."
+      },
+      "estado-info": {
+        "role": "status",
+        "displayName": "Azul informativo",
+        "canonical": "oklch(47.5% 0.113 249.8)",
+        "dark": "#7db6f2",
+        "purpose": "Avisos informativos.",
+        "tonalRamp": [
+          "oklch(15% 0.036 249.8)",
+          "oklch(26% 0.062 249.8)",
+          "oklch(37% 0.088 249.8)",
+          "oklch(48% 0.113 249.8)",
+          "oklch(59% 0.113 249.8)",
+          "oklch(70% 0.095 249.8)",
+          "oklch(82% 0.066 249.8)",
+          "oklch(95% 0.036 249.8)"
+        ]
+      },
+      "estado-info-suave": {
+        "role": "status",
+        "displayName": "Azul informativo suave",
+        "canonical": "rgb(31 95 153 / 0.1)",
+        "dark": "rgb(125 182 242 / 0.13)",
+        "purpose": "Fondo informativo."
+      },
+      "grafito": {
+        "role": "neutral",
+        "displayName": "Grafito de armazón",
+        "canonical": "oklch(26.4% 0.006 258.4)",
+        "dark": "#141618",
+        "purpose": "Barra lateral (los dos temas).",
+        "tonalRamp": [
+          "oklch(15% 0.002 258.4)",
+          "oklch(26% 0.003 258.4)",
+          "oklch(37% 0.005 258.4)",
+          "oklch(48% 0.006 258.4)",
+          "oklch(59% 0.006 258.4)",
+          "oklch(70% 0.005 258.4)",
+          "oklch(82% 0.004 258.4)",
+          "oklch(95% 0.002 258.4)"
+        ]
+      },
+      "grafito-2": {
+        "role": "neutral",
+        "displayName": "Grafito claro",
+        "canonical": "oklch(31.6% 0.008 255.6)",
+        "dark": "#212427",
+        "purpose": "Hover y pastilla activa de la barra.",
+        "tonalRamp": [
+          "oklch(15% 0.003 255.6)",
+          "oklch(26% 0.004 255.6)",
+          "oklch(37% 0.006 255.6)",
+          "oklch(48% 0.008 255.6)",
+          "oklch(59% 0.008 255.6)",
+          "oklch(70% 0.007 255.6)",
+          "oklch(82% 0.005 255.6)",
+          "oklch(95% 0.003 255.6)"
+        ]
+      },
+      "grafito-linea": {
+        "role": "neutral",
+        "displayName": "Línea de grafito",
+        "canonical": "oklch(36.6% 0.01 254)",
+        "dark": "#2e3236",
+        "purpose": "Separadores en la barra.",
+        "tonalRamp": [
+          "oklch(15% 0.003 254)",
+          "oklch(26% 0.006 254)",
+          "oklch(37% 0.008 254)",
+          "oklch(48% 0.01 254)",
+          "oklch(59% 0.01 254)",
+          "oklch(70% 0.008 254)",
+          "oklch(82% 0.006 254)",
+          "oklch(95% 0.003 254)"
+        ]
+      },
+      "grafito-tinta": {
+        "role": "neutral",
+        "displayName": "Tinta sobre grafito",
+        "canonical": "oklch(95.7% 0.004 106.5)",
+        "dark": "#f1f1ee",
+        "purpose": "Texto activo y logotipo en la barra.",
+        "tonalRamp": [
+          "oklch(15% 0.001 106.5)",
+          "oklch(26% 0.002 106.5)",
+          "oklch(37% 0.003 106.5)",
+          "oklch(48% 0.004 106.5)",
+          "oklch(59% 0.004 106.5)",
+          "oklch(70% 0.003 106.5)",
+          "oklch(82% 0.002 106.5)",
+          "oklch(95% 0.001 106.5)"
+        ]
+      },
+      "grafito-tinta-tenue": {
+        "role": "neutral",
+        "displayName": "Tinta tenue sobre grafito",
+        "canonical": "oklch(78.4% 0.005 247.9)",
+        "dark": "#b6b9bc",
+        "purpose": "Enlaces en reposo, título del abanico, remache.",
+        "tonalRamp": [
+          "oklch(15% 0.002 247.9)",
+          "oklch(26% 0.003 247.9)",
+          "oklch(37% 0.004 247.9)",
+          "oklch(48% 0.005 247.9)",
+          "oklch(59% 0.005 247.9)",
+          "oklch(70% 0.005 247.9)",
+          "oklch(82% 0.003 247.9)",
+          "oklch(95% 0.002 247.9)"
+        ]
+      },
+      "grafito-azul": {
+        "role": "primary",
+        "displayName": "Azul sobre grafito",
+        "canonical": "oklch(76.4% 0.12 266.3)",
+        "dark": "#8fb0ff",
+        "purpose": "Regla e icono del activo, foco y anillo del vehículo actual en la barra.",
+        "tonalRamp": [
+          "oklch(15% 0.038 266.3)",
+          "oklch(26% 0.065 266.3)",
+          "oklch(37% 0.093 266.3)",
+          "oklch(48% 0.12 266.3)",
+          "oklch(59% 0.12 266.3)",
+          "oklch(70% 0.1 266.3)",
+          "oklch(82% 0.07 266.3)",
+          "oklch(95% 0.038 266.3)"
+        ]
+      },
+      "pintura-sin-color": {
+        "role": "secondary",
+        "displayName": "Pintura sin indicar",
+        "canonical": "oklch(70.3% 0.011 248)",
+        "dark": "#9aa0a6",
+        "purpose": "Muestra de un vehículo sin color_hex (valor por defecto de --paint).",
+        "tonalRamp": [
+          "oklch(15% 0.003 248)",
+          "oklch(26% 0.006 248)",
+          "oklch(37% 0.009 248)",
+          "oklch(48% 0.011 248)",
+          "oklch(59% 0.011 248)",
+          "oklch(70% 0.009 248)",
+          "oklch(82% 0.007 248)",
+          "oklch(95% 0.003 248)"
+        ]
+      }
+    },
+    "paint": {
+      "variables": [
+        "--paint",
+        "--paint-ink"
+      ],
+      "source": "frontend/src/lib/colors.ts → paintVars(color_hex)",
+      "inkRule": "La tinta es #101214 o #ffffff, la de mayor contraste con la pintura.",
+      "allowedSurfaces": [
+        "muestra lacada (.lacquer)",
+        "reflejo de suelo de la cabina: color-mix al 16–18 % con la cartulina, dentro de la misma placa o tarjeta"
+      ],
+      "vehiclePalette": [
+        "#F2F2EF",
+        "#15171A",
+        "#A9AEB4",
+        "#4B5157",
+        "#C62828",
+        "#1F4E9C",
+        "#6FA3D9",
+        "#2E6B45",
+        "#CDBA96",
+        "#6B4A35",
+        "#E06A1B",
+        "#E8C21C"
+      ]
+    },
+    "dataviz": {
+      "purpose": "Gráficos de analítica; no son colores de interfaz.",
+      "chart": {
+        "light": [
+          "#1f4fd8",
+          "#17694a",
+          "#c98500",
+          "#7357c2",
+          "#2a8bb5",
+          "#7d807c"
+        ],
+        "dark": [
+          "#6f92ff",
+          "#5cc79b",
+          "#f2b54a",
+          "#b4a7f5",
+          "#6cc3e6",
+          "#8a8f95"
+        ]
+      },
+      "categorical": {
+        "light": [
+          "#2a78d6",
+          "#d95926",
+          "#199e70",
+          "#c98500",
+          "#d55181",
+          "#8a8c88"
+        ],
+        "dark": [
+          "#3987e5",
+          "#d95926",
+          "#199e70",
+          "#c98500",
+          "#d55181",
+          "#5b666c"
+        ],
+        "note": "CVD ΔE ≥ 8, contraste ≥ 3:1 sobre cartulina."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Nombre en la muestra",
+        "purpose": "Nombre del vehículo sobre su laca; 1.5rem en placas estrechas, 1.125rem en la tarjeta del garaje."
+      },
+      "headline": {
+        "displayName": "Título de pantalla",
+        "purpose": "h1 de cada pantalla; 1.5rem por debajo de 768 px."
+      },
+      "title": {
+        "displayName": "Título de sección",
+        "purpose": "Secciones y diálogos; 1rem en títulos de tarjeta."
+      },
+      "figure": {
+        "displayName": "Cifra",
+        "purpose": "Cifras del mes y kilometraje, tabulares y al margen derecho; 1.25rem en totales de gasto."
+      },
+      "body": {
+        "displayName": "Texto",
+        "purpose": "Filas, descripciones y controles."
+      },
+      "body-lg": {
+        "displayName": "Texto grande",
+        "purpose": "Campos en móvil y línea de estado bajo el título desde 768 px."
+      },
+      "label": {
+        "displayName": "Etiqueta de muestra",
+        "purpose": "Matrículas, códigos, rótulos de dato y estados; nunca como antetítulo."
+      }
+    },
+    "fontSource": "@fontsource-variable/archivo/standard.css (pesos 100–900, anchura 62–125 %), autoalojada",
+    "shadows": [
+      {
+        "name": "losa",
+        "value": "0 1px 0 0 var(--sheen) inset, 0 1px 0 0 var(--line), 0 14px 24px -18px hsl(var(--shadow-color) / 0.55)",
+        "purpose": "Tarjetas y paneles de lista en reposo."
+      },
+      {
+        "name": "elevada",
+        "value": "0 10px 28px -12px hsl(var(--shadow-color) / 0.55), 0 2px 6px hsl(var(--shadow-color) / 0.2)",
+        "purpose": "Tarjeta enlazada al pasar el ratón (sube 2 px)."
+      },
+      {
+        "name": "flotante",
+        "value": "0 18px 48px -16px hsl(var(--shadow-color) / 0.6), 0 4px 12px hsl(var(--shadow-color) / 0.25)",
+        "purpose": "Menús, paleta de órdenes y diálogos."
+      },
+      {
+        "name": "laca",
+        "value": "inset 0 1px 0 rgb(255 255 255 / 0.4), inset 0 -2px 0 rgb(0 0 0 / 0.2), 0 10px 18px -12px hsl(var(--shadow-color) / 0.7)",
+        "purpose": "Muestras de pintura, con degradado de barniz a 158°."
+      },
+      {
+        "name": "laca-boton",
+        "value": "inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.28), 0 6px 14px -8px hsl(var(--shadow-color) / 0.75)",
+        "purpose": "Botones primario y de peligro."
+      },
+      {
+        "name": "cartulina-boton",
+        "value": "inset 0 1px 0 var(--sheen), 0 1px 0 var(--line), 0 6px 12px -10px hsl(var(--shadow-color) / 0.55)",
+        "purpose": "Botón secundario."
+      },
+      {
+        "name": "shadow-color",
+        "value": "claro: 220 8% 22% · oscuro: 0 0% 0%",
+        "purpose": "Tinte HSL de todas las sombras."
+      },
+      {
+        "name": "sheen",
+        "value": "claro: rgb(255 255 255 / 0.7) · oscuro: rgb(255 255 255 / 0.05)",
+        "purpose": "Filo de luz arriba de la cartulina."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-strong",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Entradas, respuestas, abanico, barrido de pintura e inclinación."
+      },
+      {
+        "name": "ease-in-out-strong",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Lo que se desplaza dentro de la pantalla."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Hojas y cajones (320 ms)."
+      },
+      {
+        "name": "press",
+        "value": "100ms, scale(0.97)",
+        "purpose": "Respuesta al pulsar un botón; scale(0.99) en tarjetas."
+      },
+      {
+        "name": "hover",
+        "value": "150–220ms",
+        "purpose": "Color, borde y sombra; elevación de 2 px solo con puntero fino."
+      },
+      {
+        "name": "fan",
+        "value": "320ms ease-out-strong",
+        "purpose": "Despliegue del abanico de muestras."
+      },
+      {
+        "name": "paint-wipe",
+        "value": "380ms ease-out-strong, clip-path de arriba abajo",
+        "purpose": "Cambio de vehículo en la placa de muestra."
+      },
+      {
+        "name": "rise",
+        "value": "420–520ms ease-out-strong, cascada de 50–70 ms",
+        "purpose": "Entrada de la pantalla al cargar; nunca al hacer scroll."
+      },
+      {
+        "name": "nav-spring",
+        "value": "spring 350ms, bounce 0.12",
+        "purpose": "Pastilla activa de la barra lateral."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animaciones y transiciones a 0,01 ms",
+        "purpose": "prefers-reduced-motion: el abanico queda abierto y quieto, sin barrido ni inclinación."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "Aparece la barra lateral de 76 px; desaparece la barra inferior."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "Barra lateral de 256 px con el abanico; columna lateral de 22rem."
+      },
+      {
+        "name": "xl",
+        "value": "1280px",
+        "purpose": "Escaparate y «Pendiente» (25rem) lado a lado."
+      },
+      {
+        "name": "container",
+        "value": "30rem, 32rem, 34rem, 40rem, 50rem",
+        "purpose": "Consultas de contenedor de filas y placa."
+      }
+    ],
+    "layout": {
+      "grid": "8px",
+      "rail": "76px / 256px",
+      "header": "64px",
+      "contentMax": "1240px particular, 1440px taller",
+      "touchTarget": "44px en móvil, 36–40px con puntero fino"
+    }
+  },
+  "components": [
+    {
+      "name": "Botón primario lacado",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "La acción principal de la pantalla («Registrar», «Añadir vehículo»); una sola a la vista.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Registrar</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;font-size:0.875rem;line-height:1.25rem;font-weight:500;white-space:nowrap;cursor:pointer;transition:background-color 200ms cubic-bezier(0.23,1,0.32,1),color 200ms cubic-bezier(0.23,1,0.32,1),border-color 200ms cubic-bezier(0.23,1,0.32,1),box-shadow 200ms cubic-bezier(0.23,1,0.32,1),transform 200ms cubic-bezier(0.23,1,0.32,1),filter 200ms cubic-bezier(0.23,1,0.32,1);background-color:var(--accent,#1f4fd8);color:var(--on-accent,#fff);border:none;background-image:linear-gradient(180deg,rgb(255 255 255/0.18),transparent 60%);box-shadow:inset 0 1px 0 rgb(255 255 255/0.3),inset 0 -1px 0 rgb(0 0 0/0.28),0 6px 14px -8px hsl(220 8% 22%/0.75);}.ds-btn-primary:hover{filter:brightness(1.1);}.ds-btn-primary:active{transform:scale(0.97);transition-duration:100ms;box-shadow:inset 0 1px 0 rgb(255 255 255/0.2),inset 0 -1px 0 rgb(0 0 0/0.2),0 2px 6px -4px hsl(220 8% 22%/0.7);}.ds-btn-primary:focus-visible{outline:2px solid var(--accent,#1f4fd8);outline-offset:2px;}"
+    },
+    {
+      "name": "Botón secundario de cartulina",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acciones secundarias («Abrir ficha»): cartulina con filo de luz y canto.",
+      "html": "<button class=\"ds-btn-secondary\">Abrir ficha</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;font-size:0.875rem;line-height:1.25rem;font-weight:500;white-space:nowrap;cursor:pointer;transition:background-color 200ms cubic-bezier(0.23,1,0.32,1),color 200ms cubic-bezier(0.23,1,0.32,1),border-color 200ms cubic-bezier(0.23,1,0.32,1),box-shadow 200ms cubic-bezier(0.23,1,0.32,1),transform 200ms cubic-bezier(0.23,1,0.32,1),filter 200ms cubic-bezier(0.23,1,0.32,1);background:var(--surface,#f7f7f4);color:var(--fg,#17191b);border:1px solid var(--line,#d3d3cd);box-shadow:inset 0 1px 0 var(--sheen,rgb(255 255 255/0.7)),0 1px 0 var(--line,#d3d3cd),0 6px 12px -10px hsl(220 8% 22%/0.55);}.ds-btn-secondary:hover{background:var(--surface-2,#efefeb);border-color:var(--line-strong,#7d807c);}.ds-btn-secondary:active{transform:scale(0.97);transition-duration:100ms;}.ds-btn-secondary:focus-visible{outline:2px solid var(--accent,#1f4fd8);outline-offset:2px;}"
+    },
+    {
+      "name": "Botón fantasma",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Acciones de fila («Anotar km», «Marcar hecho»).",
+      "html": "<button class=\"ds-btn-ghost\">Anotar km</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;font-size:0.875rem;line-height:1.25rem;font-weight:500;white-space:nowrap;cursor:pointer;transition:background-color 200ms cubic-bezier(0.23,1,0.32,1),color 200ms cubic-bezier(0.23,1,0.32,1),border-color 200ms cubic-bezier(0.23,1,0.32,1),box-shadow 200ms cubic-bezier(0.23,1,0.32,1),transform 200ms cubic-bezier(0.23,1,0.32,1),filter 200ms cubic-bezier(0.23,1,0.32,1);height:36px;padding:0 12px;background:transparent;border:none;color:var(--fg-muted,#4d5155);}.ds-btn-ghost:hover{background:var(--surface-2,#efefeb);color:var(--fg,#17191b);}.ds-btn-ghost:active{transform:scale(0.97);transition-duration:100ms;}.ds-btn-ghost:focus-visible{outline:2px solid var(--accent,#1f4fd8);outline-offset:2px;}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campos de formulario: cartulina con borde fuerte; el foco tiñe el borde de azul.",
+      "html": "<input class=\"ds-input\" placeholder=\"Kilometraje actual\" />",
+      "css": ".ds-input{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;height:40px;width:16rem;padding:0 12px;border-radius:8px;border:1px solid var(--line-strong,#7d807c);background:var(--surface,#f7f7f4);color:var(--fg,#17191b);font-size:0.875rem;caret-color:var(--accent,#1f4fd8);transition:border-color 150ms,box-shadow 150ms;}.ds-input::placeholder{color:var(--fg-subtle,#5c6064);}.ds-input:hover{border-color:var(--fg-subtle,#5c6064);}.ds-input:focus-visible{border-color:var(--accent,#1f4fd8);outline:2px solid var(--accent,#1f4fd8);outline-offset:0;}"
+    },
+    {
+      "name": "Etiqueta de estado",
+      "kind": "chip",
+      "refersTo": "badge-vencido",
+      "description": "Estado con icono y palabra en versalitas estrechas; solo para lo que pide atención.",
+      "html": "<span class=\"ds-tag ds-tag-danger\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 16h.01\"/><path d=\"M12 8v4\"/><path d=\"M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z\"/></svg>Vencido</span> <span class=\"ds-tag ds-tag-warning\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg>Próximo</span>",
+      "css": ".ds-tag{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:5px;font-stretch:78%;font-weight:650;font-size:0.75rem;line-height:1rem;letter-spacing:0.08em;text-transform:uppercase;}.ds-tag-danger{background:var(--danger-soft,rgb(179 38 30/0.11));color:var(--danger,#b3261e);}.ds-tag-warning{background:var(--warning-soft,rgb(214 150 20/0.2));color:var(--warning,#855600);}"
+    },
+    {
+      "name": "Panel de lista",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Filas dentro de una losa de cartulina, separadas por una línea fina; cifras tabulares al margen derecho.",
+      "html": "<ul class=\"ds-list\"><li><span>Este mes</span><b>0,00 €</b></li><li><span>Este año</span><b>5.277,96 €</b></li></ul>",
+      "css": ".ds-list{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;list-style:none;margin:0;padding:0;width:22rem;overflow:clip;border:1px solid var(--line,#d3d3cd);border-radius:16px;background:var(--surface,#f7f7f4);box-shadow:0 1px 0 0 var(--sheen,rgb(255 255 255/0.7)) inset,0 1px 0 0 var(--line,#d3d3cd),0 14px 24px -18px hsl(220 8% 22%/0.55);}.ds-list li{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 16px;font-size:0.875rem;color:var(--fg-muted,#4d5155);transition:background-color 150ms ease;}.ds-list li+li{border-top:1px solid var(--line,#d3d3cd);}.ds-list li:hover{background:color-mix(in srgb,var(--surface-3,#e2e2dd) 45%,transparent);}.ds-list b{font-stretch:112%;letter-spacing:-0.015em;font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;color:var(--fg-warm,#101214);}"
+    },
+    {
+      "name": "Navegación de la barra grafito",
+      "kind": "nav",
+      "refersTo": "nav-rail-item",
+      "description": "Barra lateral grafito: enlaces de 44 px; el activo con pastilla y regla azul de 3 px.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-link is-active\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"/><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/></svg>Inicio</a><a class=\"ds-rail-link\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2\"/><circle cx=\"7\" cy=\"17\" r=\"2\"/><path d=\"M9 17h6\"/><circle cx=\"17\" cy=\"17\" r=\"2\"/></svg>Garaje</a></nav>",
+      "css": ".ds-rail{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:flex;flex-direction:column;gap:4px;width:232px;padding:12px;background:var(--rail,#232528);}.ds-rail-link{position:relative;display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:8px;font-size:0.875rem;font-weight:500;color:var(--rail-muted,#b6b9bc);text-decoration:none;transition:background-color 150ms,color 150ms;}.ds-rail-link:hover{background:var(--rail-2,#2f3236);color:var(--rail-fg,#f1f1ee);}.ds-rail-link.is-active{background:var(--rail-2,#2f3236);color:var(--rail-fg,#f1f1ee);}.ds-rail-link.is-active svg{color:var(--rail-accent,#8fb0ff);}.ds-rail-link.is-active::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:9999px;background:var(--rail-accent,#8fb0ff);}.ds-rail-link:focus-visible{outline:2px solid var(--rail-accent,#8fb0ff);outline-offset:2px;}"
+    },
+    {
+      "name": "Abanico de muestras",
+      "kind": "custom",
+      "refersTo": "fan-chip",
+      "description": "Firma del mundo: cartas lacadas por vehículo que giran sobre su remache y se abren al pasar el ratón o con el teclado.",
+      "html": "<div class=\"ds-fan\"><div class=\"ds-fan-stage\"><a class=\"ds-fan-chip\" href=\"#\" style=\"--i:1;--paint:#6b7280;--paint-ink:#ffffff\"><span class=\"ds-lacquer\"><b>Kia Sportage</b><small>2021</small></span><span class=\"ds-fan-foot\"><span>7310 LFW</span><span class=\"ds-warn\">1 próximo</span></span></a><a class=\"ds-fan-chip\" href=\"#\" style=\"--i:0;--paint:#c62828;--paint-ink:#ffffff\"><span class=\"ds-lacquer\"><b>El rojo</b><small>Seat Ibiza</small></span><span class=\"ds-fan-foot\"><span>4821 KTB</span><span class=\"ds-danger\">2 vencidos</span></span></a><span class=\"ds-rivet\"></span></div></div>",
+      "css": ".ds-fan{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;perspective:900px;background:var(--rail,#232528);padding:16px;width:232px;}.ds-fan-stage{position:relative;height:204px;transform:rotateX(8deg);transform-style:preserve-3d;}.ds-fan-chip{position:absolute;left:2rem;bottom:0.75rem;width:11.5rem;display:block;border-radius:10px;text-decoration:none;box-shadow:0 14px 22px -14px rgb(0 0 0/0.8);transform-origin:0.75rem calc(100% - 0.75rem);transform:translateY(calc(var(--i)*-4.5rem)) rotate(calc(var(--i)*-2deg)) translateZ(calc(var(--i)*-10px));transition:transform 320ms cubic-bezier(0.23,1,0.32,1);}.ds-fan:hover .ds-fan-chip,.ds-fan:focus-within .ds-fan-chip{transform:translateY(calc(var(--i)*-4.75rem)) rotate(calc(var(--i)*-7deg)) translateZ(calc(var(--i)*-10px));}.ds-fan .ds-fan-chip:hover{transform:translateY(calc(var(--i)*-4.75rem - 4px)) rotate(calc(var(--i)*-7deg)) translateZ(calc(var(--i)*-10px + 14px));}.ds-fan-chip:focus-visible{outline:2px solid var(--rail-accent,#8fb0ff);outline-offset:2px;}.ds-lacquer{background-color:var(--paint,#9aa0a6);background-image:linear-gradient(158deg,rgb(255 255 255/0.46) 0%,rgb(255 255 255/0.1) 24%,transparent 44%,rgb(0 0 0/0.14) 100%);color:var(--paint-ink,#101214);box-shadow:inset 0 1px 0 rgb(255 255 255/0.4),inset 0 -2px 0 rgb(0 0 0/0.2),0 10px 18px -12px hsl(220 8% 22%/0.7);display:block;height:3.75rem;padding:10px 12px 0;border-radius:10px 10px 0 0;}.ds-lacquer b{display:block;font-size:0.9375rem;line-height:1.25rem;font-weight:600;}.ds-lacquer small{display:block;font-stretch:78%;font-weight:650;font-size:0.75rem;line-height:1rem;letter-spacing:0.08em;text-transform:uppercase;opacity:0.8;}.ds-fan-foot{display:flex;justify-content:space-between;gap:8px;padding:8px 12px 8px 28px;border-radius:0 0 10px 10px;background:var(--surface,#f7f7f4);color:var(--fg,#17191b);font-stretch:78%;font-weight:650;font-size:0.75rem;line-height:1rem;letter-spacing:0.08em;text-transform:uppercase;}.ds-danger{color:var(--danger,#b3261e);}.ds-warn{color:var(--warning,#855600);}.ds-rivet{position:absolute;left:2.45rem;bottom:1.2rem;width:10px;height:10px;border-radius:9999px;background:var(--rail-muted,#b6b9bc);box-shadow:inset 0 -1px 0 rgb(0 0 0/0.4),0 1px 2px rgb(0 0 0/0.5);transform:translateZ(4px);}@media (prefers-reduced-motion:reduce){.ds-fan-chip{transition:none;transform:translateY(calc(var(--i)*-4.75rem)) rotate(calc(var(--i)*-7deg));}}"
+    },
+    {
+      "name": "Placa de muestra",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Escaparate de Inicio: carta lacada con la pintura real y los datos, junto a la cabina donde vive el único lienzo 3D.",
+      "html": "<section class=\"ds-plate\" style=\"--paint:#c62828;--paint-ink:#ffffff\"><div class=\"ds-plate-card ds-wipe\"><p class=\"ds-plate-name\">El rojo</p><p class=\"ds-plate-sub\">Seat Ibiza · 2019</p><dl><dt>Kilometraje</dt><dd class=\"ds-plate-km\">81.744 km</dd><dt>Matrícula</dt><dd>4821 KTB</dd><dt>Pintura</dt><dd>Rojo · #C62828</dd></dl></div><div class=\"ds-plate-booth\" aria-hidden=\"true\"></div></section>",
+      "css": ".ds-plate{font-family:'Archivo Variable',ui-sans-serif,system-ui,sans-serif;display:grid;grid-template-columns:13rem 1fr;width:40rem;overflow:hidden;border:1px solid var(--line,#d3d3cd);border-radius:24px;background:var(--surface,#f7f7f4);box-shadow:0 1px 0 0 var(--sheen,rgb(255 255 255/0.7)) inset,0 1px 0 0 var(--line,#d3d3cd),0 14px 24px -18px hsl(220 8% 22%/0.55);}.ds-plate-card{background-color:var(--paint,#9aa0a6);background-image:linear-gradient(158deg,rgb(255 255 255/0.46) 0%,rgb(255 255 255/0.1) 24%,transparent 44%,rgb(0 0 0/0.14) 100%);color:var(--paint-ink,#101214);box-shadow:inset 0 1px 0 rgb(255 255 255/0.4),inset 0 -2px 0 rgb(0 0 0/0.2),0 10px 18px -12px hsl(220 8% 22%/0.7);position:relative;z-index:1;margin-right:-12px;padding:20px;border-radius:24px 20px 20px 24px;}.ds-plate-name{margin:0;font-stretch:112%;letter-spacing:-0.015em;font-size:1.5rem;font-weight:700;}.ds-plate-sub{margin:4px 0 24px;font-size:0.875rem;opacity:0.8;}.ds-plate-card dl{margin:0;display:grid;gap:12px;}.ds-plate-card dt{font-stretch:78%;font-weight:650;font-size:0.75rem;line-height:1rem;letter-spacing:0.08em;text-transform:uppercase;opacity:0.75;}.ds-plate-card dd{margin:2px 0 0;font-stretch:78%;font-weight:650;font-size:0.75rem;line-height:1rem;letter-spacing:0.08em;text-transform:uppercase;}.ds-plate-card dd.ds-plate-km{font-stretch:112%;text-transform:none;letter-spacing:-0.015em;font-size:1.75rem;line-height:2rem;font-weight:700;font-variant-numeric:tabular-nums;}.ds-plate-booth{min-height:18rem;background:radial-gradient(120% 70% at 50% 100%,color-mix(in srgb,var(--paint) 18%,var(--surface-2,#efefeb)),var(--surface,#f7f7f4) 72%);}.ds-wipe{animation:ds-wipe 380ms cubic-bezier(0.23,1,0.32,1) both;}@keyframes ds-wipe{from{clip-path:inset(0 0 100% 0 round 24px);}to{clip-path:inset(0 0 0 0 round 24px);}}@media (prefers-reduced-motion:reduce){.ds-wipe{animation:none;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La carta de colores",
+    "overview": "CarCare se presenta como la carta de colores de un taller de pintura: cada vehículo es su muestra lacada, con la pintura real del coche (`color_hex`), y todo lo demás es el gris neutro de una cabina de igualación, donde los colores se leen sin trampa. La pantalla es la cartulina en la que van grapadas las muestras; la barra lateral grafito es el armazón de la carta, y el abanico de muestras que sale de ella es la firma del mundo. El usuario reconoce sus coches por el color antes de leer el nombre.\n\nLa densidad es de herramienta, no de folleto: listas en panel con filas finas, cifras tabulares pegadas al margen derecho, pocas tallas de letra y un único azul de calibración para la acción principal. La profundidad es física y pequeña: la cartulina tiene filo de luz y canto, la muestra lacada tiene brillo de barniz, y las cartas se inclinan un poco hacia el puntero. El coche 3D procedural vive en un solo lienzo por pantalla, dentro de la cabina de la placa de muestra, y siempre tiene su silueta 2D y su información en HTML.\n\nEl tema claro («cabina», el predeterminado) es el de uso diario. El oscuro («cabina apagada») es la misma cabina con la luz apagada: grafito, sin acento neón. El mundo rechaza expresamente el panel oscuro con acento neón y el SaaS blanco de tarjetas iguales.",
+    "keyCharacteristics": [
+      "Gris cabina y cartulina neutros; el color del vehículo solo dentro de sus muestras lacadas.",
+      "Barra lateral grafito en los dos temas y en los dos modos (particular y taller).",
+      "Un solo azul de calibración para la acción principal, los enlaces de acción y el foco.",
+      "Archivo variable: ancho para títulos, normal para el texto, estrecho y en versalitas para etiquetas, matrículas y códigos.",
+      "Cifras tabulares alineadas a la derecha; lo que falta se dice con su acción, nunca con un cero inventado.",
+      "Movimiento corto y con salida fuerte; con `prefers-reduced-motion` todo queda quieto y legible."
+    ],
+    "rules": [
+      {
+        "name": "La regla de la cabina neutra",
+        "body": "El color del vehículo solo vive dentro de sus muestras lacadas (la carta del abanico, la placa del escaparate, la cabecera de la tarjeta, la muestra de la fila y la placa de la ficha). La única fuga permitida es el reflejo en el suelo de la cabina, dentro de la misma placa o tarjeta y mezclado al 16–18 % con la cartulina. Fuera de ahí, grises neutros y estados.",
+        "section": "colors"
+      },
+      {
+        "name": "La regla de la voz azul",
+        "body": "El azul de calibración significa «actúa aquí»: el botón primario, los enlaces de acción y el foco. Nunca decora, nunca rellena una superficie y hay un solo botón primario a la vista por pantalla.",
+        "section": "colors"
+      },
+      {
+        "name": "La regla del estado con palabra",
+        "body": "Rojo, ámbar y verde solo dicen estado, y nunca solos: cada estado lleva icono y texto («Vencido», «2 próximos»). La pintura de un coche rojo no es un aviso.",
+        "section": "colors"
+      },
+      {
+        "name": "La regla de las pocas tallas",
+        "body": "El rango lo dan el peso, la anchura y las versalitas, no una escalera de tamaños. Siete papeles y ninguno más.",
+        "section": "typography"
+      },
+      {
+        "name": "La regla de la cifra al margen",
+        "body": "Importes, kilómetros y plazos van con cifras tabulares y pegados al margen derecho de su fila o celda, sin partirse de su unidad.",
+        "section": "typography"
+      },
+      {
+        "name": "La regla de la etiqueta de muestra",
+        "body": "Las versalitas estrechas rotulan datos (matrícula, código, estado, rótulo de una cifra). Nunca van como antetítulo encima de un título.",
+        "section": "typography"
+      },
+      {
+        "name": "La regla de la losa",
+        "body": "Cada superficie de cartulina es una losa con su filo de luz y su canto, no una caja plana con borde. La laca queda reservada a la pintura del vehículo y a los botones primario y de peligro.",
+        "section": "elevation"
+      },
+      {
+        "name": "La regla del lienzo único",
+        "body": "Un solo `<Canvas>` 3D por pantalla, cargado de forma diferida y con silueta 2D de respaldo; los listados usan miniaturas estáticas, nunca un WebGL por tarjeta. Toda la profundidad de interfaz es CSS.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Haz** que todo lo de un vehículo lleve su muestra lacada con `paintVars(color_hex)`, y el texto encima con `--paint-ink`, comprobando 4,5:1 en el texto pequeño.",
+      "**Haz** las cifras con números tabulares y alineadas a la derecha; si falta un dato, dilo y ofrece la acción («Faltan lecturas de este mes. Anotar km»).",
+      "**Haz** que cada estado lleve icono y palabra, y que el aviso «según tus intervalos, no medido» aparezca una vez por sección.",
+      "**Haz** las entradas con `cubic-bezier(0.23, 1, 0.32, 1)` y duraciones de 100 a 520 ms, animando solo `transform`, `opacity`, `clip-path`, color y sombra.",
+      "**Haz** que todo movimiento se quede quieto y completo con `prefers-reduced-motion`: el abanico abierto, la pintura sin barrido, las cartas sin inclinación.",
+      "**Haz** el foco visible con 2 px de azul de calibración (o `grafito-azul` dentro de la barra) y 2 px de separación."
+    ],
+    "donts": [
+      "**No** uses la pintura del vehículo fuera de sus muestras: ni en fondos de página, ni en bordes, ni en botones, ni en texto.",
+      "**No** conviertas la interfaz en un panel oscuro con acento neón ni en un SaaS blanco de tarjetas iguales; el oscuro es la cabina apagada en grafito.",
+      "**No** pongas más de un `<Canvas>` 3D por pantalla ni un WebGL por tarjeta; el 3D nunca va sin su silueta 2D y su HTML accesible.",
+      "**No** uses rojo, ámbar o verde como decoración ni el azul de calibración como relleno de superficie.",
+      "**No** dibujes la matrícula como una placa de matrícula: va como texto en etiqueta de muestra.",
+      "**No** pongas etiquetas en versalitas como antetítulo encima de un título.",
+      "**No** enseñes cifras, puntuaciones de salud ni desgastes que no salgan de datos reales."
+    ]
+  }
+}
