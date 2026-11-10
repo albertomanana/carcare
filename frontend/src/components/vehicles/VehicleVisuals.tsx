@@ -1,6 +1,7 @@
-import { Car } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import type { BodyType } from '@/api/types'
 import { cn } from '@/lib/cn'
+import { paintVars } from '@/lib/colors'
 import { CarThumbnail } from '@/three'
 
 interface Look {
@@ -20,19 +21,13 @@ export function VehicleThumb({ vehicle, className }: { vehicle: Look; className?
   )
 }
 
-/** Punto de color del vehículo para listas compactas. */
+/** Muestra lacada del color del vehículo para listas compactas (mundo «Carta de colores»). */
 export function VehicleSwatch({ vehicle, size = 'md', className }: { vehicle: Pick<Look, 'color_hex'>; size?: 'sm' | 'md'; className?: string }) {
   return (
     <span
       aria-hidden
-      className={cn(
-        'grid shrink-0 place-items-center rounded-full border border-line-strong/60 bg-surface-3',
-        size === 'sm' ? 'size-7' : 'size-9',
-        className,
-      )}
-      style={vehicle.color_hex ? { backgroundColor: vehicle.color_hex } : undefined}
-    >
-      <Car className={cn('text-white mix-blend-difference', size === 'sm' ? 'size-3.5' : 'size-4')} />
-    </span>
+      style={paintVars(vehicle.color_hex) as CSSProperties}
+      className={cn('lacquer block shrink-0 rounded-md', size === 'sm' ? 'size-7' : 'size-9', className)}
+    />
   )
 }

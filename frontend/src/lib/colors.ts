@@ -37,3 +37,29 @@ export function vehicleColorName(hex: string | null | undefined): string | null 
   }
   return best?.name ?? null
 }
+
+/** Luminancia relativa (WCAG) de un hex #RRGGBB; null si no es válido. */
+export function relativeLuminance(hex: string | null | undefined): number | null {
+  const c = hex ? rgb(hex) : null
+  if (!c) return null
+  const [r, g, b] = c.map((v) => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** Pintura por defecto cuando el vehículo no tiene color (el gris neutro de la carta). */
+export const DEFAULT_PAINT = '#9AA0A6'
+
+/**
+ * Variables CSS de una muestra de pintura: el color del vehículo y la tinta legible encima (oscura sobre pinturas
+ * claras, blanca sobre oscuras; se elige la de mayor contraste).
+ */
+export function paintVars(hex: string | null | undefined): Record<'--paint' | '--paint-ink', string> {
+  const paint = hex && rgb(hex) ? hex : DEFAULT_PAINT
+  const l = relativeLuminance(paint) ?? 0.5
+  const onDark = (1.05) / (l + 0.05)
+  const onLight = (l + 0.05) / (0.0074 + 0.05) // contra #101214
+  return { '--paint': paint, '--paint-ink': onLight >= onDark ? '#101214' : '#ffffff' }
+}

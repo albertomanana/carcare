@@ -5,9 +5,9 @@ import { type Theme, ThemeContext } from './theme-context'
 function initialTheme(): Theme {
   const stored = readStorage(STORAGE_KEYS.theme)
   if (stored === 'light' || stored === 'dark') return stored
-  // Oscuro por defecto (identidad de marca), salvo que index.html ya haya fijado otro
+  // Claro por defecto: la cabina de igualación se usa de día (PRODUCT.md). El oscuro es la cabina con la luz apagada.
   const attr = typeof document !== 'undefined' ? document.documentElement.dataset.theme : undefined
-  return attr === 'light' ? 'light' : 'dark'
+  return attr === 'dark' ? 'dark' : 'light'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#111518' : '#f6f5f1')
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#1b1d20' : '#e4e4e1')
   }, [theme])
 
   const setTheme = useCallback((next: Theme) => {

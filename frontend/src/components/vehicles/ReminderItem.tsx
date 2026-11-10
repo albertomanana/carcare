@@ -59,6 +59,8 @@ export function ReminderItem({
     reminder.status === 'done'
       ? `Hecho el ${formatDate(reminder.completed_at)}${reminder.completed_mileage !== null ? ` a ${formatKm(reminder.completed_mileage)}` : ''}`
       : dueShort(reminder)
+  // Las cifras no se parten de su unidad ni de su fecha: «617 km», «1 día», «9 nov 2026» (espacios de no separación)
+  const whenText = keepTogether(when)
   const extra = pending && !compact ? [pct !== null ? `${pct} % del intervalo` : null, recurrence].filter(Boolean).join(' · ') : ''
 
   return (
@@ -66,7 +68,7 @@ export function ReminderItem({
       id={`recordatorio-${reminder.id}`}
       tabIndex={highlighted ? -1 : undefined}
       className={cn(
-        'flex scroll-mt-32 items-start gap-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:gap-3',
+        '@container flex scroll-mt-32 items-start gap-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:gap-3',
         highlighted && 'rounded-control bg-surface-2 px-2',
       )}
     >
@@ -92,23 +94,28 @@ export function ReminderItem({
             <>
               <Link to={vehicleLink} className="text-fg underline-offset-4 hover:underline">
                 {reminder.vehicle.display_name}
-                {reminder.vehicle.plate ? ` · ${formatPlate(reminder.vehicle.plate)}` : ''}
+                {/* espacios de no separación: la matrícula no se parte y cada «·» va pegado a lo que le sigue */}
+                {reminder.vehicle.plate ? ` · ${formatPlate(reminder.vehicle.plate).replace(' ', ' ')}` : ''}
               </Link>
-              {' · '}
             </>
           )}
-          <span className={cn(pending && reminder.state === 'overdue' && 'text-danger')}>{when}</span>
+          <span className={cn('@[32rem]:hidden', pending && reminder.state === 'overdue' && 'text-danger')}>
+            {vehicleLink && reminder.vehicle ? ' · ' : ''}
+            {whenText}
+          </span>
         </p>
         {extra && <p className="mt-0.5 text-xs text-fg-subtle">{extra}</p>}
       </div>
+      {/* el plazo, pegado al margen derecho con cifras tabulares (en filas estrechas va bajo el título) */}
+      <p className={cn('tabular hidden max-w-[14rem] shrink-0 self-center text-right text-sm @[32rem]:block', pending && reminder.state === 'overdue' ? 'text-danger' : 'text-fg-muted')}>{whenText}</p>
       {pending && (actions.onComplete || hasMenu) && (
         <div className="flex shrink-0 items-center gap-1">
           {actions.onComplete && (
             <>
-              <Button variant="ghost" size="sm" onClick={() => actions.onComplete?.(reminder)} className="max-sm:hidden" aria-label={`Marcar como hecho: ${reminder.title}`}>
+              <Button variant="ghost" size="sm" onClick={() => actions.onComplete?.(reminder)} className="hidden @[40rem]:inline-flex" aria-label={`Marcar como hecho: ${reminder.title}`}>
                 Marcar hecho
               </Button>
-              <IconButton label={`Marcar como hecho: ${reminder.title}`} size="sm" onClick={() => actions.onComplete?.(reminder)} className="sm:hidden">
+              <IconButton label={`Marcar como hecho: ${reminder.title}`} size="sm" onClick={() => actions.onComplete?.(reminder)} className="@[40rem]:hidden">
                 <CircleCheck aria-hidden />
               </IconButton>
             </>
@@ -166,4 +173,10 @@ export function ReminderListSkeleton({ rows = 3 }: { rows?: number }) {
       ))}
     </div>
   )
+}
+
+/** Une con espacios de no separación cada cifra con lo que la acompaña (unidad, mes, año). */
+function keepTogether(text: string): string {
+  const NBSP = String.fromCharCode(0xa0)
+  return text.replace(/(\d) (?=\S)/g, `$1${NBSP}`).replace(/(\p{L}) (?=\d{4}\b)/gu, `$1${NBSP}`)
 }

@@ -1,49 +1,98 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/archivo/standard.css';
 
 /*
- * Tokens de diseño de CarCare (plan inicial v1 §4.2). Modo oscuro por defecto.
- * Uso en Tailwind: bg-canvas (fondo de página), bg-surface, bg-surface-2, text-fg, text-fg-muted, border-line, bg-accent, text-on-accent…
+ * Tokens de diseño de CarCare · mundo «Carta de colores» (rediseño del 10/11/2026, ver PRODUCT.md y
+ * .impeccable/surfaces). Cada vehículo es su muestra de pintura; el resto es gris neutro de cabina de igualación,
+ * donde los colores se leen sin trampa. El color vive dentro de las muestras (`--paint`); fuera, grises y estados.
+ * Claro por defecto (se usa de día, en casa o en la oficina del taller). El oscuro es la cabina con la luz apagada.
+ * Uso en Tailwind: bg-canvas, bg-surface, text-fg, border-line, bg-accent, text-on-accent…
  * El tema se cambia con data-theme="light" | "dark" en <html>.
  */
 :root {
+  color-scheme: light;
+  --base: #e4e4e1; /* gris cabina N8 */
+  --surface: #f7f7f4; /* cartulina de muestra */
+  --surface-2: #efefeb;
+  --surface-3: #e2e2dd;
+  --line: #d3d3cd;
+  --line-strong: #7d807c; /* ≥ 3:1 sobre base y surface (WCAG 1.4.11) */
+  --fg: #17191b;
+  --fg-warm: #101214;
+  --fg-muted: #4d5155;
+  --fg-subtle: #5c6064;
+  --accent: #1f4fd8; /* azul de calibración: la acción principal */
+  --accent-ink: #1a45c2;
+  --on-accent: #ffffff;
+  --accent-soft: rgb(31 79 216 / 0.11);
+  --danger: #b3261e;
+  --danger-soft: rgb(179 38 30 / 0.11);
+  --on-danger: #ffffff;
+  --warning: #855600;
+  --warning-soft: rgb(214 150 20 / 0.2);
+  --ok: #17694a;
+  --ok-soft: rgb(23 105 74 / 0.11);
+  --info: #1f5f99;
+  --info-soft: rgb(31 95 153 / 0.1);
+  --chart-1: #1f4fd8;
+  --chart-2: #17694a;
+  --chart-3: #c98500;
+  --chart-4: #7357c2;
+  --chart-5: #2a8bb5;
+  --chart-6: #7d807c;
+  /* Paleta categórica (validada con dataviz: CVD ΔE ≥ 8, contraste ≥ 3:1 sobre --surface) */
+  --cat-1: #2a78d6;
+  --cat-2: #d95926;
+  --cat-3: #199e70;
+  --cat-4: #c98500;
+  --cat-5: #d55181;
+  --cat-other: #8a8c88;
+  --shadow-color: 220 8% 22%;
+  --overlay: rgb(23 25 27 / 0.42);
+  /* Barra lateral: grafito en los dos temas (el armazón de la carta) */
+  --rail: #232528;
+  --rail-2: #2f3236;
+  --rail-line: #3b3f44;
+  --rail-fg: #f1f1ee;
+  --rail-muted: #b6b9bc;
+  --rail-accent: #8fb0ff;
+  /* Pintura por defecto cuando el vehículo no tiene color */
+  --paint: #9aa0a6;
+  /* Filo de luz arriba de las superficies de cartulina */
+  --sheen: rgb(255 255 255 / 0.7);
+}
+
+:root[data-theme='dark'] {
   color-scheme: dark;
-  --base: #111518;
-  --surface: #1a2024;
-  --surface-2: #20272b;
-  --surface-3: #2a3237;
-  --line: #333b40;
-  --line-strong: #6b777d; /* ≥ 3:1 sobre surface y surface-2 (WCAG 1.4.11, hallazgo I3) */
-  --fg: #f5f7f7;
-  --fg-warm: #f2efe8;
-  --fg-muted: #a5b0b5;
-  --fg-subtle: #8a969c;
-  --accent: #c7f36b;
-  --accent-ink: #c7f36b; /* lima usada como texto/icono */
-  --accent-edge: #7b9f1c; /* canto de la tecla primaria: el grosor del botón */
-  --on-accent: #111518;
-  --accent-soft: rgb(199 243 107 / 0.12);
-  --danger: #ff6b6b;
-  --danger-soft: rgb(255 107 107 / 0.12);
-  --on-danger: #111518;
-  --warning: #f5b84a;
-  --warning-soft: rgb(245 184 74 / 0.12);
-  --ok: #5cd6c0;
-  --ok-soft: rgb(92 214 192 / 0.12);
-  --info: #7cc4fa;
-  --info-soft: rgb(124 196 250 / 0.12);
-  --chart-1: #c7f36b;
-  --chart-2: #5cd6c0;
-  --chart-3: #f5b84a;
+  --base: #1b1d20;
+  --surface: #25282c;
+  --surface-2: #2c2f34;
+  --surface-3: #363a3f;
+  --line: #3a3e43;
+  --line-strong: #767b81;
+  --fg: #eeeeeb;
+  --fg-warm: #f5f5f2;
+  --fg-muted: #b4b8bc;
+  --fg-subtle: #9b9fa4;
+  --accent: #3b66f0;
+  --accent-ink: #9db8ff;
+  --on-accent: #ffffff;
+  --accent-soft: rgb(91 128 255 / 0.16);
+  --danger: #ff7b70;
+  --danger-soft: rgb(255 123 112 / 0.13);
+  --on-danger: #1b1d20;
+  --warning: #f2b54a;
+  --warning-soft: rgb(242 181 74 / 0.14);
+  --ok: #5cc79b;
+  --ok-soft: rgb(92 199 155 / 0.13);
+  --info: #7db6f2;
+  --info-soft: rgb(125 182 242 / 0.13);
+  --chart-1: #6f92ff;
+  --chart-2: #5cc79b;
+  --chart-3: #f2b54a;
   --chart-4: #b4a7f5;
-  --chart-5: #7cc4fa;
-  --chart-6: #8a969c;
-  /*
-   * Paleta categórica para gráficos con varias series (donut por categoría…).
-   * Validada con el script de la skill dataviz (CVD ΔE ≥ 8, contraste ≥ 3:1 sobre --surface).
-   * La lima (--chart-1) queda para la serie única principal.
-   */
+  --chart-5: #6cc3e6;
+  --chart-6: #8a8f95;
   --cat-1: #3987e5;
   --cat-2: #d95926;
   --cat-3: #199e70;
@@ -51,51 +100,11 @@
   --cat-5: #d55181;
   --cat-other: #5b666c;
   --shadow-color: 0 0% 0%;
-  --overlay: rgb(5 8 10 / 0.66);
-  --glow: rgb(199 243 107 / 0.18);
-}
-
-:root[data-theme='light'] {
-  color-scheme: light;
-  --base: #f6f5f1;
-  --surface: #ffffff;
-  --surface-2: #f0eee8;
-  --surface-3: #e7e4dc;
-  --line: #e2ded4;
-  --line-strong: #85837b; /* ≥ 3:1 sobre surface y surface-2 (hallazgo I3) */
-  --fg: #14181b;
-  --fg-warm: #111518;
-  --fg-muted: #4f5a60;
-  --fg-subtle: #5f6b72;
-  --accent: #c7f36b;
-  --accent-ink: #3f6600; /* la lima no contrasta como texto sobre claro */
-  --accent-edge: #6a9210;
-  --on-accent: #111518;
-  --accent-soft: rgb(124 170 20 / 0.14);
-  --danger: #c93434;
-  --danger-soft: rgb(201 52 52 / 0.1);
-  --on-danger: #ffffff;
-  --warning: #9a6200;
-  --warning-soft: rgb(245 184 74 / 0.18);
-  --ok: #0f7a68;
-  --ok-soft: rgb(15 122 104 / 0.1);
-  --info: #1f6fae;
-  --info-soft: rgb(31 111 174 / 0.1);
-  --chart-1: #7caa14;
-  --chart-2: #1b9c86;
-  --chart-3: #d38f12;
-  --chart-4: #7a68d8;
-  --chart-5: #2f86c8;
-  --chart-6: #8c8a82;
-  --cat-1: #2a78d6;
-  --cat-2: #eb6834;
-  --cat-3: #1baf7a;
-  --cat-4: #eda100;
-  --cat-5: #e87ba4;
-  --cat-other: #a9a69c;
-  --shadow-color: 30 10% 40%;
-  --overlay: rgb(20 24 27 / 0.42);
-  --glow: rgb(124 170 20 / 0.16);
+  --overlay: rgb(5 6 8 / 0.62);
+  --rail: #141618;
+  --rail-2: #212427;
+  --rail-line: #2e3236;
+  --sheen: rgb(255 255 255 / 0.05);
 }
 
 @custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
@@ -132,8 +141,14 @@
   --color-chart-6: var(--chart-6);
   --color-overlay: var(--overlay);
 
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Space Grotesk Variable', 'Inter Variable', ui-sans-serif, sans-serif;
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-rail: var(--rail);
+  --color-rail-2: var(--rail-2);
+  --color-rail-line: var(--rail-line);
+  --color-rail-fg: var(--rail-fg);
+  --color-rail-muted: var(--rail-muted);
+  --color-rail-accent: var(--rail-accent);
 
   --radius-control: 8px;
   --radius-card: 16px;
@@ -147,8 +162,7 @@
 
   /* Losa: filo de luz arriba, canto de 3 px abajo (el grosor del panel) y sombra proyectada sobre el suelo */
   --shadow-card:
-    0 1px 0 0 rgb(255 255 255 / 0.06) inset, 0 2px 0 0 var(--surface-3), 0 3px 0 0 var(--line),
-    0 18px 28px -18px hsl(var(--shadow-color) / 0.7);
+    0 1px 0 0 var(--sheen) inset, 0 1px 0 0 var(--line), 0 14px 24px -18px hsl(var(--shadow-color) / 0.55);
   --shadow-lift: 0 10px 28px -12px hsl(var(--shadow-color) / 0.55), 0 2px 6px hsl(var(--shadow-color) / 0.2);
   --shadow-pop: 0 18px 48px -16px hsl(var(--shadow-color) / 0.6), 0 4px 12px hsl(var(--shadow-color) / 0.25);
 
@@ -251,11 +265,7 @@
 
 @layer base {
   html {
-    /* Garaje nocturno: una luz suave de lima arriba sobre el grafito. Es ambiente, no un halo en una caja. */
-    background:
-      radial-gradient(70rem 36rem at 50% -12rem, var(--glow), transparent 70%) no-repeat,
-      var(--base);
-    background-attachment: fixed, scroll;
+    background: var(--base);
     color: var(--fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -266,7 +276,7 @@
   body {
     min-height: 100dvh;
     background: transparent;
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: normal;
   }
 
   h1,
@@ -285,20 +295,25 @@
     scroll-padding-top: 4.5rem;
   }
 
-  /* Foco visible: anillo lima de 2px con 2px de separación */
+  /* Foco visible: anillo azul de calibración de 2px con 2px de separación */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 4px;
   }
 
-  :root[data-theme='light'] :focus-visible {
+  :root[data-theme='dark'] :focus-visible {
     outline-color: var(--accent-ink);
   }
 
   ::selection {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    color: var(--fg-warm);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--accent);
   }
 
   button:not(:disabled),
@@ -313,9 +328,9 @@
     opacity: 0.7;
   }
 
-  :root:not([data-theme='light']) input[type='date']::-webkit-calendar-picker-indicator,
-  :root:not([data-theme='light']) input[type='datetime-local']::-webkit-calendar-picker-indicator,
-  :root:not([data-theme='light']) input[type='month']::-webkit-calendar-picker-indicator {
+  :root[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
+  :root[data-theme='dark'] input[type='datetime-local']::-webkit-calendar-picker-indicator,
+  :root[data-theme='dark'] input[type='month']::-webkit-calendar-picker-indicator {
     filter: invert(1);
   }
 
@@ -335,11 +350,8 @@
     margin-bottom: 3px;
     border: 1px solid var(--line);
     border-radius: var(--radius-card);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 93%, white), var(--surface) 38%);
-    box-shadow: var(--shadow-card);
-  }
-  :root[data-theme='light'] .list-panel {
     background: var(--surface);
+    box-shadow: var(--shadow-card);
   }
   .list-panel > * {
     padding-inline: 1rem;
@@ -376,15 +388,95 @@
     animation: var(--animate-shimmer);
   }
 
-  .bg-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px);
-    background-size: 48px 48px;
-  }
-
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* ───────── Carta de colores ───────── */
+
+  /* Títulos en Archivo algo ancho, como la rotulación de una carta de pintura. */
+  .font-display {
+    font-stretch: 112%;
+    letter-spacing: -0.015em;
+  }
+
+  /* Etiqueta de muestra: Archivo estrecho en versalitas, para matrículas, códigos y estados (nunca sobre un título). */
+  .tag-label {
+    font-stretch: 78%;
+    font-weight: 650;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * Muestra lacada: la pintura del vehículo (--paint) con brillo de barniz arriba, canto oscuro abajo y sombra neutra.
+   * El color del coche solo vive aquí dentro; el texto encima usa --paint-ink (claro u oscuro según la pintura).
+   */
+  .lacquer {
+    background-color: var(--paint);
+    background-image:
+      linear-gradient(158deg, rgb(255 255 255 / 0.46) 0%, rgb(255 255 255 / 0.1) 24%, transparent 44%, rgb(0 0 0 / 0.14) 100%);
+    color: var(--paint-ink, #101214);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      inset 0 -2px 0 rgb(0 0 0 / 0.2),
+      0 10px 18px -12px hsl(var(--shadow-color) / 0.7);
+  }
+
+  /*
+   * Abanico de muestras (barra lateral): las cartas giran sobre el remache de abajo a la izquierda, como un abanico de
+   * pintura de verdad, con una leve inclinación hacia atrás para que se vea el canto. Se despliega al pasar el ratón o al
+   * llegar con el teclado; con movimiento reducido se queda desplegado y quieto.
+   */
+  .fan {
+    perspective: 900px;
+  }
+  .fan-stage {
+    position: relative;
+    transform: rotateX(8deg);
+    transform-style: preserve-3d;
+  }
+  .fan-chip {
+    position: absolute;
+    left: 2rem;
+    bottom: 0.75rem;
+    width: 11.5rem;
+    transform-origin: 0.75rem calc(100% - 0.75rem);
+    /* en reposo cada carta deja ver su banda lacada entera (escalón de 72 px); al desplegarse se abren en abanico */
+    transform: translateY(calc(var(--i) * -4.5rem)) rotate(calc(var(--i) * -2deg)) translateZ(calc(var(--i) * -10px));
+    transition: transform 320ms var(--ease-out-strong);
+  }
+  .fan:focus-within .fan-chip {
+    transform: translateY(calc(var(--i) * -4.75rem)) rotate(calc(var(--i) * -7deg)) translateZ(calc(var(--i) * -10px));
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .fan:hover .fan-chip {
+      transform: translateY(calc(var(--i) * -4.75rem)) rotate(calc(var(--i) * -7deg)) translateZ(calc(var(--i) * -10px));
+    }
+    .fan .fan-chip:hover {
+      transform: translateY(calc(var(--i) * -4.75rem - 4px)) rotate(calc(var(--i) * -7deg)) translateZ(calc(var(--i) * -10px + 14px));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fan-chip {
+      transform: translateY(calc(var(--i) * -4.75rem)) rotate(calc(var(--i) * -7deg));
+    }
+  }
+
+  /* Cambio de pintura: la nueva barre la carta de arriba abajo (clip-path, 380 ms, salida fuerte). Pasa al elegir otro
+     vehículo, unas pocas veces por visita; con movimiento reducido aparece sin barrido. */
+  .paint-wipe {
+    animation: cc-wipe 380ms var(--ease-out-strong) both;
+  }
+  @keyframes cc-wipe {
+    from {
+      clip-path: inset(0 0 100% 0 round var(--wipe-r, var(--radius-hero)));
+    }
+    to {
+      clip-path: inset(0 0 0 0 round var(--wipe-r, var(--radius-hero)));
+    }
   }
 
   /* ───────── Movimiento ───────── */
@@ -415,7 +507,7 @@
     animation-delay: 250ms;
   }
 
-  /* Tarjeta enlazada: sube 2 px y el borde toma lima. Solo con puntero fino (en táctil, el hover se queda pegado). */
+  /* Tarjeta enlazada: sube 2 px y el borde se marca. Solo con puntero fino (en táctil, el hover se queda pegado). */
   .lift {
     transition:
       transform 220ms var(--ease-out-strong),
@@ -430,7 +522,7 @@
   @media (hover: hover) and (pointer: fine) {
     .lift:hover {
       transform: translateY(-2px);
-      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      border-color: var(--line-strong);
       box-shadow: var(--shadow-lift);
     }
   }
@@ -486,64 +578,6 @@
 
   /* ───────── Profundidad (3D de interfaz, solo CSS: sin un WebGL por elemento) ───────── */
 
-  /* Suelo del garaje: una rejilla en perspectiva que se pierde en el horizonte. Estático (nada se mueve solo). */
-  .floor {
-    position: fixed;
-    inset: auto 0 0 0;
-    z-index: -1;
-    height: 62vh;
-    overflow: hidden;
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 92%);
-    mask-image: linear-gradient(to top, #000 0%, transparent 92%);
-  }
-  .floor::before {
-    content: '';
-    position: absolute;
-    inset: -30% -60% -10%;
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px);
-    background-size: 84px 84px;
-    background-position: center bottom;
-    transform: perspective(520px) rotateX(66deg);
-    transform-origin: 50% 100%;
-  }
-  :root[data-theme='light'] .floor::before {
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, var(--accent-ink) 16%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--accent-ink) 16%, transparent) 1px, transparent 1px);
-  }
-
-  /* El mismo suelo, pero dentro de un escenario (tarjeta) en vez de fijo a la ventana. */
-  .floor-local {
-    position: absolute;
-    inset: auto 0 0 0;
-    z-index: 0;
-    height: 64%;
-    overflow: hidden;
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 95%);
-    mask-image: linear-gradient(to top, #000 0%, transparent 95%);
-  }
-  .floor-local::before {
-    content: '';
-    position: absolute;
-    inset: -30% -60% -10%;
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--accent) 30%, transparent) 1px, transparent 1px);
-    background-size: 64px 64px;
-    background-position: center bottom;
-    transform: perspective(420px) rotateX(64deg);
-    transform-origin: 50% 100%;
-  }
-  :root[data-theme='light'] .floor-local::before {
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, var(--accent-ink) 24%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--accent-ink) 24%, transparent) 1px, transparent 1px);
-  }
-
   /* Escena: contenedor con perspectiva; sus hijos pueden girar y salir del plano. */
   .scene {
     perspective: 1200px;
@@ -562,11 +596,8 @@
 
   /* Superficie de tarjeta con un filo de luz arriba. */
   .surface-card {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 93%, white), var(--surface) 38%);
-    box-shadow: var(--shadow-card);
-  }
-  :root[data-theme='light'] .surface-card {
     background: var(--surface);
+    box-shadow: var(--shadow-card);
   }
 
   .scrollbar-none {
@@ -582,7 +613,7 @@
 }
 
 /*
- * Guía luminosa: un anillo de lima que late tres veces alrededor de lo que toca hacer ahora (marca vacía, modelo,
+ * Guía luminosa: un anillo azul que late tres veces alrededor de lo que toca hacer ahora (marca vacía, modelo,
  * versión…). Solo transform y opacity; termina solo para no distraer. Con movimiento reducido no se ve (el bloque de
  * abajo lo deja en 0,01 ms) y el campo activo ya tiene su foco normal.
  */
@@ -633,8 +664,8 @@
   --fg-warm: #111518;
   --fg-muted: #4a5459;
   --fg-subtle: #5b666c;
-  --accent-ink: #3f6600;
-  --accent-soft: rgb(124 170 20 / 0.14);
+  --accent-ink: #1a45c2;
+  --accent-soft: rgb(31 79 216 / 0.11);
   --danger: #b42828;
   --danger-soft: rgb(201 52 52 / 0.1);
   --warning: #8a5700;
@@ -663,7 +694,7 @@
     --fg-warm: #111111;
     --fg-muted: #3d4549;
     --fg-subtle: #52595d;
-    --accent-ink: #3f6600;
+    --accent-ink: #1a45c2;
   }
 
   html,
@@ -683,4 +714,9 @@
     size: A4;
     margin: 16mm 14mm;
   }
+}
+
+/* Foco dentro de la barra grafito: el azul claro de la barra (el de calibración no llega a 3:1 sobre grafito). */
+.rail :focus-visible {
+  outline-color: var(--rail-accent);
 }

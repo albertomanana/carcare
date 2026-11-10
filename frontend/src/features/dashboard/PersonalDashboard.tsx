@@ -1,9 +1,10 @@
 import { BellPlus, CarFront, ChevronDown, Gauge, Plus, Receipt, Wrench } from 'lucide-react'
+import type { CSSProperties } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
+import { useVehicleSummary } from '@/api/hooks/vehicles'
 import { useDashboard } from '@/api/hooks/workspaces'
 import type { Activity, PersonalDashboard as PersonalDashboardData, Vehicle } from '@/api/types'
-import { Sparkbars } from '@/components/charts/Sparkbars'
-import { Plate } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,14 +14,14 @@ import { EmptyState, ErrorState } from '@/components/ui/States'
 import { buttonClasses } from '@/components/ui/variants'
 import { VehicleFirstSteps } from '@/components/vehicles/FirstSteps'
 import { ReminderItem, ReminderList } from '@/components/vehicles/ReminderItem'
-import { VehicleThumb } from '@/components/vehicles/VehicleVisuals'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useReminderActions } from '@/features/vehicle/useReminderActions'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { Showroom } from './Showroom'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { paintVars } from '@/lib/colors'
 import { dashboardFirstSteps } from '@/lib/firstSteps'
-import { formatDateTime, formatKm, formatMoney, formatRelativeDate, formatRelativeTime } from '@/lib/format'
+import { formatDate, formatDateTime, formatKm, formatMoney, formatPlate, formatRelativeDate, formatRelativeTime } from '@/lib/format'
 import { INTERVAL_DISCLAIMER } from '@/lib/reminders'
 import { plural } from '@/lib/text'
 
@@ -29,7 +30,7 @@ const PENDING_ROWS = 5
 
 /**
  * Inicio del particular (5.1 del informe de UX): todo es de **todos** los vehículos, así que ninguna cifra
- * mezcla ámbitos (hallazgo C3). Una sola petición (`/dashboard`), sin 3D y sin tarjetas de cifras.
+ * mezcla ámbitos (hallazgo C3). Una sola petición (`/dashboard`); el único 3D es la placa de muestra (Showroom).
  */
 export default function PersonalDashboard() {
   const ctx = useWorkspace()
@@ -103,22 +104,32 @@ function Home({ data }: { data: PersonalDashboardData }) {
   const canOperate = ctx.can('operate')
   const guide = canOperate ? dashboardFirstSteps(data, ctx.canExpenses) : null
 
+  // Primer pantallazo: la placa de muestra del vehículo elegido y, a su lado, lo que toca. Debajo, sus tres cifras del
+  // mes; después, los vehículos, el gasto de todos y lo último registrado.
+  const active = data.vehicles.filter((v) => !v.archived_at)
+  const [selectedId, setSelectedId] = useState<Vehicle['id'] | null>(null)
+  const vehicle = active.find((v) => v.id === selectedId) ?? active[0]
+
   return (
     <div className="space-y-10">
-      <Showroom vehicles={data.vehicles} />
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start">
+        {vehicle && <Showroom vehicles={data.vehicles} vehicle={vehicle} onSelect={setSelectedId} />}
+        {guide ? <VehicleFirstSteps vehicle={guide.vehicle} steps={guide.steps} showName /> : <Pending data={data} canOperate={canOperate} />}
+      </div>
 
-      {guide ? <VehicleFirstSteps vehicle={guide.vehicle} steps={guide.steps} showName /> : <Pending data={data} canOperate={canOperate} />}
+      {vehicle && <MonthFigures vehicle={vehicle} canOperate={canOperate} />}
 
-      <VehiclesSection vehicles={data.vehicles} canOperate={canOperate} />
-
-      {!guide && (
-        <div className="grid gap-10 lg:grid-cols-2">
-          {ctx.canExpenses && <SpendSection data={data} />}
-          <Section title="Último registrado">
-            <ActivityList items={data.recent_activity} />
-          </Section>
-        </div>
-      )}
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start">
+        <VehiclesSection vehicles={data.vehicles} canOperate={canOperate} />
+        {!guide && (
+          <div className="min-w-0 space-y-10">
+            {ctx.canExpenses && <SpendSection data={data} />}
+            <Section title="Último registrado">
+              <ActivityList items={data.recent_activity} />
+            </Section>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -182,27 +193,26 @@ function VehiclesSection({ vehicles, canOperate }: { vehicles: Vehicle[]; canOpe
         {vehicles.map((v) => {
           const details = [v.nickname ? `${v.make} ${v.model}` : v.version, v.year].filter(Boolean).join(' · ')
           return (
-            <li key={v.id} className="flex items-center gap-3 py-3">
-              <VehicleThumb vehicle={v} className="hidden h-10 w-16 shrink-0 sm:block" />
+            <li key={v.id} className="@container flex items-center gap-3 py-3">
+              {/* muestra de su pintura: el color vive aquí dentro */}
+              <span aria-hidden style={paintVars(v.color_hex) as CSSProperties} className="lacquer size-10 shrink-0 rounded-lg" />
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-baseline gap-x-2">
                   <Link to={`${ctx.base}/vehiculos/${v.id}`} className="font-medium text-fg underline-offset-4 hover:underline">
                     {v.display_name}
                   </Link>
-                  <Plate value={v.plate} className="text-sm" />
+                  {v.plate && <span className="tag-label text-fg-muted">{formatPlate(v.plate)}</span>}
                 </p>
-                <p className="text-sm text-fg-muted tabular">
-                  {details && <span className="max-sm:hidden">{details} · </span>}
-                  {v.current_mileage !== null ? (
-                    <>
-                      {formatKm(v.current_mileage)}
-                      {v.mileage_updated_at && <span className="text-fg-subtle"> · {formatRelativeDate(v.mileage_updated_at)}</span>}
-                    </>
-                  ) : (
-                    'Sin kilometraje'
-                  )}
+                {details && <p className="truncate text-sm text-fg-muted">{details}</p>}
+                <p className="tabular text-sm text-fg-muted @[30rem]:hidden">
+                  {v.current_mileage !== null ? formatKm(v.current_mileage) : 'Sin km'}
+                  {v.mileage_updated_at && ` · ${formatRelativeDate(v.mileage_updated_at)}`}
                 </p>
               </div>
+              <p className="tabular hidden shrink-0 text-right text-sm @[30rem]:block">
+                <span className="block whitespace-nowrap font-medium text-fg">{v.current_mileage !== null ? formatKm(v.current_mileage) : 'Sin km'}</span>
+                {v.mileage_updated_at && <span className="block whitespace-nowrap text-xs text-fg-subtle">{formatRelativeDate(v.mileage_updated_at)}</span>}
+              </p>
               {canOperate && !v.archived_at && (
                 <Button variant="ghost" size="sm" onClick={() => quick.run('mileage', v.id)} aria-label={`Anotar km de ${v.display_name}`}>
                   Anotar km
@@ -213,6 +223,78 @@ function VehiclesSection({ vehicles, canOperate }: { vehicles: Vehicle[]; canOpe
         })}
       </ul>
     </Section>
+  )
+}
+
+/**
+ * Tres cifras del mes del vehículo de la placa, alineadas a la derecha: gasto, km y coste por km. Salen del resumen del
+ * vehículo; si falta un dato se dice cuál y se ofrece la acción que lo resuelve (regla 2), nunca un cero inventado.
+ */
+function MonthFigures({ vehicle, canOperate }: { vehicle: Vehicle; canOperate: boolean }) {
+  const ctx = useWorkspace()
+  const quick = useQuickActions()
+  const summary = useVehicleSummary(vehicle.id)
+  const s = summary.data
+  const logKm = canOperate && !vehicle.archived_at ? () => quick.run('mileage', vehicle.id) : undefined
+  const figures: { label: string; value: string | null; missing: string; note?: string; action?: () => void; actionLabel?: string }[] = [
+    ...(ctx.canExpenses ? [{ label: 'Gasto del mes', value: s ? formatMoney(s.totals.month) : null, missing: 'Sin datos todavía.' }] : []),
+    {
+      label: 'Km este mes',
+      value: s && s.mileage.km_this_month !== null ? formatKm(s.mileage.km_this_month) : null,
+      missing: 'Faltan lecturas de este mes.',
+      action: logKm,
+      actionLabel: 'Anotar km',
+    },
+    ...(ctx.canExpenses
+      ? [
+          {
+            label: 'Coste por km',
+            value: s?.cost_per_km.available && s.cost_per_km.value ? formatMoney(s.cost_per_km.value) : null,
+            missing: s?.cost_per_km.reason ?? 'Faltan datos para calcularlo.',
+            note: s ? `Del ${formatDate(s.period.from)} al ${formatDate(s.period.to)}` : undefined,
+            action: logKm,
+            actionLabel: 'Anotar km',
+          },
+        ]
+      : []),
+  ]
+  return (
+    <section aria-labelledby="month-title">
+      <h2 id="month-title" className="font-display text-lg font-bold text-fg-warm">
+        {vehicle.display_name} en cifras
+      </h2>
+      {summary.isError ? (
+        <ErrorState compact error={summary.error} onRetry={() => void summary.refetch()} className="mt-3" />
+      ) : (
+        <dl className="list-panel mt-3 grid sm:grid-cols-3 sm:[&>*+*]:border-l sm:[&>*+*]:border-t-0 sm:[&>*+*]:border-line">
+          {figures.map((f) => (
+            <div key={f.label} className="flex min-h-24 flex-col justify-between gap-2 py-4">
+              <dt className="tag-label text-fg-muted">{f.label}</dt>
+              {summary.isPending ? (
+                <dd><Skeleton className="ml-auto h-8 w-28" /></dd>
+              ) : f.value !== null ? (
+                <dd className="text-right">
+                  <span className="tabular block whitespace-nowrap font-display text-[1.75rem] font-bold leading-8 text-fg-warm">{f.value}</span>
+                  {f.note && <span className="mt-1 block text-xs text-fg-subtle">{f.note}</span>}
+                </dd>
+              ) : (
+                <dd className="text-right text-sm text-fg-muted">
+                  {f.missing}
+                  {f.action && (
+                    <>
+                      {' '}
+                      <button type="button" onClick={f.action} className="font-medium text-accent-ink underline-offset-4 hover:underline">
+                        {f.actionLabel}
+                      </button>
+                    </>
+                  )}
+                </dd>
+              )}
+            </div>
+          ))}
+        </dl>
+      )}
+    </section>
   )
 }
 
@@ -231,18 +313,18 @@ function SpendSection({ data }: { data: PersonalDashboardData }) {
         )
       }
     >
-      <dl className="flex flex-wrap gap-x-10 gap-y-3">
-        <div>
-          <dt className="text-sm text-fg-muted">Este mes</dt>
-          <dd className="font-display text-2xl font-semibold text-fg-warm tabular">{formatMoney(data.spend.month)}</dd>
-        </div>
-        <div>
-          <dt className="text-sm text-fg-muted">Este año</dt>
-          <dd className="font-display text-2xl font-semibold text-fg-warm tabular">{formatMoney(data.spend.year)}</dd>
-        </div>
-      </dl>
-      <Sparkbars data={data.spend.by_month} label="Gasto de los últimos 12 meses" className="mt-4 max-w-sm" />
-      <p className="mt-1 text-xs text-fg-subtle">Últimos 12 meses</p>
+      <div className="list-panel">
+        <dl>
+          <div className="flex items-baseline justify-between gap-4 py-3">
+            <dt className="text-sm text-fg-muted">Este mes</dt>
+            <dd className="tabular text-right font-display text-xl font-bold text-fg-warm">{formatMoney(data.spend.month)}</dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-4 border-t border-line py-3">
+            <dt className="text-sm text-fg-muted">Este año</dt>
+            <dd className="tabular text-right font-display text-xl font-bold text-fg-warm">{formatMoney(data.spend.year)}</dd>
+          </div>
+        </dl>
+      </div>
     </Section>
   )
 }

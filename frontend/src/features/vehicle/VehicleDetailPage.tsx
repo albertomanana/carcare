@@ -1,12 +1,12 @@
 import { Archive, ArchiveRestore, ArrowLeft, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
 import { BrandLogo } from '@/components/vehicles/BrandLogo'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { paintVars } from '@/lib/colors'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { errorMessage } from '@/api/client'
 import type { Vehicle } from '@/api/types'
 import { useArchiveVehicle, useDeleteVehicle, useVehicle } from '@/api/hooks/vehicles'
-import { Plate } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
@@ -18,7 +18,7 @@ import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { cn } from '@/lib/cn'
 import { fitTabs } from '@/lib/tabs'
-import { formatDate, formatKm, formatRelativeDate } from '@/lib/format'
+import { formatDate, formatKm, formatPlate, formatRelativeDate } from '@/lib/format'
 import { FUEL_LABEL, TRANSMISSION_LABEL } from '@/lib/labels'
 import { plural } from '@/lib/text'
 import { WORK_ORDER_STATUS } from '@/lib/status'
@@ -228,11 +228,24 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
       )}
 
       <div className="flex items-start justify-between gap-3">
+        {/*
+          Placa de muestra del vehículo: su pintura real con el logotipo de la marca y el código de color. Entra con el barrido
+          de pintura al llegar desde el abanico de la barra lateral (key por vehículo). Decorativa: todo está en el texto.
+        */}
+        <span aria-hidden className="shrink-0 [perspective:700px]">
+          <span
+            key={vehicle.id}
+            style={paintVars(vehicle.color_hex) as CSSProperties}
+            className="lacquer paint-wipe flex h-20 w-28 flex-col [--wipe-r:0.75rem] justify-between rounded-xl p-2.5 [transform:rotateY(-12deg)] md:h-24 md:w-36 md:p-3"
+          >
+            <BrandLogo make={vehicle.make} className="size-6 self-end opacity-90 md:size-7" />
+            <span className="tag-label truncate opacity-85">{vehicle.color_hex ? vehicle.color_hex.toUpperCase() : 'Sin color'}</span>
+          </span>
+        </span>
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-fg-warm text-balance md:text-3xl">
-            <BrandLogo make={vehicle.make} className="mr-3 size-7 align-[-0.12em] text-fg-muted md:size-8" />
+          <h1 className="font-display text-2xl font-bold text-fg-warm text-balance md:text-3xl">
             {vehicle.display_name}
-            {vehicle.plate && <Plate value={vehicle.plate} className="ml-3 align-middle font-sans text-base font-normal md:text-lg" />}
+            {vehicle.plate && <span className="tag-label ml-3 align-middle text-sm text-fg-muted md:text-base">{formatPlate(vehicle.plate)}</span>}
           </h1>
           {details && <p className="mt-1 text-sm text-fg-muted">{details}</p>}
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">

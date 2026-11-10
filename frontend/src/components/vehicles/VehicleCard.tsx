@@ -1,9 +1,11 @@
 import { Archive, Clock, OctagonAlert } from "lucide-react";
 import { Link } from "react-router";
 import type { Vehicle } from "@/api/types";
-import { Badge, Plate } from "@/components/ui/Badge";
+import type { CSSProperties } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { Tilt } from "@/components/ui/Tilt";
-import { formatKm, formatRelativeDate } from "@/lib/format";
+import { paintVars } from "@/lib/colors";
+import { formatKm, formatPlate, formatRelativeDate } from "@/lib/format";
 import { WORK_ORDER_STATUS } from "@/lib/status";
 import { BrandLogo } from "./BrandLogo";
 import { VehicleThumb } from "./VehicleVisuals";
@@ -34,29 +36,26 @@ export function VehicleCard({
     <Tilt max={7} className="rounded-card">
     <Link
       to={to}
-      className="surface-card group flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line transition-colors duration-200 hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--line))]"
+      style={paintVars(vehicle.color_hex) as CSSProperties}
+      className="surface-card group flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line transition-colors duration-200 hover:border-line-strong"
     >
-      <div className="relative aspect-[16/9] overflow-hidden border-b border-line bg-surface-2 [&>*]:transition-transform [&>*]:duration-500 [&>*]:ease-out-soft group-hover:[&>*]:scale-[1.05]">
+      {/* Carta de muestra: la pintura del coche con su nombre; debajo, el coche en la cabina */}
+      <div className="lacquer flex items-start justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <p className="truncate font-display text-lg font-bold">{vehicle.display_name}</p>
+          {subtitle && <p className="truncate text-sm opacity-80">{subtitle}</p>}
+        </div>
+        {/* decorativo: el nombre de la marca ya está en el texto */}
+        <BrandLogo make={vehicle.make} className="mt-1 size-6 opacity-80" />
+      </div>
+      <div className="relative aspect-[16/8] overflow-hidden bg-[radial-gradient(110%_80%_at_50%_100%,color-mix(in_srgb,var(--paint)_16%,var(--surface-2)),var(--surface)_70%)] [&>*]:transition-transform [&>*]:duration-500 [&>*]:ease-out-soft group-hover:[&>*]:scale-[1.04]">
         <VehicleThumb
           vehicle={vehicle}
           className="absolute inset-0 h-full w-full min-h-0 rounded-none border-0 bg-transparent object-contain p-3"
         />
-        {/* decorativo: el nombre de la marca ya está en el texto de la tarjeta */}
-        <BrandLogo
-          make={vehicle.make}
-          className="absolute left-3 top-3 size-6 text-fg-muted"
-        />
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">
-        <p className="flex min-w-0 items-baseline gap-2">
-          <span className="truncate font-display text-lg font-semibold tracking-tight text-fg-warm">
-            {vehicle.display_name}
-          </span>
-          <Plate value={vehicle.plate} className="shrink-0 text-sm" />
-        </p>
-        {subtitle && (
-          <p className="truncate text-sm text-fg-muted">{subtitle}</p>
-        )}
+        <p className="tag-label text-fg-muted">{vehicle.plate ? formatPlate(vehicle.plate) : "Sin matrícula"}</p>
         {showCustomer && (
           <p className="truncate text-sm text-fg-muted">
             {vehicle.customer?.name ?? "Sin cliente asignado"}

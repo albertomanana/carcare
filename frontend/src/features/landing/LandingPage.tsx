@@ -91,7 +91,6 @@ export default function LandingPage() {
 
   return (
     <div data-portada className="min-h-dvh overflow-x-clip text-fg">
-      <div aria-hidden className="floor" />
       <SkipLink />
 
       <header className="glass sticky top-0 z-40 border-b border-line/60">
