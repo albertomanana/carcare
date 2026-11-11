@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
 } from "lucide-react";
+import { EmptyBoard } from '@/components/game/kit'
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -29,7 +30,7 @@ import {
 import { SearchInput, Select } from "@/components/ui/inputs";
 import { LoadMore } from "@/components/ui/LoadMore";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { EmptyState, ErrorState, NoResults } from "@/components/ui/States";
+import { ErrorState, NoResults } from "@/components/ui/States"
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useHashTarget, useRevealHashTarget } from "@/hooks/useHashTarget";
@@ -224,13 +225,12 @@ export function RecordsView({ vehicle }: { vehicle: Vehicle }) {
         filtering ? (
           <NoResults what="intervenciones" onReset={reset} />
         ) : archived ? (
-          <EmptyState
-            compact
+          <EmptyBoard
             icon={<Archive />}
             title="No hay intervenciones archivadas"
           />
         ) : (
-          <EmptyState
+          <EmptyBoard
             icon={<History />}
             title="Todavía no hay intervenciones"
             description="Registra mantenimientos, reparaciones, averías o la ITV: con piezas, mano de obra y facturas."

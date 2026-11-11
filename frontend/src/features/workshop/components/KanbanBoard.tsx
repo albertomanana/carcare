@@ -4,6 +4,7 @@ import type { WorkOrder, WorkOrderStatus } from '@/api/types'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
 import { WORK_ORDER_STATUS } from '@/lib/status'
+import '../diorama.css'
 import { OrderCard } from './OrderCard'
 import { KANBAN_SHORT_LABEL, KANBAN_STATUSES } from './orderUtils'
 
@@ -183,7 +184,7 @@ export function KanbanBoard({ orders, orderHref, onRequest, busyId }: KanbanBoar
         ref={boardRef}
         onClickCapture={onClickCapture}
         className={cn(
-          'scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:mx-0 xl:overflow-visible xl:px-0',
+          'scrollbar-none -mx-4 flex gap-3 overflow-x-auto px-4 pb-5 pt-1 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:mx-0 xl:overflow-visible xl:px-0',
           view ? 'snap-none' : 'snap-x snap-mandatory',
         )}
       >
@@ -192,29 +193,30 @@ export function KanbanBoard({ orders, orderHref, onRequest, busyId }: KanbanBoar
           const st = WORK_ORDER_STATUS[status]
           const over = view?.over === status
           const headingId = `kanban-${status}`
+          const StIcon = st.icon
           return (
             <section
               key={status}
               aria-labelledby={headingId}
               data-kanban-column={status}
-              className={cn(
-                'flex w-[82vw] max-w-[300px] shrink-0 snap-start flex-col rounded-card border transition-colors duration-150 sm:w-[268px]',
-                'xl:w-auto xl:min-w-0 xl:max-w-none xl:flex-1 xl:basis-0',
-                over ? 'border-accent bg-accent-soft' : 'border-transparent',
-              )}
+              data-tone={st.tone === 'neutral' ? undefined : st.tone}
+              data-over={over || undefined}
+              className={cn('lane w-[82vw] max-w-[300px] shrink-0 snap-start sm:w-[268px]', 'xl:w-auto xl:min-w-0 xl:max-w-none xl:flex-1 xl:basis-0')}
             >
-              <header className="flex items-baseline gap-2 border-b border-line px-1 pb-2 pt-1">
-                <h2 id={headingId} className="min-w-0 truncate text-sm font-semibold text-fg" title={st.label}>
+              <div aria-hidden className="lane-cap" />
+              <header className="flex items-center gap-2 px-1.5 pb-2">
+                <StIcon aria-hidden className="size-4 shrink-0 text-fg-muted" />
+                <h2 id={headingId} className="min-w-0 flex-1 truncate font-display text-sm font-bold text-fg-warm" title={st.label}>
                   <span aria-hidden>{KANBAN_SHORT_LABEL[status] ?? st.label}</span>
                   <span className="sr-only">
                     {st.label}, {list.length === 1 ? '1 orden' : `${list.length} órdenes`}
                   </span>
                 </h2>
-                <span aria-hidden className="text-sm text-fg-muted tabular">
+                <span aria-hidden className="chip tabular min-h-6 px-2">
                   {list.length}
                 </span>
               </header>
-              <ol className="flex min-h-28 flex-1 flex-col gap-2 pt-2">
+              <ol className="flex min-h-28 flex-1 flex-col gap-2.5 px-0.5 pb-1.5">
                 {list.map((o) => (
                   <li key={o.id}>
                     <OrderCard
@@ -228,7 +230,7 @@ export function KanbanBoard({ orders, orderHref, onRequest, busyId }: KanbanBoar
                   </li>
                 ))}
                 {list.length === 0 && (
-                  <li className="grid flex-1 place-items-center rounded-control border border-dashed border-line px-3 py-6 text-center text-xs text-fg-subtle">
+                  <li className="lane-empty">
                     {view ? 'Suelta aquí' : 'Sin órdenes'}
                   </li>
                 )}

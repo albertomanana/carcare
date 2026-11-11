@@ -44,12 +44,12 @@ export function NotificationBell() {
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger aria-label={bellLabel(unread)} title={bellLabel(unread)} className={iconButtonClasses({ variant: 'ghost', className: 'data-[state=open]:bg-surface-2 data-[state=open]:text-fg' })}>
+      <Popover.Trigger aria-label={bellLabel(unread)} title={bellLabel(unread)} className={iconButtonClasses({ variant: 'ghost', className: 'data-[state=open]:bg-accent-soft data-[state=open]:text-fg' })}>
         <Bell aria-hidden />
         {badge && (
           <span
             aria-hidden
-            className="absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-canvas bg-fg px-1 text-[10px] font-semibold leading-none text-canvas tabular"
+            className="absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-none text-on-accent tabular"
           >
             {badge}
           </span>
@@ -65,7 +65,7 @@ export function NotificationBell() {
           sideOffset={6}
           collisionPadding={12}
           aria-label="Notificaciones"
-          className="z-[60] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-card border border-line bg-surface-2 shadow-2xl shadow-black/30 outline-none data-[state=open]:animate-pop-in"
+          className="z-[60] hud-pop flex w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden outline-none data-[state=open]:animate-pop-in"
         >
           <NotificationPanel unread={unread} onClose={() => setOpen(false)} />
         </Popover.Content>

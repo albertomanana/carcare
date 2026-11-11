@@ -7,7 +7,8 @@ import type { Customer, Vehicle } from '@/api/types'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink, Button } from '@/components/ui/Button'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { WorkshopHeader } from './components/WorkshopHeader'
+import { Panel } from '@/components/ui/Hud'
 import { Section } from '@/components/ui/Section'
 import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
@@ -35,7 +36,7 @@ export default function CustomerDetailPage() {
   if (!valid)
     return (
       <>
-        <PageHeader back={back} title="Cliente" />
+        <WorkshopHeader back={back} title="Cliente" />
         <ErrorState title="No encontramos este cliente" />
       </>
     )
@@ -43,14 +44,14 @@ export default function CustomerDetailPage() {
   if (query.isError)
     return (
       <>
-        <PageHeader back={back} title="Cliente" />
+        <WorkshopHeader back={back} title="Cliente" />
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       </>
     )
   if (query.data.workspace_id !== ctx.id)
     return (
       <>
-        <PageHeader back={back} title="Cliente" />
+        <WorkshopHeader back={back} title="Cliente" />
         <ErrorState title="Este cliente no pertenece a este taller" />
       </>
     )
@@ -68,7 +69,7 @@ function CustomerDetail({ customer }: { customer: Customer }) {
 
   return (
     <>
-      <PageHeader
+      <WorkshopHeader
         crumbs={[{ label: 'Clientes', to: `${ctx.base}/clientes` }, { label: customer.name }]}
         title={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -102,9 +103,9 @@ function CustomerDetail({ customer }: { customer: Customer }) {
             {customer.notes}
           </p>
         )}
-      </PageHeader>
+      </WorkshopHeader>
 
-      <div className="max-w-4xl space-y-10">
+      <div className="max-w-4xl space-y-5">
         <CustomerVehicles customer={customer} canAdd={canEdit} />
         <CustomerOrders customer={customer} canOpenOrder={canOpenOrder} />
         {ctx.can('manage') && <CustomerPrivacySection customer={customer} />}
@@ -173,6 +174,7 @@ function CustomerVehicles({ customer, canAdd }: { customer: Customer; canAdd: bo
     </ButtonLink>
   )
   return (
+    <Panel className="p-4 sm:p-5">
     <Section id="vehiculos" title="Vehículos" description={vehicles.data ? plural(vehicles.data.length, 'vehículo activo', 'vehículos activos') : undefined} action={vehicles.data?.length ? addButton : undefined}>
       {vehicles.isPending ? (
         <div role="status" aria-live="polite">
@@ -190,13 +192,14 @@ function CustomerVehicles({ customer, canAdd }: { customer: Customer; canAdd: bo
           action={addButton}
         />
       ) : (
-        <ul className="list-panel">
+        <ul className="border-t border-line">
           {vehicles.data.map((v) => (
             <VehicleRow key={v.id} vehicle={v} />
           ))}
         </ul>
       )}
     </Section>
+    </Panel>
   )
 }
 
@@ -226,6 +229,7 @@ function CustomerOrders({ customer, canOpenOrder }: { customer: Customer; canOpe
   const list = flattenPages(orders.data)
   const total = totalFromPages(orders.data)
   return (
+    <Panel className="p-4 sm:p-5">
     <Section id="ordenes" title="Órdenes" description={total ? `${plural(total, 'orden', 'órdenes')}, de la más reciente a la más antigua.` : undefined}>
       {orders.isPending ? (
         <OrderRowSkeleton count={3} />
@@ -256,6 +260,7 @@ function CustomerOrders({ customer, canOpenOrder }: { customer: Customer; canOpe
         </>
       )}
     </Section>
+    </Panel>
   )
 }
 

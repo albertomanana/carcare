@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn('skeleton rounded-control', className)} />
+  return <div aria-hidden className={cn('skeleton rounded-xl', className)} />
 }
 
 export function SkeletonText({ lines = 3, className }: { lines?: number; className?: string }) {

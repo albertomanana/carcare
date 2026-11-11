@@ -209,9 +209,9 @@ export function AgendaCalendar({ reminders, selected, onSelect, actions, vehicle
           {selected === today && <span className="ml-2 text-sm font-normal text-fg-muted">(hoy)</span>}
         </h2>
         {selectedItems.length ? (
-          <ReminderList aria-label={`Vencimientos del ${formatDate(selected, 'long')}`}>
+          <ReminderList variant="missions" aria-label={`Vencimientos del ${formatDate(selected, 'long')}`}>
             {selectedItems.map((r) => (
-              <ReminderItem key={r.id} reminder={r} compact actions={actions} vehicleLink={vehicleLink(r)} />
+              <ReminderItem variant="mission" key={r.id} reminder={r} compact actions={actions} vehicleLink={vehicleLink(r)} />
             ))}
           </ReminderList>
         ) : (

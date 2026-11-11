@@ -12,7 +12,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { HudHeader } from '@/components/game/kit'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { LoadingBlock } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
@@ -51,7 +51,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Ajustes" />
+      <HudHeader title="Ajustes" />
       {status === 'loading' ? (
         <LoadingBlock label="Cargando tus ajustes…" className="max-w-3xl" />
       ) : !user ? (

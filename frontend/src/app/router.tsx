@@ -1,5 +1,5 @@
 import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react'
-import { createBrowserRouter, Outlet, type RouteObject } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, type RouteObject, useLocation } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageSpinner } from '@/components/ui/Spinner'
 import { AppIndexRedirect, GuestOnly, RequireAuth } from '@/features/auth/guards'
@@ -35,7 +35,6 @@ const OrderDetail = lazy(() => import('@/features/workshop/OrderDetailPage'))
 const OrderSummary = lazy(() => import('@/features/workshop/OrderSummaryPage'))
 const Customers = lazy(() => import('@/features/workshop/CustomersPage'))
 const CustomerDetail = lazy(() => import('@/features/workshop/CustomerDetailPage'))
-const WorkshopFloor = lazy(() => import('@/features/workshop/WorkshopFloorPage'))
 const Team = lazy(() => import('@/features/workshop/TeamPage'))
 const Settings = lazy(() => import('@/features/settings/SettingsPage'))
 // E16 · solicitudes a talleres: la misma ruta lleva a la pantalla del particular o a la del taller (ByWorkspaceType)
@@ -45,6 +44,12 @@ const MyRequests = lazy(() => import('@/features/requests/MyRequestsPage'))
 const RequestDetail = lazy(() => import('@/features/requests/RequestDetailPage'))
 const WorkshopRequests = lazy(() => import('@/features/workshop/requests/WorkshopRequestsPage'))
 const WorkshopRequestDetail = lazy(() => import('@/features/workshop/requests/WorkshopRequestDetailPage'))
+
+/** `/taller` era la vista de la maqueta; desde el 11/11/2026 es la portada del espacio (Inicio y Taller se fusionaron). Se conserva `?orden=` y `?elevador=`. */
+function TallerRedirect() {
+  const { search } = useLocation()
+  return <Navigate to={`..${search}`} relative="path" replace />
+}
 
 function page(Component: LazyExoticComponent<ComponentType>) {
   return <Component />
@@ -116,7 +121,7 @@ export const routes: RouteObject[] = [
                   { path: 'ordenes/:orderId', element: page(OrderDetail) },
                   { path: 'clientes', element: page(Customers) },
                   { path: 'clientes/:customerId', element: page(CustomerDetail) },
-                  { path: 'taller', element: page(WorkshopFloor) },
+                  { path: 'taller', element: <TallerRedirect /> },
                   { path: 'equipo', element: page(Team) },
                   { path: 'talleres', element: page(Directory) },
                   { path: 'solicitudes', element: <ByWorkspaceType title="Solicitudes" personal={MyRequests} workshop={WorkshopRequests} /> },

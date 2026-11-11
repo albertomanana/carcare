@@ -7,8 +7,8 @@ export function Avatar({ name, size = 'md', className, highlight }: { name: stri
     <span
       aria-hidden
       className={cn(
-        'inline-grid shrink-0 select-none place-items-center rounded-full border font-display font-semibold',
-        highlight ? 'border-accent/60 bg-accent-soft text-accent-ink' : 'border-line bg-surface-3 text-fg',
+        'inline-grid shrink-0 select-none place-items-center rounded-full border-2 font-display font-bold',
+        highlight ? 'border-accent/60 bg-accent-soft text-accent-ink' : 'border-surface bg-surface-3 text-fg shadow-[0_2px_0_0_var(--line)]',
         sizes[size],
         className,
       )}

@@ -56,16 +56,16 @@ export function StatusStepper({ order, onRequest, busy, className }: StatusStepp
                 aria-hidden
                 className={cn(
                   'w-full transition-colors duration-200 motion-reduce:transition-none',
-                  state === 'done' || current ? 'h-1 rounded-full bg-accent-ink' : state === 'optional' ? 'mt-px h-0.5 border-t-2 border-dashed border-line-strong' : 'h-1 rounded-full bg-surface-3',
+                  state === 'done' || current ? 'h-2 rounded-full bg-accent' : state === 'optional' ? 'mt-0.5 h-1 border-t-2 border-dashed border-line-strong' : 'h-2 rounded-full bg-surface-3',
                 )}
               />
               <span className="flex flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-2">
                 <span
                   aria-hidden
                   className={cn(
-                    'grid size-7 shrink-0 place-items-center rounded-full border [&_svg]:size-3.5',
+                    'grid size-8 shrink-0 place-items-center rounded-full border-2 [&_svg]:size-4',
                     current
-                      ? 'border-2 border-accent-ink bg-surface text-fg'
+                      ? 'border-accent bg-accent text-on-accent shadow-[0_2px_0_0_var(--accent-edge)]'
                       : state === 'done'
                         ? 'border-accent/50 bg-accent-soft text-accent-ink'
                         : state === 'optional'
@@ -76,7 +76,7 @@ export function StatusStepper({ order, onRequest, busy, className }: StatusStepp
                   {current && busy ? <Spinner className="size-3.5" /> : state === 'done' ? <Check strokeWidth={3} /> : <Icon />}
                 </span>
                 <span className="min-w-0 text-center sm:text-left">
-                  <span className={cn('block text-[11px] leading-tight sm:text-xs', current ? 'font-semibold text-fg' : state === 'done' ? 'text-fg-muted' : 'text-fg-subtle')}>
+                  <span className={cn('block text-[11px] leading-tight sm:text-xs', current ? 'font-bold text-fg-warm' : state === 'done' ? 'text-fg-muted' : 'text-fg-subtle')}>
                     <span className="sm:hidden">{SHORT_LABEL[s]}</span>
                     <span className="hidden sm:inline">{st.label}</span>
                     {state === 'optional' && <span className="sr-only"> (paso opcional)</span>}

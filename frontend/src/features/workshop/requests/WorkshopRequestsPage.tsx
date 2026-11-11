@@ -7,7 +7,7 @@ import type { RepairRequest } from '@/api/types'
 import { Plate, StatusPill } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { WorkshopHeader } from '@/features/workshop/components/WorkshopHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs'
@@ -42,7 +42,7 @@ export default function WorkshopRequestsPage() {
 
   return (
     <>
-      <PageHeader
+      <WorkshopHeader
         title="Solicitudes"
         description={newCount > 0 ? `${plural(newCount, 'solicitud nueva', 'solicitudes nuevas')} por responder.` : undefined}
       />
@@ -81,7 +81,7 @@ function RequestList({ tab, status, caption, onShowAll }: { tab: TabId; status?:
 
   return (
     <>
-      <ul className="border-t border-line" aria-label={caption}>
+      <ul className="slab" aria-label={caption}>
         {requests.map((r) => (
           <RequestRow key={r.id} request={r} to={`${ctx.base}/solicitudes/${r.id}`} />
         ))}
@@ -140,7 +140,7 @@ function RequestRow({ request: r, to }: { request: RepairRequest; to: string }) 
 
 function RequestListSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="border-t border-line">
+    <div role="status" aria-live="polite" className="slab">
       <span className="sr-only">Cargando solicitudes…</span>
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} aria-hidden className="space-y-2 border-b border-line px-1 py-3">

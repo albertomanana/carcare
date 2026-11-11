@@ -1,35 +1,41 @@
 ---
 name: CarCare
-description: Carta de colores de carrocería; cada vehículo es su muestra de pintura sobre el gris neutro de una cabina de igualación.
+description: Diorama; una maqueta isométrica clara tipo juego de estrategia, con paneles de cristal que flotan sobre un lienzo azul pastel, botones gordos y el color de cada vehículo como ficha.
 colors:
-  gris-cabina: "#e4e4e1"
-  cartulina: "#f7f7f4"
-  cartulina-2: "#efefeb"
-  cartulina-3: "#e2e2dd"
-  linea: "#d3d3cd"
-  linea-fuerte: "#7d807c"
-  tinta: "#17191b"
-  tinta-honda: "#101214"
-  tinta-media: "#4d5155"
-  tinta-tenue: "#5c6064"
-  azul-calibracion: "#1f4fd8"
-  azul-calibracion-tinta: "#1a45c2"
+  lienzo: "#e9f0fa"
+  panel: "#ffffff"
+  panel-2: "#f1f5fb"
+  panel-3: "#e2eaf5"
+  linea: "#d3deed"
+  linea-fuerte: "#7384a1"
+  tinta: "#14213a"
+  tinta-honda: "#0c1730"
+  tinta-media: "#45536f"
+  tinta-tenue: "#53627e"
+  azul-electrico: "#2559e8"
+  azul-electrico-tinta: "#1d4cd0"
+  azul-electrico-canto: "#1a3fae"
   sobre-azul: "#ffffff"
-  azul-calibracion-suave: "rgb(31 79 216 / 0.11)"
-  estado-vencido: "#b3261e"
-  estado-vencido-suave: "rgb(179 38 30 / 0.11)"
-  estado-proximo: "#855600"
-  estado-proximo-suave: "rgb(214 150 20 / 0.2)"
-  estado-en-plazo: "#17694a"
-  estado-en-plazo-suave: "rgb(23 105 74 / 0.11)"
-  estado-info: "#1f5f99"
-  estado-info-suave: "rgb(31 95 153 / 0.1)"
-  grafito: "#232528"
-  grafito-2: "#2f3236"
-  grafito-linea: "#3b3f44"
-  grafito-tinta: "#f1f1ee"
-  grafito-tinta-tenue: "#b6b9bc"
-  grafito-azul: "#8fb0ff"
+  azul-electrico-suave: "rgb(37 89 232 / 0.1)"
+  estado-vencido: "#b32119"
+  estado-vencido-canto: "#7c130d"
+  estado-vencido-suave: "rgb(179 33 25 / 0.1)"
+  estado-proximo: "#7d4e00"
+  estado-proximo-suave: "rgb(214 150 20 / 0.16)"
+  estado-en-plazo: "#0f6a49"
+  estado-en-plazo-suave: "rgb(15 106 73 / 0.11)"
+  estado-info: "#1b5fa8"
+  estado-info-suave: "rgb(27 95 168 / 0.1)"
+  canto-neutro: "#c2d0e5"
+  noche-lienzo: "#0e1a30"
+  noche-panel: "#162540"
+  noche-panel-2: "#1c2e4d"
+  noche-panel-3: "#263c61"
+  noche-linea: "#2b3f63"
+  noche-linea-fuerte: "#7189b3"
+  noche-tinta: "#e9effc"
+  noche-azul: "#3b69f0"
+  noche-azul-tinta: "#a4bdff"
   pintura-sin-color: "#9aa0a6"
 typography:
   display:
@@ -37,30 +43,30 @@ typography:
     fontSize: "1.875rem"
     fontWeight: 700
     lineHeight: 1.2
-    letterSpacing: "-0.015em"
-    fontVariation: "'wdth' 112"
+    letterSpacing: "-0.02em"
+    fontVariation: "'wdth' 108"
   headline:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.875rem"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.2
-    letterSpacing: "-0.015em"
-    fontVariation: "'wdth' 112"
+    letterSpacing: "-0.02em"
+    fontVariation: "'wdth' 108"
   title:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.125rem"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.55
-    letterSpacing: "-0.015em"
-    fontVariation: "'wdth' 112"
+    letterSpacing: "-0.02em"
+    fontVariation: "'wdth' 108"
   figure:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.75rem"
-    fontWeight: 700
+    fontWeight: 800
     lineHeight: "2rem"
-    letterSpacing: "-0.015em"
+    letterSpacing: "-0.02em"
     fontFeature: "\"tnum\" 1"
-    fontVariation: "'wdth' 112"
+    fontVariation: "'wdth' 108"
   body:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
@@ -74,17 +80,15 @@ typography:
   label:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.75rem"
-    fontWeight: 650
+    fontWeight: 750
     lineHeight: "1rem"
-    letterSpacing: "0.08em"
-    fontVariation: "'wdth' 78"
+    letterSpacing: "0.06em"
 rounded:
-  etiqueta: "5px"
-  control: "8px"
-  muestra-abanico: "10px"
-  card: "16px"
-  hero: "24px"
-  muestra-redonda: "9999px"
+  control: "12px"
+  card: "20px"
+  hero: "28px"
+  dock: "20px"
+  pildora: "9999px"
 spacing:
   xs: "4px"
   sm: "8px"
@@ -95,225 +99,254 @@ spacing:
   seccion: "40px"
 components:
   button-primary:
-    backgroundColor: "{colors.azul-calibracion}"
+    backgroundColor: "{colors.azul-electrico}"
     textColor: "{colors.sobre-azul}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
-    padding: "0 16px"
+    padding: "0 20px"
     height: "40px"
   button-secondary:
-    backgroundColor: "{colors.cartulina}"
+    backgroundColor: "{colors.panel}"
     textColor: "{colors.tinta}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
-    padding: "0 16px"
+    padding: "0 20px"
     height: "40px"
-  button-secondary-hover:
-    backgroundColor: "{colors.cartulina-2}"
   button-ghost:
     textColor: "{colors.tinta-media}"
     rounded: "{rounded.control}"
-    padding: "0 12px"
+    padding: "0 14px"
     height: "36px"
   button-ghost-hover:
-    backgroundColor: "{colors.cartulina-2}"
+    backgroundColor: "{colors.azul-electrico-suave}"
     textColor: "{colors.tinta}"
   button-danger:
     backgroundColor: "{colors.estado-vencido}"
     textColor: "{colors.sobre-azul}"
     rounded: "{rounded.control}"
-    padding: "0 16px"
+    padding: "0 20px"
     height: "40px"
   input:
-    backgroundColor: "{colors.cartulina}"
+    backgroundColor: "{colors.panel-2}"
     textColor: "{colors.tinta}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
-    padding: "0 12px"
+    padding: "0 14px"
     height: "40px"
-  card:
-    backgroundColor: "{colors.cartulina}"
+  hud-panel:
+    backgroundColor: "{colors.panel}"
     rounded: "{rounded.card}"
     padding: "16px"
-  badge-vencido:
+  chip-vencido:
     backgroundColor: "{colors.estado-vencido-suave}"
     textColor: "{colors.estado-vencido}"
     typography: "{typography.label}"
-    rounded: "{rounded.etiqueta}"
-    padding: "0 8px"
-    height: "24px"
-  badge-proximo:
+    rounded: "{rounded.pildora}"
+    padding: "0 12px"
+    height: "28px"
+  chip-proximo:
     backgroundColor: "{colors.estado-proximo-suave}"
     textColor: "{colors.estado-proximo}"
     typography: "{typography.label}"
-    rounded: "{rounded.etiqueta}"
-    padding: "0 8px"
-    height: "24px"
-  nav-rail-item:
-    textColor: "{colors.grafito-tinta-tenue}"
+    rounded: "{rounded.pildora}"
+    padding: "0 12px"
+    height: "28px"
+  dock-item:
+    textColor: "{colors.tinta-media}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
     padding: "0 12px"
     height: "44px"
-  nav-rail-item-active:
-    backgroundColor: "{colors.grafito-2}"
-    textColor: "{colors.grafito-tinta}"
-  fan-chip:
-    backgroundColor: "{colors.pintura-sin-color}"
-    textColor: "{colors.tinta-honda}"
-    rounded: "{rounded.muestra-abanico}"
-    width: "184px"
+  dock-item-active:
+    backgroundColor: "{colors.azul-electrico-suave}"
+    textColor: "{colors.azul-electrico-tinta}"
 ---
 
 # Design System: CarCare
 
+> **Mundo «Diorama» (11/11/2026).** Sustituye al mundo «Carta de colores» (10/11/2026), por pedido expreso de Alberto: «quiero que sea como un juego TODA la página en TODOS los usuarios, no solo el taller». La referencia es el estilo de una maqueta isométrica de arcilla / juego de estrategia limpio (tipo WareTrack), no un vídeo concreto que se haya podido ver. La decisión no se reabre; este documento recoge cómo se aplica.
+
 ## Overview
 
-**Creative North Star: "La carta de colores"**
+**Creative North Star: "El diorama"**
 
-CarCare se presenta como la carta de colores de un taller de pintura: cada vehículo es su muestra lacada, con la pintura real del coche (`color_hex`), y todo lo demás es el gris neutro de una cabina de igualación, donde los colores se leen sin trampa. La pantalla es la cartulina en la que van grapadas las muestras; la barra lateral grafito es el armazón de la carta, y el abanico de muestras que sale de ella es la firma del mundo. El usuario reconoce sus coches por el color antes de leer el nombre.
+CarCare es una maqueta: un lienzo azul pastel muy tenue sobre el que está construido el mundo, y sobre el que flotan los paneles de la interfaz como en el HUD de un juego de estrategia. El entorno 3D y el fondo de la app son el mismo color (`--base`), de modo que las escenas (el coche, la nave del taller) se funden con la página y no parecen «una caja con un modelo dentro». Los paneles son blancos, de esquinas muy redondeadas, con cristal sutil y una sombra larga y suave que los despega del suelo; los botones son piezas gordas con volumen, que se hunden al pulsarlos; la navegación es un dock flotante de pestañas redondeadas y la cabecera es una barra de estado, no una franja a sangre.
 
-La densidad es de herramienta, no de folleto: listas en panel con filas finas, cifras tabulares pegadas al margen derecho, pocas tallas de letra y un único azul de calibración para la acción principal. La profundidad es física y pequeña: la cartulina tiene filo de luz y canto, la muestra lacada tiene brillo de barniz, y las cartas se inclinan un poco hacia el puntero. El coche 3D procedural vive en un solo lienzo por pantalla, dentro de la cabina de la placa de muestra, y siempre tiene su silueta 2D y su información en HTML.
+Hay **juego en la forma, no en los datos**. La regla 2 del proyecto sigue mandando: ningún punto, nivel, logro ni cifra sin fuente real. Los avisos y recordatorios pueden presentarse como «misiones» (tarjetas con estado, icono y plazo) porque son datos reales; nada más se inventa para que parezca un juego.
 
-El tema claro («cabina», el predeterminado) es el de uso diario. El oscuro («cabina apagada») es la misma cabina con la luz apagada: grafito, sin acento neón. El mundo rechaza expresamente el panel oscuro con acento neón y el SaaS blanco de tarjetas iguales.
+Cada vehículo conserva su pintura (`--paint`, `lib/colors.ts`) como ficha de color: la muestra de la tarjeta, la ficha del dock, el cuadrado de la fila. Fuera de esas fichas, el color es el del mundo: lienzo, blanco, un azul eléctrico para lo activo y rojo/ámbar/verde solo como estado.
+
+El tema claro («día de diorama», el predeterminado) es el de uso diario. El oscuro («noche de diorama») es el mismo mundo con la luz apagada: azul marino profundo, paneles azul noche, los mismos acentos. Ambos están calculados para contraste AA.
 
 **Rasgos clave:**
-- Gris cabina y cartulina neutros; el color del vehículo solo dentro de sus muestras lacadas.
-- Barra lateral grafito en los dos temas y en los dos modos (particular y taller).
-- Un solo azul de calibración para la acción principal, los enlaces de acción y el foco.
-- Archivo variable: ancho para títulos, normal para el texto, estrecho y en versalitas para etiquetas, matrículas y códigos.
-- Cifras tabulares alineadas a la derecha; lo que falta se dice con su acción, nunca con un cero inventado.
-- Movimiento corto y con salida fuerte; con `prefers-reduced-motion` todo queda quieto y legible.
+- Un lienzo (`--base`) compartido por la página y por el 3D; paneles de cristal que flotan encima.
+- Esquinas muy redondeadas: 12 px en controles, 20 px en paneles, 28 px en piezas grandes, píldoras en etiquetas.
+- Botones «gordos» con canto, brillo y sombra blanda; respuesta física al pulsar.
+- Dock flotante a la izquierda (escritorio) o abajo (móvil) y barra de estado arriba.
+- Archivo variable llevado a pesos 700–800 y anchura 108 % en títulos, que da carácter de juego.
+- Movimiento con muelle corto (≤ 300 ms, salida fuerte), escalonado, que se queda quieto con `prefers-reduced-motion`.
 
 ## Colors
 
-Una paleta de cabina de igualación: grises neutros casi sin tinte, un azul de calibración para actuar, colores de estado solo para el estado y, por encima de todo, la pintura real de cada vehículo, que entra en la interfaz únicamente como muestra lacada.
+Una paleta de maqueta: un lienzo azul pastel casi blanco, paneles blancos, tintas azul marino (nunca negro puro), un azul eléctrico para actuar y colores de estado solo para el estado. Todos los pares de texto se han calculado (relación de contraste WCAG) con `docs/equipo/informes/2026-11-11-frontend-react-mundo-diorama/contraste.cjs`.
 
 ### Primary
-- **Azul de calibración** (`azul-calibracion`): el botón primario lacado («Registrar», «Añadir vehículo»), el anillo de foco y la guía luminosa. Su variante de texto (`azul-calibracion-tinta`) colorea los enlaces de acción («Ver la agenda», «Anotar km»). En oscuro sube a `#3b66f0` y su tinta a `#9db8ff`.
+- **Azul eléctrico** (`--accent` `#2559e8`; en noche `#3b69f0`): el botón primario, lo activo (pestaña del dock, segmento seleccionado, chip filtrado), el anillo de foco y los enlaces de acción. Texto blanco encima (5,7:1 en claro, 4,7:1 en noche). Su variante de texto (`--accent-ink` `#1d4cd0`; en noche `#a4bdff`) colorea enlaces y estados activos sobre fondo claro (7,0:1 sobre panel). Su **canto** (`--accent-edge`) es el borde inferior del botón gordo.
 
 ### Secondary
-- **Pintura del vehículo** (variable `--paint`, dato del usuario, no de la interfaz): rellena las muestras lacadas. Su tinta (`--paint-ink`) se calcula en `paintVars` y es `tinta-honda` o blanco, la de mayor contraste. Sin color registrado, la muestra usa `pintura-sin-color`.
+- **Pintura del vehículo** (`--paint`, dato del usuario, no de la interfaz): rellena las fichas. La tinta encima (`--paint-ink`) la calcula `paintVars` y es `#101214` o blanco, la de mayor contraste. Sin color registrado: `pintura-sin-color`.
 
 ### Neutral
-- **Gris cabina** (`gris-cabina`): el fondo de página y de la cabecera fija; el gris N8 de referencia.
-- **Cartulina** (`cartulina`, `cartulina-2`, `cartulina-3`): tarjetas, paneles de lista, campos y botón secundario; los dos tonos inferiores para hover, celdas alternas y esqueletos.
-- **Línea** (`linea`): separadores entre filas y bordes de tarjeta. **Línea fuerte** (`linea-fuerte`): bordes de campo y bordes al pasar el ratón; llega a 3:1 sobre gris cabina y cartulina (WCAG 1.4.11).
-- **Tinta** (`tinta`, `tinta-honda`): texto principal; la honda para títulos y cifras grandes. **Tinta media** y **tenue** (`tinta-media`, `tinta-tenue`): descripciones, matrículas en lista y fechas relativas.
-- **Grafito** (`grafito`, `grafito-2`, `grafito-linea`, `grafito-tinta`, `grafito-tinta-tenue`, `grafito-azul`): la barra lateral, igual en los dos temas (en oscuro baja a `#141618`). El activo de la barra es `grafito-2` con una regla de 3 px en `grafito-azul`, que también es el color del foco dentro de la barra, porque el azul de calibración no llega a 3:1 sobre grafito.
+- **Lienzo** (`--base` `#e9f0fa`; noche `#0e1a30`): fondo de la página y color de fondo del entorno 3D (`three/env.ts` lo lee de aquí).
+- **Panel** (`--surface` `#ffffff`; noche `#162540`), **panel 2** (campos, hover; `#f1f5fb`) y **panel 3** (etiqueta neutra, esqueleto; `#e2eaf5`).
+- **Línea** (`--line`): separadores y bordes de panel, discreta. **Línea fuerte** (`--line-strong` `#7384a1`): bordes de campo y de controles que lo necesitan; 3,3:1 sobre el lienzo y 3,8:1 sobre el panel (WCAG 1.4.11).
+- **Tinta**: `--fg` (`#14213a`, 16:1 sobre panel), `--fg-warm` para títulos y cifras, `--fg-muted` (`#45536f`, 7,7:1) y `--fg-subtle` (`#53627e`, 6,2:1).
+- **Cristal** (`--glass`): el panel al 94 % de opacidad con desenfoque; con `prefers-reduced-transparency` pasa a opaco.
 
 ### Estados
-- **Vencido** (`estado-vencido`), **Próximo** (`estado-proximo`), **En plazo** (`estado-en-plazo`) e **Info** (`estado-info`), cada uno con su fondo suave. Solo marcan el estado de un aviso, una zona o una orden, siempre con icono y palabra.
+- **Vencido** `#b32119`, **Próximo** `#7d4e00`, **En plazo** `#0f6a49` e **Info** `#1b5fa8`, cada uno con su fondo suave (10–16 %). Todos ≥ 4,9:1 también sobre el lienzo. Solo marcan el estado de un aviso, una zona o una orden, siempre con icono y palabra.
 
 ### Named Rules
-**La regla de la cabina neutra.** El color del vehículo solo vive dentro de sus muestras lacadas (la carta del abanico, la placa del escaparate, la cabecera de la tarjeta, la muestra de la fila y la placa de la ficha). La única fuga permitida es el reflejo en el suelo de la cabina, dentro de la misma placa o tarjeta y mezclado al 16–18 % con la cartulina. Fuera de ahí, grises neutros y estados.
+**La regla de la ficha de color.** El color del vehículo solo vive dentro de sus fichas (la tarjeta, la ficha del dock, el cuadrado de la fila, la cabecera de la ficha). Fuera de ahí: lienzo, blanco, azul eléctrico y estados.
 
-**La regla de la voz azul.** El azul de calibración significa «actúa aquí»: el botón primario, los enlaces de acción y el foco. Nunca decora, nunca rellena una superficie y hay un solo botón primario a la vista por pantalla.
+**La regla de la voz azul.** El azul eléctrico significa «activo» o «actúa aquí». Hay una sola acción primaria rellena de azul a la vista por pantalla; lo activo de la navegación va en azul suave, no relleno.
 
-**La regla del estado con palabra.** Rojo, ámbar y verde solo dicen estado, y nunca solos: cada estado lleva icono y texto («Vencido», «2 próximos»). La pintura de un coche rojo no es un aviso.
+**La regla del estado con palabra.** Rojo, ámbar y verde solo dicen estado, y nunca solos: cada estado lleva icono y texto. La pintura de un coche rojo no es un aviso.
 
 ## Typography
 
-**Display Font:** Archivo Variable, autoalojado (con ui-sans-serif, system-ui)
-**Body Font:** Archivo Variable
-**Label/Mono Font:** Archivo Variable al 78 % de anchura, en versalitas
+**Display y cuerpo:** Archivo Variable (autoalojada, pesos 100–900, anchura 62–125 %). No se añade ninguna fuente nueva: el carácter de juego sale de llevarla a pesos 700–800 y a anchura 108 % en títulos y cifras.
 
-**Character:** una sola familia variable hace de rotulación de carta de pintura: ensanchada al 112 % para títulos y cifras, normal para leer, y estrecha y espaciada para las etiquetas que en una carta real llevarían el código de la muestra.
+Los pesos están remapeados en el tema (`--font-weight-medium: 600`, `semibold: 700`, `bold: 800`): todo el producto sube un escalón sin tocar las pantallas.
 
 ### Hierarchy
-- **Display** (700, 1.5rem en móvil y 1.875rem desde el contenedor de 50rem, anchura 112 %): el nombre del vehículo sobre su muestra lacada.
-- **Headline** (600, 1.5rem en móvil y 1.875rem desde 768 px, anchura 112 %): el título de cada pantalla.
-- **Title** (600, 1.125rem, anchura 112 %): títulos de sección («Pendiente», «Vehículos») y de diálogo; 1rem en títulos de tarjeta.
-- **Figure** (700, 1.75rem/2rem, tabulares, anchura 112 %): las cifras del mes y el kilometraje de la placa; 1.25rem para los totales de gasto.
-- **Body** (400, 0.875rem/1.25rem): filas de lista, descripciones y controles. 1rem en campos de formulario en móvil (evita el zoom de iOS) y en la línea de estado bajo el título desde 768 px, con un máximo de 42rem.
-- **Label** (650, 0.75rem/1rem, 0.08em, versalitas, anchura 78 %): matrículas, códigos de pintura, rótulos de dato («Kilometraje», «Gasto del mes»), estados y el título del abanico.
+- **Display** (700, 1.5rem en móvil y 1.875rem desde 768 px, anchura 108 %): el nombre del vehículo en su ficha.
+- **Headline** (700, 1.5rem / 1.875rem, anchura 108 %): el título de cada pantalla.
+- **Title** (700, 1.125rem, anchura 108 %): títulos de sección y de diálogo; 1rem en tarjetas.
+- **Figure** (800, 1.75rem/2rem, tabulares, anchura 108 %): cifras del mes, kilometraje.
+- **Body** (400, 0.875rem/1.25rem; 1rem en campos de móvil). Los controles y enlaces van en 600–700.
+- **Label** (`.tag-label`, 750, 0.75rem, 0.06em, versalitas): matrículas, códigos y rótulos de dato.
 
 ### Named Rules
-**La regla de las pocas tallas.** El rango lo dan el peso, la anchura y las versalitas, no una escalera de tamaños. Siete papeles y ninguno más.
+**La regla de las pocas tallas.** El rango lo dan el peso y la anchura, no una escalera de tamaños.
 
-**La regla de la cifra al margen.** Importes, kilómetros y plazos van con cifras tabulares y pegados al margen derecho de su fila o celda, sin partirse de su unidad.
+**La regla de la cifra al margen.** Importes, kilómetros y plazos con cifras tabulares (`.tabular`) y pegados al margen derecho de su fila, sin partirse de su unidad.
 
-**La regla de la etiqueta de muestra.** Las versalitas estrechas rotulan datos (matrícula, código, estado, rótulo de una cifra). Nunca van como antetítulo encima de un título.
+**La regla de la etiqueta.** Las versalitas rotulan datos (matrícula, código, rótulo de cifra). Nunca van como antetítulo encima de un título.
 
 ## Layout
 
-Rejilla de 8 px con medios pasos de 4 px: los huecos entre bloques son de 12, 16, 24, 32 y 40 px, y las secciones de Inicio se separan 40 px. La barra lateral grafito es fija: 76 px con solo iconos desde 768 px y 256 px desde 1024 px, plegable a 76 px; por debajo de 768 px desaparece y entra la barra inferior móvil (Inicio, Garaje, «Registrar», Agenda, Más). La cabecera es opaca, fija y de 64 px.
+Rejilla de 8 px con medios pasos de 4 px. Todo flota con un margen de 12 px al borde de la ventana.
 
-El contenido se centra con un máximo de 1240 px en el particular y 1440 px en el taller, con márgenes de 16, 24 y 32 px según el ancho. En Inicio, desde 1280 px, el escaparate ocupa el resto y «Pendiente» una columna de 25rem; debajo, tres cifras del mes en una fila de tres celdas (apiladas en móvil); después, vehículos y una columna de 22rem para gasto y actividad desde 1024 px. Los componentes se adaptan con consultas de contenedor (30, 32, 34, 40 y 50rem): la placa del escaparate pasa de apilada a muestra lateral de 13rem y de 16rem, y las filas de aviso sacan el plazo al margen derecho cuando caben.
+- **Dock (escritorio):** `aside.hud-panel` fijo a la izquierda, a 12 px de los bordes (arriba, abajo e izquierda). 76 px con iconos de 768 a 1023 px (y plegado) y 240 px desde 1024 px. Lleva marca, secciones por grupos, las **fichas de vehículo** (particular) y, abajo, Ajustes y «Contraer».
+- **Barra de estado (HUD):** `header` pegajosa de 4 rem con su margen (barra de 56 px + 8 px), con el selector de espacio, la búsqueda, los avisos y la cuenta. Las barras fijas de las pantallas cuelgan de `top-16`.
+- **Dock móvil:** barra flotante inferior (`hud-bar`) a 12 px de los bordes, con Inicio, Garaje, «Registrar» (botón redondo elevado), Agenda y «Más».
+- **Contenido:** centrado, máximo 1240 px en el particular y 1440 px en el taller, desplazado por `--shell-left` (6,25 rem en tableta, 16,5 rem con el dock ancho).
+- **Contenedores:** consultas de contenedor (30, 32, 34, 40 y 50 rem) para las piezas que cambian según su ancho.
 
-Los objetivos táctiles miden 44 px en móvil y bajan a 36–40 px con puntero fino desde 768 px. Se comprueba a 360, 768 y 1280 px.
+Los objetivos táctiles miden 44 px en móvil y 36–40 px con puntero fino. Se comprueba a 360, 768 y 1280 px.
+
+### Lienzo a sangre (escenas 3D de fondo)
+Una pantalla puede poner su escena 3D detrás de todo: el diorama ocupa toda la ventana (también bajo el dock y la barra) y los paneles flotan encima.
+
+```tsx
+import { CanvasBleed } from '@/components/layout/CanvasBleed'
+
+<CanvasBleed scene={<MiEscena />} hudClassName="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
+  <aside className="hud-panel p-4">…</aside>
+</CanvasBleed>
+```
+
+- `CanvasBleed` llama a `useCanvasBleed()`, que avisa a `AppShell`: el `<main>` pasa a `data-canvas="bleed"` (sin márgenes ni ancho máximo) y la cabecera se vuelve `fixed` flotando sobre la escena. Sin él, `data-canvas="page"`.
+- `scene` va en `.canvas-layer` (fija, `inset: 0`, `z-index: 0`). El fondo de la escena debe ser `--base`. Un solo `<Canvas>` por pantalla, con respaldo 2D y HTML accesible.
+- Los hijos van en `.canvas-hud` (`z-index: 1`, `padding` que respeta cabecera, dock y barra inferior; `pointer-events: none` salvo en `.hud-panel`, `.hud-bar`, `.mission`, enlaces, botones, campos y `[data-hud]`). La escena recibe el puntero (orbitar, hacer clic) donde no hay paneles.
+- `--shell-left` es la variable CSS con el hueco del dock; úsala si necesitas alinear algo con él.
+- Heredado: la ruta `/taller` antigua se sigue tratando como `data-canvas="flush"` (sin márgenes, cabecera en el flujo) hasta que se migre a `CanvasBleed`.
 
 ## Elevation & Depth
 
-Profundidad física y corta, de objeto sobre una mesa: la cartulina es una losa con filo de luz arriba, una línea de canto abajo y una sombra proyectada suave; la muestra lacada añade brillo de barniz y un canto oscuro. La sombra se tiñe con `--shadow-color` (gris frío en claro, negro en oscuro) y nunca es dura ni desplazada. Al pasar el ratón por una tarjeta enlazada, sube 2 px y gana la sombra `lift`; los menús y diálogos usan `pop`. Las cartas se inclinan hacia el puntero (como mucho 6–8°) con perspectiva CSS; el único WebGL es el coche.
+Profundidad de maqueta: sombras en capas (contacto, cuerpo y proyección larga y suave), tintadas con `--shadow-color` (azul marino en claro, casi negro azulado en noche). Nunca duras. Los paneles de cristal llevan además un filo de luz arriba (`--sheen`).
 
 ### Shadow Vocabulary
-- **Losa** (`box-shadow: 0 1px 0 0 var(--sheen) inset, 0 1px 0 0 var(--line), 0 14px 24px -18px hsl(var(--shadow-color) / 0.55)`): tarjetas y paneles de lista en reposo.
-- **Elevada** (`box-shadow: 0 10px 28px -12px hsl(var(--shadow-color) / 0.55), 0 2px 6px hsl(var(--shadow-color) / 0.2)`): tarjeta enlazada al pasar el ratón.
-- **Flotante** (`box-shadow: 0 18px 48px -16px hsl(var(--shadow-color) / 0.6), 0 4px 12px hsl(var(--shadow-color) / 0.25)`): menús, paleta de órdenes y diálogos.
-- **Laca** (`box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), inset 0 -2px 0 rgb(0 0 0 / 0.2), 0 10px 18px -12px hsl(var(--shadow-color) / 0.7)` sobre un degradado de barniz a 158°): toda muestra de pintura.
+- **Card** (`--shadow-card`): `0 1px 0 sheen inset, 0 1px 2px /.07, 0 6px 14px -4px /.09, 0 20px 36px -20px /.16`: tarjetas y paneles de lista en reposo.
+- **Lift** (`--shadow-lift`): tarjeta enlazada al pasar el ratón (sube 3 px) y misión pulsable.
+- **HUD** (`--shadow-hud`): dock, barra de estado y paneles flotantes.
+- **Pop** (`--shadow-pop`): menús, tooltips, avisos, paleta y diálogos.
+- **Canto del botón gordo:** `0 3px 0 0 <canto>` (1 px al pulsar) más una sombra blanda del color del botón.
 
 ### Named Rules
-**La regla de la losa.** Cada superficie de cartulina es una losa con su filo de luz y su canto, no una caja plana con borde. La laca queda reservada a la pintura del vehículo y a los botones primario y de peligro.
+**La regla del panel flotante.** Todo lo que está por encima del lienzo es un panel: blanco/cristal, esquina grande, sombra larga. Nada de cajas planas con borde de 1 px sobre el lienzo.
 
-**La regla del lienzo único.** Un solo `<Canvas>` 3D por pantalla, cargado de forma diferida y con silueta 2D de respaldo; los listados usan miniaturas estáticas, nunca un WebGL por tarjeta. Toda la profundidad de interfaz es CSS.
+**La regla del lienzo único.** Un solo `<Canvas>` 3D por pantalla, diferido y con silueta 2D de respaldo; los listados usan miniaturas estáticas. Toda la profundidad de interfaz es CSS.
 
 ## Shapes
 
-Esquinas de carta de muestra: redondeadas y firmes, más grandes cuanto mayor es la pieza. Controles y campos, 8 px; cartas del abanico, 10 px; tarjetas y paneles de lista, 16 px; la placa del escaparate, 24 px. Las etiquetas de estado son rectángulos de esquina corta (5 px), no píldoras. Las muestras de la fila son cuadrados de 40 px con 8 px de radio; las que eligen vehículo en el escaparate son círculos de 32 px. La placa de la ficha se gira 12° sobre su eje vertical para enseñar el canto. El remache del abanico, un círculo de 10 px en `grafito-tinta-tenue`, es la geometría que firma tanto el abanico como el logotipo.
+- Controles y campos: 12 px (`rounded-control`). Paneles y tarjetas: 20 px (`rounded-card`). Piezas grandes y diálogos: 28 px (`rounded-hero`). El dock y la barra de estado: 20 px; el dock móvil: 24 px.
+- Etiquetas, chips, pestañas y control segmentado: **píldora** (`rounded-full`).
+- Las fichas de vehículo (dock, filas) son cuadrados de 36–40 px con 12 px de radio; los iconos de misión, de 40 px con 12 px.
 
 ## Components
 
-### Buttons
-Lacados y táctiles: responden al pulsar con `scale(0.97)` en 100 ms.
-- **Shape:** esquina de control (8px); 44 px de alto en móvil, 40 px (36 px en pequeño) desde 768 px.
-- **Primary:** muestra de azul de calibración con brillo de barniz arriba (degradado blanco al 18 %), canto oscuro abajo y sombra corta. Al pasar el ratón, `brightness(1.1)`; al pulsar, la sombra se recoge.
-- **Hover / Focus:** transición de 200 ms con salida fuerte; foco con anillo de 2 px en azul de calibración y 2 px de separación.
-- **Secondary:** cartulina con borde de línea, filo de luz y sombra mínima; al pasar el ratón, `cartulina-2` y borde fuerte. **Ghost:** solo texto en tinta media, con fondo `cartulina-2` al pasar. **Outline:** borde fuerte sin fondo. **Danger:** la misma laca en rojo de estado.
+### Buttons (`.chunky`)
+- **Primary:** azul eléctrico con brillo arriba, **canto** de 3 px en `--accent-edge` y sombra blanda azul. Al pasar el ratón (puntero fino) sube 1 px y el canto crece a 4 px; al pulsar baja 2 px, `scale(.97)` y el canto se recoge a 1 px. Una por pantalla.
+- **Secondary:** ficha blanca con borde `--line` y canto `--neutral-edge`; hover `--surface-2` y borde fuerte.
+- **Danger:** la misma pieza en rojo de estado. **Outline** y **Ghost**: planos, sin canto; hover en azul suave.
+- 44 px en móvil; 40 px (36 en pequeño) desde 768 px. Deshabilitado: plano, 50 %.
 
-### Chips
-- **Style:** etiqueta de muestra: rectángulo de 5 px, versalitas estrechas al 78 %, fondo suave del estado y texto del estado, con icono de 12–14 px (24 px de alto, 20 px en pequeño).
-- **State:** solo se pinta píldora para lo que pide atención (Vencido, Próximo, Archivado); «En plazo» y «Sin datos» van como texto con icono.
+### Chips y badges (`.chip`, `<Badge>`, `<Chip>`)
+Píldora gruesa (28 px de alto, 20–24 en `Badge`) con icono de 14 px y texto. Tonos `chip-accent | -ok | -warning | -danger | -info`. Un chip pulsable (`button.chip`) con `aria-pressed="true"` se rellena de azul con su canto. El estado nunca va solo en color.
 
-### Cards / Containers
-- **Corner Style:** 16px; la placa del escaparate, 24px.
-- **Background:** cartulina sobre gris cabina.
-- **Shadow Strategy:** losa en reposo, elevada al pasar el ratón (ver Elevation & Depth).
-- **Border:** 1 px en `linea`, `linea-fuerte` al pasar.
-- **Internal Padding:** 16 px; las filas de un panel de lista llevan 16 px laterales y 10–12 px verticales, separadas por una línea fina.
-- **Tarjeta de vehículo:** cabecera lacada con su pintura, nombre y marca; debajo, la cabina con la miniatura estática y el reflejo de la pintura en el suelo; al pie, matrícula en etiqueta, km tabulares y estados.
+### Paneles (`.hud-panel`, `.hud-bar`, `.hud-pop`, `<Card>`, `.list-panel`)
+- `hud-panel`: cristal (`--glass` al 94 %, `blur(12px)`), borde claro, radio de tarjeta, sombra HUD. `hud-bar`: lo mismo con 20 px de radio (barras). `hud-pop`: lo mismo con sombra pop (menús y avisos).
+- `Card` / `.surface-card` / `.list-panel`: panel sólido para el contenido de lectura (listas, formularios). Las filas llevan 16 px laterales y se separan con una línea fina; al pasar el ratón se tiñen de azul al 5 %.
 
-### Inputs / Fields
-- **Style:** cartulina, borde de 1 px en `linea-fuerte`, 8 px de radio, 44 px en móvil (texto de 16 px) y 40 px desde 768 px.
-- **Focus:** el borde pasa a azul de calibración y el anillo de foco se pega al campo; el cursor de texto es azul.
-- **Error / Disabled:** con `aria-invalid` el borde pasa a rojo de estado; deshabilitado al 60 % de opacidad.
+### Misiones (`.mission`, `<Mission>`)
+Tarjeta de un aviso o tarea con **datos reales**: barra de color a la izquierda según `data-tone` (más icono y texto del estado), título, descripción y, a la derecha, plazo o importe. Si es un enlace o un botón, sube 2 px al pasar el ratón.
 
-### Navigation
-- **Barra lateral grafito:** enlaces de 44 px con icono de 20 px y texto de 14 px en `grafito-tinta-tenue`; al pasar, fondo `grafito-2` y tinta clara. El activo lleva una pastilla `grafito-2` que se desliza entre secciones (muelle de 350 ms, rebote 0,12) con la regla izquierda de 3 px y el icono en `grafito-azul`.
-- **Cabecera:** opaca en gris cabina, 64 px, con el espacio, la búsqueda, los avisos y la cuenta.
-- **Móvil:** barra inferior con tres secciones, «Registrar» en un círculo azul y «Más».
+### Progreso (`.segbar`, `<Progress>`)
+Barra segmentada de 10 piezas redondeadas; cada pieza se rellena en proporción (`--f`), de modo que la cifra es exacta (la última puede quedar a medias). Entra con un escalón de 28 ms por pieza. Lleva `role="progressbar"` con `aria-valuenow`.
 
-### Abanico de muestras (firma)
-Una carta lacada por vehículo (hasta tres), de 184 px de ancho, con nombre y modelo sobre la pintura y, en una franja de cartulina, matrícula y estado en versalitas. Las cartas giran sobre el remache de abajo a la izquierda: en reposo se escalonan 72 px y 2°, y al pasar el ratón o llegar con el teclado se abren en abanico (76 px y 7°) en 320 ms con salida fuerte; la que está bajo el puntero sale 14 px hacia delante. El vehículo que estás viendo va delante con anillo `grafito-azul`. Cada carta es un enlace a su ficha. Con movimiento reducido el abanico queda abierto y quieto.
+### Inputs
+Campo de 12 px con relleno `--surface-2`, borde de 1 px en `--line-strong` (3:1) y sombra interior suave; 44 px en móvil (texto de 16 px) y 40 px desde 768 px. Foco: el borde pasa a azul, el fondo a blanco y aparece el anillo de 2 px. Error: borde rojo con `aria-invalid`.
 
-### Placa de muestra (escaparate y ficha)
-En Inicio, una placa de 24 px de radio con la carta lacada a la izquierda (nombre, kilometraje en cifra, matrícula y pintura con su nombre y su código) y, a la derecha, la cabina de igualación con el coche 3D girando despacio. Las muestras redondas cambian de vehículo; la nueva pintura barre la carta de arriba abajo en 380 ms. En la ficha, la misma muestra en pequeño (112 × 80 px, 144 × 96 px desde 768 px) junto al título.
+### Pestañas y control segmentado
+Pista hundida en píldora (`--surface-3`) con la pieza activa en blanco, elevada, con el texto en azul. `<Tabs>` y `<SegmentedControl>` comparten forma.
+
+### Navegación
+- **Dock:** pestañas de 44 px, icono de 20 px y texto 700. Activa: pastilla azul suave que se desliza entre secciones (muelle de 320 ms, rebote 0,18) con borde interior azul, icono más grueso y `aria-current="page"`. Estrecho: solo icono con tooltip.
+- **Fichas de vehículo** (particular; sustituyen al abanico de muestras): una por coche (hasta 4), con su pintura como cuadrado de arcilla (`.clay`) con icono de coche, el nombre, la matrícula y lo que tiene vencido o próximo (icono + texto). El que estás viendo lleva anillo azul. Se retiró el abanico porque su despliegue en 3D CSS no encajaba con un dock plano y compacto, y porque las fichas dan el mismo reconocimiento por color en menos espacio.
+- **Barra de estado:** selector de espacio (ficha azul con icono de garaje o taller, nombre y tipo), búsqueda en píldora, avisos y cuenta.
+- **Móvil:** dock flotante con «Registrar» elevado (círculo azul de 44 px).
+
+### Fichas de pintura (`.clay`)
+El color del vehículo con un brillo de arcilla arriba (degradado a 160°), sombra interior abajo y sombra suave. `.lacquer` se mantiene como alias hasta que las pantallas lo cambien.
+
+## Motion
+
+- **Curva:** `cubic-bezier(0.23, 1, 0.32, 1)` (salida fuerte) para entradas y respuestas; `cubic-bezier(0.32, 0.72, 0, 1)` para hojas y cajones.
+- **Entrada (`.pop-in`, `.stagger`, `animate-pop-in`):** sube 8–12 px desde 95–97 % de escala, se pasa un pelín y asienta; 240–280 ms, con 40–45 ms entre elementos. Las pantallas entran en cascada (`.stagger` en `AppShell`).
+- **Pulsar:** `scale(.97)` en 100–140 ms; el botón gordo además baja 2 px.
+- **Hover:** 150–220 ms, solo con puntero fino; las tarjetas suben 2–3 px.
+- Solo se animan `transform`, `translate`, `scale`, `opacity`, color y sombra. Con `prefers-reduced-motion` todo queda quieto y completo (el bloque global deja las animaciones en 0,01 ms).
 
 ## Do's and Don'ts
 
 ### Do:
-- **Haz** que todo lo de un vehículo lleve su muestra lacada con `paintVars(color_hex)`, y el texto encima con `--paint-ink`, comprobando 4,5:1 en el texto pequeño.
-- **Haz** las cifras con números tabulares y alineadas a la derecha; si falta un dato, dilo y ofrece la acción («Faltan lecturas de este mes. Anotar km»).
-- **Haz** que cada estado lleve icono y palabra, y que el aviso «según tus intervalos, no medido» aparezca una vez por sección.
-- **Haz** las entradas con `cubic-bezier(0.23, 1, 0.32, 1)` y duraciones de 100 a 520 ms, animando solo `transform`, `opacity`, `clip-path`, color y sombra.
-- **Haz** que todo movimiento se quede quieto y completo con `prefers-reduced-motion`: el abanico abierto, la pintura sin barrido, las cartas sin inclinación.
-- **Haz** el foco visible con 2 px de azul de calibración (o `grafito-azul` dentro de la barra) y 2 px de separación.
+- **Haz** que todo lo de un vehículo lleve su ficha de pintura con `paintVars(color_hex)` y `.clay`, comprobando 4,5:1 del texto encima.
+- **Haz** que un panel flote: `hud-panel` sobre el lienzo, `Card` o `.list-panel` para contenido de lectura.
+- **Haz** los avisos y recordatorios como misiones (`<Mission>`), con su icono, su estado en palabras y su plazo real.
+- **Haz** cifras tabulares alineadas a la derecha; si falta un dato, dilo y ofrece la acción («Faltan lecturas de este mes. Anotar km»).
+- **Haz** que cada estado lleve icono y palabra, y que «según tus intervalos, no medido» aparezca una vez por sección.
+- **Haz** el foco visible con 2 px de azul eléctrico (en noche, `--accent-ink`) y 2 px de separación.
+- **Haz** que todo movimiento se quede quieto y completo con `prefers-reduced-motion` y que el cristal pase a opaco con `prefers-reduced-transparency`.
 
 ### Don't:
-- **No** uses la pintura del vehículo fuera de sus muestras: ni en fondos de página, ni en bordes, ni en botones, ni en texto.
-- **No** conviertas la interfaz en un panel oscuro con acento neón ni en un SaaS blanco de tarjetas iguales; el oscuro es la cabina apagada en grafito.
+- **No** inventes puntos, niveles, logros, rachas ni «health score»: el juego es la forma, no los datos (regla 2).
+- **No** uses la pintura del vehículo fuera de sus fichas: ni en fondos de página, ni en botones, ni en texto.
+- **No** pongas más de un botón primario relleno de azul por pantalla ni uses el azul como fondo de superficies grandes.
+- **No** uses rojo, ámbar o verde como decoración ni como única señal.
 - **No** pongas más de un `<Canvas>` 3D por pantalla ni un WebGL por tarjeta; el 3D nunca va sin su silueta 2D y su HTML accesible.
-- **No** uses rojo, ámbar o verde como decoración ni el azul de calibración como relleno de superficie.
-- **No** dibujes la matrícula como una placa de matrícula: va como texto en etiqueta de muestra.
+- **No** pintes cajas planas con borde sobre el lienzo ni degradados de color decorativos; la profundidad sale de la sombra.
+- **No** uses blanco ni negro puros para texto: las tintas son azul marino (`--fg`, `--fg-warm`).
+- **No** dibujes la matrícula como una placa: va como texto en etiqueta (`<Plate>`).
 - **No** pongas etiquetas en versalitas como antetítulo encima de un título.
-- **No** enseñes cifras, puntuaciones de salud ni desgastes que no salgan de datos reales.

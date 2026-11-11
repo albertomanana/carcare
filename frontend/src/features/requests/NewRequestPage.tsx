@@ -14,9 +14,9 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Field, Fieldset } from '@/components/ui/Field'
 import { DateInput, Input, MileageInput, Select, Textarea } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyBoard, HudHeader } from '@/components/game/kit'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { ErrorState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParam } from '@/hooks/useSearchParam'
@@ -75,13 +75,13 @@ export default function NewRequestPage() {
   const preset = useDirectoryWorkshop(presetId && directory.isSuccess && !inList ? presetId : undefined)
 
   const back = { to: `${ctx.base}/solicitudes`, label: 'Mis solicitudes' }
-  const header = <PageHeader title="Pedir una reparación" back={back} />
+  const header = <HudHeader title="Pedir una reparación" back={back} />
 
   if (!ctx.isPersonal || !ctx.can('own')) {
     return (
       <>
         {header}
-        <EmptyState icon={<Store />} title="Solo el titular del espacio personal puede enviar solicitudes" />
+        <EmptyBoard icon={<Store />} title="Solo el titular del espacio personal puede enviar solicitudes" />
       </>
     )
   }
@@ -117,7 +117,7 @@ export default function NewRequestPage() {
     return (
       <>
         {header}
-        <EmptyState
+        <EmptyBoard
           icon={<Car />}
           title="Primero añade tu coche"
           description="La solicitud lleva los datos de un coche de tu garaje: marca, modelo, año, combustible, carrocería, color y matrícula."
@@ -134,7 +134,7 @@ export default function NewRequestPage() {
     return (
       <>
         {header}
-        <EmptyState icon={<Store />} title="Todavía no hay talleres en el directorio" description="Cuando un taller de CarCare se publique, podrás pedirle una reparación desde aquí." />
+        <EmptyBoard icon={<Store />} title="Todavía no hay talleres en el directorio" description="Cuando un taller de CarCare se publique, podrás pedirle una reparación desde aquí." />
       </>
     )
   }

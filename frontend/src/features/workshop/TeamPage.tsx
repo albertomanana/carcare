@@ -25,7 +25,8 @@ import {
 import { Field } from '@/components/ui/Field'
 import { Input, Select } from '@/components/ui/inputs'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { Panel } from '@/components/ui/Hud'
+import { WorkshopHeader } from './components/WorkshopHeader'
 import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
@@ -61,14 +62,14 @@ export default function TeamPage() {
   if (!ctx.isWorkshop)
     return (
       <>
-        <PageHeader title="Equipo" />
+        <WorkshopHeader title="Equipo" />
         <EmptyState icon={<Users />} title="El equipo es del modo taller" description="Tu garaje personal es solo tuyo. Crea un taller desde Ajustes para trabajar con más personas." />
       </>
     )
 
   return (
     <>
-      <PageHeader
+      <WorkshopHeader
         title="Equipo"
         description={members.data ? `${plural(members.data.length, 'persona', 'personas')} con acceso a ${ctx.workspace.name}.` : `Quién trabaja en ${ctx.workspace.name} y con qué permisos.`}
         actions={
@@ -79,9 +80,9 @@ export default function TeamPage() {
           )
         }
       />
-      <div className="max-w-4xl space-y-10">
-        <section aria-labelledby="personas-title" className="min-w-0">
-          <h2 id="personas-title" className="mb-3 font-display text-lg font-semibold tracking-tight text-fg-warm">
+      <div className="max-w-4xl space-y-5">
+        <section aria-labelledby="personas-title" className="hud-panel min-w-0 p-4 sm:p-5">
+          <h2 id="personas-title" className="mb-3 font-display text-lg font-bold tracking-tight text-fg-warm">
             Personas
           </h2>
           {members.isPending ? (
@@ -331,6 +332,7 @@ function RecentActivity() {
   const total = totalFromPages(activity.data)
 
   return (
+    <Panel className="p-4 sm:p-5">
     <Section
       title="Actividad"
       id="actividad"
@@ -403,6 +405,7 @@ function RecentActivity() {
         </>
       )}
     </Section>
+    </Panel>
   )
 }
 

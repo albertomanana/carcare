@@ -9,12 +9,19 @@ describe('navGroups', () => {
   it('el taller agrupa sus secciones por tarea, con los nombres nuevos', () => {
     const groups = navGroups(ctx(true))
     expect(groups.map((g) => g.label)).toEqual(['Día a día', 'Clientes y vehículos', 'Gestión'])
-    expect(groups[0].items.map((i) => i.label)).toEqual(['Inicio', 'Órdenes', 'Taller', 'Solicitudes'])
+    expect(groups[0].items.map((i) => i.label)).toEqual(['Taller', 'Órdenes', 'Solicitudes'])
     expect(navItems(ctx(true)).every((i) => i.description)).toBe(true)
   })
 
   it('sin permiso de gestión no sale Analítica', () => {
     expect(navItems(ctx(true, false)).map((i) => i.label)).not.toContain('Analítica')
+  })
+
+  it('el taller tiene una sola portada, sin «Inicio» y «Taller» duplicados, y la lleva a la barra inferior', () => {
+    const items = navItems(ctx(true))
+    expect(items.filter((i) => i.to === '/app/3')).toHaveLength(1)
+    expect(items.map((i) => i.label)).not.toContain('Inicio')
+    expect(items.filter((i) => i.mobile).map((i) => i.label)).toEqual(['Taller', 'Órdenes', 'Clientes'])
   })
 
   it('el particular lleva tres secciones en la barra inferior', () => {
@@ -23,8 +30,9 @@ describe('navGroups', () => {
 
   it('la paleta encuentra las secciones por su nombre antiguo', () => {
     const items = navItems(ctx(true))
-    expect(items.find((i) => i.keywords?.includes('centro de control'))?.label).toBe('Inicio')
+    expect(items.find((i) => i.keywords?.includes('centro de control'))?.label).toBe('Taller')
     expect(items.find((i) => i.keywords?.includes('taller 3d'))?.label).toBe('Taller')
+    expect(items.find((i) => i.keywords?.includes('inicio'))?.to).toBe('/app/3')
   })
 })
 

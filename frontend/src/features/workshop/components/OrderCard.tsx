@@ -36,16 +36,17 @@ export function OrderCard({ order, to, onRequest, busy, dragging, ghost, onPoint
       onPointerDown={onPointerDown}
       onDragStart={(e) => e.preventDefault()}
       aria-busy={busy || undefined}
+      data-late={order.is_late || undefined}
+      data-ghost={ghost || undefined}
       className={cn(
-        'group relative flex select-none flex-col gap-1 rounded-card border bg-surface px-3 py-2.5 transition-[border-color,opacity] duration-150 ease-out-soft motion-reduce:transition-none',
-        'hover:border-line-strong has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent pointer-fine:cursor-grab',
-        order.is_late ? 'border-danger/45' : 'border-line',
+        'order-card group flex select-none flex-col gap-1 px-3 py-2.5',
+        'has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent pointer-fine:cursor-grab',
         dragging && 'opacity-40',
-        ghost && 'cursor-grabbing border-accent shadow-lg',
+        ghost && 'cursor-grabbing',
       )}
     >
       <div className="flex items-start gap-1">
-        <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-medium leading-snug text-fg">
+        <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-bold leading-snug text-fg-warm">
           <Link to={to} draggable={false} className="outline-none after:absolute after:inset-0 after:rounded-card after:content-['']">
             {order.title}
           </Link>
@@ -57,7 +58,7 @@ export function OrderCard({ order, to, onRequest, busy, dragging, ghost, onPoint
 
       {vehicle && <p className="truncate text-xs text-fg-muted">{vehicle}</p>}
 
-      <div className="flex min-w-0 items-center gap-1.5 text-xs text-fg-muted">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-muted">
         <span
           data-drag-handle
           aria-hidden

@@ -1,4 +1,5 @@
 import { EllipsisVertical, Pencil, Plus, Receipt, Trash2 } from 'lucide-react'
+import { EmptyBoard } from '@/components/game/kit'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
@@ -16,7 +17,7 @@ import { LoadMore } from '@/components/ui/LoadMore'
 import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StatCard } from '@/components/ui/StatCard'
-import { EmptyState, ErrorState, NoResults } from '@/components/ui/States'
+import { ErrorState, NoResults } from '@/components/ui/States'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useHashTarget, useRevealHashTarget } from '@/hooks/useHashTarget'
@@ -72,7 +73,7 @@ export default function ExpensesTab() {
 
   const s = summary.data
   return (
-    <div className="space-y-10">
+    <div className="hud-panel space-y-10 p-4 sm:p-6">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Select aria-label="Periodo" value={preset === 'year' ? String(yearParam) : preset} onChange={(e) => setPreset(e.target.value)} className="sm:w-52">
@@ -139,8 +140,7 @@ export default function ExpensesTab() {
           category ? (
             <NoResults what="gastos" onReset={() => setCategory(null)} />
           ) : (
-            <EmptyState
-              compact
+            <EmptyBoard
               icon={<Receipt />}
               title="Sin gastos en este periodo"
               description="Repostajes, seguro, impuestos, parking… Las intervenciones con coste aparecen aquí solas."

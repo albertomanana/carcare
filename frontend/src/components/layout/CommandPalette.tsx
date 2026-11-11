@@ -156,7 +156,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         <RD.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-sm data-[state=open]:animate-fade-in" />
         <RD.Content
           aria-describedby={undefined}
-          className="fixed left-1/2 top-[8dvh] z-50 flex max-h-[80dvh] w-[calc(100vw-1.5rem)] max-w-xl -translate-x-1/2 flex-col overflow-hidden rounded-hero border border-line bg-surface shadow-2xl shadow-black/50 outline-none data-[state=open]:animate-pop-in"
+          className="fixed left-1/2 top-[8dvh] z-50 flex max-h-[80dvh] w-[calc(100vw-1.5rem)] max-w-xl -translate-x-1/2 flex-col hud-pop overflow-hidden !rounded-hero outline-none data-[state=open]:animate-pop-in"
         >
           <RD.Title className="sr-only">Paleta de comandos</RD.Title>
           <div className="flex items-center gap-3 border-b border-line px-4">
@@ -200,7 +200,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                     onClick={() => cmd.perform()}
                     className={cn(
                       'flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-3 text-sm',
-                      index === active ? 'bg-surface-3 text-fg' : 'text-fg-muted',
+                      index === active ? 'bg-accent-soft font-bold text-fg' : 'font-semibold text-fg-muted',
                     )}
                   >
                     <Icon aria-hidden className={cn('size-4 shrink-0', index === active && 'text-accent-ink')} />

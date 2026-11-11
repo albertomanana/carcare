@@ -2,44 +2,48 @@
 @import '@fontsource-variable/archivo/standard.css';
 
 /*
- * Tokens de diseño de CarCare · mundo «Carta de colores» (rediseño del 10/11/2026, ver PRODUCT.md y
- * .impeccable/surfaces). Cada vehículo es su muestra de pintura; el resto es gris neutro de cabina de igualación,
- * donde los colores se leen sin trampa. El color vive dentro de las muestras (`--paint`); fuera, grises y estados.
- * Claro por defecto (se usa de día, en casa o en la oficina del taller). El oscuro es la cabina con la luz apagada.
+ * Tokens de diseño de CarCare · mundo «Diorama» (11/11/2026, pedido de Alberto; sustituye a «Carta de colores»).
+ * Toda la app es una maqueta tipo juego de estrategia: un lienzo azul pastel muy tenue sobre el que flotan paneles
+ * blancos con cristal sutil, botones «gordos» con volumen y una barra de estado (HUD) en lugar de cabecera plana.
+ * `--base` es también el color de fondo del entorno 3D (three/env.ts lo lee con getComputedStyle): las escenas se
+ * funden con la página. Cada vehículo conserva su pintura (`--paint`) como acento en fichas y muestras.
  * Uso en Tailwind: bg-canvas, bg-surface, text-fg, border-line, bg-accent, text-on-accent…
- * El tema se cambia con data-theme="light" | "dark" en <html>.
+ * El tema se cambia con data-theme="light" | "dark" en <html>. Contrastes comprobados con cálculo (ver DESIGN.md).
  */
 :root {
   color-scheme: light;
-  --base: #e4e4e1; /* gris cabina N8 */
-  --surface: #f7f7f4; /* cartulina de muestra */
-  --surface-2: #efefeb;
-  --surface-3: #e2e2dd;
-  --line: #d3d3cd;
-  --line-strong: #7d807c; /* ≥ 3:1 sobre base y surface (WCAG 1.4.11) */
-  --fg: #17191b;
-  --fg-warm: #101214;
-  --fg-muted: #4d5155;
-  --fg-subtle: #5c6064;
-  --accent: #1f4fd8; /* azul de calibración: la acción principal */
-  --accent-ink: #1a45c2;
+  --base: #e9f0fa; /* lienzo del diorama (= fondo del 3D) */
+  --surface: #ffffff; /* paneles que flotan */
+  --surface-2: #f1f5fb;
+  --surface-3: #e2eaf5;
+  --line: #d3deed;
+  --line-strong: #7384a1; /* ≥ 3:1 sobre base y surface (WCAG 1.4.11) */
+  --fg: #14213a;
+  --fg-warm: #0c1730;
+  --fg-muted: #45536f;
+  --fg-subtle: #53627e;
+  --accent: #2559e8; /* azul eléctrico corporativo: lo activo y la acción principal */
+  --accent-ink: #1d4cd0;
+  --accent-edge: #1a3fae; /* el «canto» del botón gordo */
   --on-accent: #ffffff;
-  --accent-soft: rgb(31 79 216 / 0.11);
-  --danger: #b3261e;
-  --danger-soft: rgb(179 38 30 / 0.11);
+  --accent-soft: rgb(37 89 232 / 0.1);
+  --danger: #b32119;
+  --danger-edge: #7c130d;
+  --danger-soft: rgb(179 33 25 / 0.1);
   --on-danger: #ffffff;
-  --warning: #855600;
-  --warning-soft: rgb(214 150 20 / 0.2);
-  --ok: #17694a;
-  --ok-soft: rgb(23 105 74 / 0.11);
-  --info: #1f5f99;
-  --info-soft: rgb(31 95 153 / 0.1);
-  --chart-1: #1f4fd8;
+  --warning: #7d4e00;
+  --warning-soft: rgb(214 150 20 / 0.16);
+  --ok: #0f6a49;
+  --ok-soft: rgb(15 106 73 / 0.11);
+  --info: #1b5fa8;
+  --info-soft: rgb(27 95 168 / 0.1);
+  --neutral-edge: #c2d0e5; /* canto de los botones claros */
+  --chart-1: #2559e8;
   --chart-2: #17694a;
   --chart-3: #c98500;
   --chart-4: #7357c2;
   --chart-5: #2a8bb5;
-  --chart-6: #7d807c;
+  --chart-6: #7384a1;
   /* Paleta categórica (validada con dataviz: CVD ΔE ≥ 8, contraste ≥ 3:1 sobre --surface) */
   --cat-1: #2a78d6;
   --cat-2: #d95926;
@@ -47,64 +51,64 @@
   --cat-4: #c98500;
   --cat-5: #d55181;
   --cat-other: #8a8c88;
-  --shadow-color: 220 8% 22%;
-  --overlay: rgb(23 25 27 / 0.42);
-  /* Barra lateral: grafito en los dos temas (el armazón de la carta) */
-  --rail: #232528;
-  --rail-2: #2f3236;
-  --rail-line: #3b3f44;
-  --rail-fg: #f1f1ee;
-  --rail-muted: #b6b9bc;
-  --rail-accent: #8fb0ff;
+  --shadow-color: 222 45% 28%;
+  --overlay: rgb(14 26 48 / 0.4);
+  /* Cristal de los paneles del HUD (94 % opaco: el desenfoque es un detalle, no una necesidad) */
+  --glass: rgb(255 255 255 / 0.94);
+  --glass-edge: rgb(255 255 255 / 0.95);
   /* Pintura por defecto cuando el vehículo no tiene color */
   --paint: #9aa0a6;
-  /* Filo de luz arriba de las superficies de cartulina */
-  --sheen: rgb(255 255 255 / 0.7);
+  /* Filo de luz arriba de las superficies */
+  --sheen: rgb(255 255 255 / 0.9);
+  /* Hueco que ocupa la barra de navegación flotante a la izquierda (lo fija AppShell por ancho de pantalla) */
+  --shell-left: 0px;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --base: #1b1d20;
-  --surface: #25282c;
-  --surface-2: #2c2f34;
-  --surface-3: #363a3f;
-  --line: #3a3e43;
-  --line-strong: #767b81;
-  --fg: #eeeeeb;
-  --fg-warm: #f5f5f2;
-  --fg-muted: #b4b8bc;
-  --fg-subtle: #9b9fa4;
-  --accent: #3b66f0;
-  --accent-ink: #9db8ff;
+  --base: #0e1a30; /* noche de diorama */
+  --surface: #162540;
+  --surface-2: #1c2e4d;
+  --surface-3: #263c61;
+  --line: #2b3f63;
+  --line-strong: #7189b3;
+  --fg: #e9effc;
+  --fg-warm: #f6f9ff;
+  --fg-muted: #b3c0da;
+  --fg-subtle: #9aa9c6;
+  --accent: #3b69f0;
+  --accent-ink: #a4bdff;
+  --accent-edge: #2142a8;
   --on-accent: #ffffff;
-  --accent-soft: rgb(91 128 255 / 0.16);
-  --danger: #ff7b70;
-  --danger-soft: rgb(255 123 112 / 0.13);
-  --on-danger: #1b1d20;
-  --warning: #f2b54a;
-  --warning-soft: rgb(242 181 74 / 0.14);
-  --ok: #5cc79b;
-  --ok-soft: rgb(92 199 155 / 0.13);
-  --info: #7db6f2;
-  --info-soft: rgb(125 182 242 / 0.13);
+  --accent-soft: rgb(91 128 255 / 0.17);
+  --danger: #ff8a80;
+  --danger-edge: #b0443b;
+  --danger-soft: rgb(255 138 128 / 0.14);
+  --on-danger: #0e1a30;
+  --warning: #f4bb55;
+  --warning-soft: rgb(244 187 85 / 0.14);
+  --ok: #62d0a2;
+  --ok-soft: rgb(98 208 162 / 0.13);
+  --info: #84bbf5;
+  --info-soft: rgb(132 187 245 / 0.13);
+  --neutral-edge: #0a1424;
   --chart-1: #6f92ff;
   --chart-2: #5cc79b;
   --chart-3: #f2b54a;
   --chart-4: #b4a7f5;
   --chart-5: #6cc3e6;
-  --chart-6: #8a8f95;
+  --chart-6: #8a9bbb;
   --cat-1: #3987e5;
   --cat-2: #d95926;
   --cat-3: #199e70;
   --cat-4: #c98500;
   --cat-5: #d55181;
-  --cat-other: #5b666c;
-  --shadow-color: 0 0% 0%;
-  --overlay: rgb(5 6 8 / 0.62);
-  --rail: #141618;
-  --rail-2: #212427;
-  --rail-line: #2e3236;
-  --sheen: rgb(255 255 255 / 0.05);
+  --cat-other: #5b6a85;
+  --shadow-color: 222 70% 3%;
+  --overlay: rgb(4 9 20 / 0.62);
+  --glass: rgb(22 37 64 / 0.9);
+  --glass-edge: rgb(255 255 255 / 0.08);
+  --sheen: rgb(255 255 255 / 0.07);
 }
 
 @custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
@@ -122,6 +126,7 @@
   --color-fg-subtle: var(--fg-subtle);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-edge: var(--accent-edge);
   --color-on-accent: var(--on-accent);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
@@ -143,35 +148,42 @@
 
   --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
-  --color-rail: var(--rail);
-  --color-rail-2: var(--rail-2);
-  --color-rail-line: var(--rail-line);
-  --color-rail-fg: var(--rail-fg);
-  --color-rail-muted: var(--rail-muted);
-  --color-rail-accent: var(--rail-accent);
 
-  --radius-control: 8px;
-  --radius-card: 16px;
-  --radius-hero: 24px;
+  /* Pesos de juego: todo un escalón más grueso que el estándar (Archivo variable llega a 900) */
+  --font-weight-medium: 600;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 800;
 
-  /* Curvas de movimiento (Emil Kowalski): salida fuerte para entradas y respuestas, entrada-salida para lo que se mueve en pantalla */
+  /* Esquinas de maqueta: controles xl, paneles algo más que 2xl, piezas grandes 3xl+ */
+  --radius-control: 12px;
+  --radius-card: 20px;
+  --radius-hero: 28px;
+
+  /* Curvas de movimiento: salida fuerte para entradas y respuestas, entrada-salida para lo que se mueve en pantalla */
   --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* Losa: filo de luz arriba, canto de 3 px abajo (el grosor del panel) y sombra proyectada sobre el suelo */
+  /* Sombras en capas, de maqueta: contacto, cuerpo y proyección larga y suave sobre el suelo */
   --shadow-card:
-    0 1px 0 0 var(--sheen) inset, 0 1px 0 0 var(--line), 0 14px 24px -18px hsl(var(--shadow-color) / 0.55);
-  --shadow-lift: 0 10px 28px -12px hsl(var(--shadow-color) / 0.55), 0 2px 6px hsl(var(--shadow-color) / 0.2);
-  --shadow-pop: 0 18px 48px -16px hsl(var(--shadow-color) / 0.6), 0 4px 12px hsl(var(--shadow-color) / 0.25);
+    0 1px 0 0 var(--sheen) inset, 0 1px 2px hsl(var(--shadow-color) / 0.07), 0 6px 14px -4px hsl(var(--shadow-color) / 0.09),
+    0 20px 36px -20px hsl(var(--shadow-color) / 0.16);
+  --shadow-lift:
+    0 1px 0 0 var(--sheen) inset, 0 2px 4px hsl(var(--shadow-color) / 0.08), 0 12px 24px -6px hsl(var(--shadow-color) / 0.14),
+    0 28px 48px -22px hsl(var(--shadow-color) / 0.24);
+  --shadow-pop:
+    0 2px 4px hsl(var(--shadow-color) / 0.1), 0 16px 32px -8px hsl(var(--shadow-color) / 0.2), 0 36px 64px -26px hsl(var(--shadow-color) / 0.34);
+  --shadow-hud:
+    0 1px 0 0 var(--sheen) inset, 0 2px 6px hsl(var(--shadow-color) / 0.06), 0 10px 24px -6px hsl(var(--shadow-color) / 0.12),
+    0 32px 60px -30px hsl(var(--shadow-color) / 0.28);
 
   --animate-fade-in: cc-fade-in 180ms var(--ease-out-soft) both;
   --animate-fade-out: cc-fade-out 150ms ease-out both;
-  --animate-pop-in: cc-pop-in 200ms var(--ease-out-soft) both;
+  --animate-pop-in: cc-pop-in 240ms var(--ease-out-soft) both;
   --animate-sheet-in: cc-sheet-in 320ms var(--ease-drawer) both;
   --animate-drawer-in: cc-drawer-in 320ms var(--ease-drawer) both;
-  --animate-rise: cc-rise 420ms var(--ease-out-strong) both;
+  --animate-rise: cc-rise 300ms var(--ease-out-strong) both;
   --animate-shimmer: cc-shimmer 1.4s linear infinite;
 
   @keyframes cc-fade-in {
@@ -190,12 +202,17 @@
       opacity: 0;
     }
   }
+  /* Muelle corto: sube, se pasa un pelín y asienta (menús, diálogos, tarjetas que entran) */
   @keyframes cc-pop-in {
-    from {
+    0% {
       opacity: 0;
-      transform: translateY(6px) scale(0.95);
+      transform: translateY(8px) scale(0.95);
     }
-    to {
+    65% {
+      opacity: 1;
+      transform: translateY(-1px) scale(1.006);
+    }
+    100% {
       opacity: 1;
       transform: none;
     }
@@ -219,13 +236,11 @@
   @keyframes cc-rise {
     from {
       opacity: 0;
-      transform: perspective(900px) translateY(18px) translateZ(-40px) rotateX(-7deg);
-      filter: blur(3px);
+      transform: translateY(12px) scale(0.97);
     }
     to {
       opacity: 1;
       transform: none;
-      filter: none;
     }
   }
   @keyframes cc-draw {
@@ -245,20 +260,22 @@
       transform: translateY(-6px);
     }
   }
-  @keyframes cc-sheen {
-    from {
-      background-position: 160% 0;
-    }
-    to {
-      background-position: -60% 0;
-    }
-  }
   @keyframes cc-shimmer {
     from {
       background-position: 200% 0;
     }
     to {
       background-position: -200% 0;
+    }
+  }
+  @keyframes cc-seg {
+    from {
+      opacity: 0;
+      transform: scaleY(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: none;
     }
   }
 }
@@ -294,12 +311,15 @@
   :root:has([data-portada]) {
     scroll-padding-top: 4.5rem;
   }
+  /* App: la barra de estado flotante mide 4 rem; el foco no debe quedar debajo de ella */
+  :root:has([data-canvas]) {
+    scroll-padding-top: 5rem;
+  }
 
-  /* Foco visible: anillo azul de calibración de 2px con 2px de separación */
+  /* Foco visible: anillo azul eléctrico de 2px con 2px de separación (sigue la forma del control) */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 4px;
   }
 
   :root[data-theme='dark'] :focus-visible {
@@ -342,12 +362,11 @@
 
 @layer components {
   /*
-   * Lista en panel: las filas viven dentro de una tarjeta con esquinas redondeadas y se separan con una línea fina.
-   * Sustituye a las listas planas "divide-y border-y". Cada fila aporta solo su alto; el margen lateral lo pone el panel.
+   * Lista en panel: las filas viven dentro de un panel con esquinas redondeadas y se separan con una línea fina.
+   * Cada fila aporta solo su alto; el margen lateral lo pone el panel.
    */
   .list-panel {
     overflow: clip;
-    margin-bottom: 3px;
     border: 1px solid var(--line);
     border-radius: var(--radius-card);
     background: var(--surface);
@@ -366,7 +385,35 @@
     }
     .list-panel > li:hover,
     .list-panel > div:hover {
-      background: color-mix(in srgb, var(--surface-3) 45%, transparent);
+      background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+    }
+  }
+  /* Una lista en caja dentro de un panel que ya flota no lleva caja propia (evita la caja dentro de la caja). */
+  .hud-panel .list-panel {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .hud-panel .list-panel > * {
+    padding-inline: 0;
+  }
+  /* Lista plana dentro de un panel que ya flota (`GamePanel flush`): sin caja propia, filas separadas por una línea. */
+  .list-flat > * {
+    padding-inline: 1.25rem;
+  }
+  .list-flat > * + * {
+    border-top: 1px solid var(--line);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .list-flat > li,
+    .list-flat > div {
+      transition: background-color 150ms ease;
+    }
+    .list-flat > li:hover,
+    .list-flat > div:hover {
+      background: color-mix(in srgb, var(--accent) 5%, var(--surface));
     }
   }
 }
@@ -378,12 +425,7 @@
   }
 
   .skeleton {
-    background: linear-gradient(
-      90deg,
-      var(--surface-2) 0%,
-      var(--surface-3) 50%,
-      var(--surface-2) 100%
-    );
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
     background-size: 200% 100%;
     animation: var(--animate-shimmer);
   }
@@ -392,81 +434,255 @@
     text-wrap: balance;
   }
 
-  /* ───────── Carta de colores ───────── */
+  /* ───────── Tipografía de juego ───────── */
 
-  /* Títulos en Archivo algo ancho, como la rotulación de una carta de pintura. */
+  /* Títulos y cifras en Archivo ancho y grueso, como el rótulo de un juego de estrategia. */
   .font-display {
-    font-stretch: 112%;
-    letter-spacing: -0.015em;
+    font-stretch: 108%;
+    letter-spacing: -0.02em;
   }
 
-  /* Etiqueta de muestra: Archivo estrecho en versalitas, para matrículas, códigos y estados (nunca sobre un título). */
+  /* Etiqueta: rótulo corto en versalitas gruesas, para matrículas, códigos y estados (nunca sobre un título). */
   .tag-label {
-    font-stretch: 78%;
-    font-weight: 650;
+    font-stretch: 100%;
+    font-weight: 750;
     font-size: 0.75rem;
     line-height: 1rem;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
+    word-spacing: 0.18em;
     text-transform: uppercase;
   }
 
-  /*
-   * Muestra lacada: la pintura del vehículo (--paint) con brillo de barniz arriba, canto oscuro abajo y sombra neutra.
-   * El color del coche solo vive aquí dentro; el texto encima usa --paint-ink (claro u oscuro según la pintura).
-   */
-  .lacquer {
-    background-color: var(--paint);
-    background-image:
-      linear-gradient(158deg, rgb(255 255 255 / 0.46) 0%, rgb(255 255 255 / 0.1) 24%, transparent 44%, rgb(0 0 0 / 0.14) 100%);
-    color: var(--paint-ink, #101214);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.4),
-      inset 0 -2px 0 rgb(0 0 0 / 0.2),
-      0 10px 18px -12px hsl(var(--shadow-color) / 0.7);
+  /* La matrícula junto al título de la ficha no se parte en dos líneas ("7310" / "LFW") */
+  h1 .tag-label {
+    white-space: nowrap;
   }
 
-  /*
-   * Abanico de muestras (barra lateral): las cartas giran sobre el remache de abajo a la izquierda, como un abanico de
-   * pintura de verdad, con una leve inclinación hacia atrás para que se vea el canto. Se despliega al pasar el ratón o al
-   * llegar con el teclado; con movimiento reducido se queda desplegado y quieto.
-   */
-  .fan {
-    perspective: 900px;
+  /* ───────── HUD: paneles de cristal sobre el diorama ───────── */
+
+  /* Panel flotante: blanco con cristal sutil, esquinas grandes y sombra larga de maqueta. */
+  .hud-panel,
+  .hud-bar,
+  .hud-pop {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(12px) saturate(1.25);
+    backdrop-filter: blur(12px) saturate(1.25);
+    border: 1px solid var(--glass-edge);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-hud);
   }
-  .fan-stage {
-    position: relative;
-    transform: rotateX(8deg);
-    transform-style: preserve-3d;
+  /* Barra de estado (cabecera) y dock (navegación): una pieza más compacta, con la misma sombra. */
+  .hud-bar {
+    border-radius: 1.25rem;
   }
-  .fan-chip {
-    position: absolute;
-    left: 2rem;
-    bottom: 0.75rem;
-    width: 11.5rem;
-    transform-origin: 0.75rem calc(100% - 0.75rem);
-    /* en reposo cada carta deja ver su banda lacada entera (escalón de 72 px); al desplegarse se abren en abanico */
-    transform: translateY(calc(var(--i) * -4.5rem)) rotate(calc(var(--i) * -2deg)) translateZ(calc(var(--i) * -10px));
-    transition: transform 320ms var(--ease-out-strong);
+  /* Menús, avisos y paleta: flotan por encima de todo, con más sombra. */
+  .hud-pop {
+    background: color-mix(in srgb, var(--surface) 97%, transparent);
+    box-shadow: var(--shadow-pop);
   }
-  .fan:focus-within .fan-chip {
-    transform: translateY(calc(var(--i) * -4.75rem)) rotate(calc(var(--i) * -7deg)) translateZ(calc(var(--i) * -10px));
+  /* Con la transparencia reducida (sistema) o sin soporte, el cristal pasa a ser opaco */
+  @media (prefers-reduced-transparency: reduce) {
+    .hud-panel,
+    .hud-bar,
+    .hud-pop,
+    .glass {
+      background: var(--surface);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  /* Botón gordo: volumen de pieza de juego (brillo arriba, canto abajo, sombra blanda) que se hunde al pulsar. */
+  .chunky {
+    --chunky-lip: 3px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.38),
+      0 var(--chunky-lip) 0 0 var(--chunky-edge, var(--neutral-edge)),
+      0 calc(var(--chunky-lip) + 6px) 14px -6px var(--chunky-glow, hsl(var(--shadow-color) / 0.35));
+    transition:
+      translate 140ms var(--ease-out-strong),
+      scale 140ms var(--ease-out-strong),
+      box-shadow 140ms var(--ease-out-strong),
+      background-color 160ms ease,
+      border-color 160ms ease,
+      filter 160ms ease,
+      color 160ms ease;
+  }
+  .chunky:active:not(:disabled):not([aria-disabled='true']) {
+    --chunky-lip: 1px;
+    translate: 0 2px;
+    scale: 0.97;
   }
   @media (hover: hover) and (pointer: fine) {
-    .fan:hover .fan-chip {
-      transform: translateY(calc(var(--i) * -4.75rem)) rotate(calc(var(--i) * -7deg)) translateZ(calc(var(--i) * -10px));
-    }
-    .fan .fan-chip:hover {
-      transform: translateY(calc(var(--i) * -4.75rem - 4px)) rotate(calc(var(--i) * -7deg)) translateZ(calc(var(--i) * -10px + 14px));
+    .chunky:hover:not(:disabled):not([aria-disabled='true']):not(:active) {
+      translate: 0 -1px;
+      --chunky-lip: 4px;
     }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .fan-chip {
-      transform: translateY(calc(var(--i) * -4.75rem)) rotate(calc(var(--i) * -7deg));
+  .chunky-accent {
+    --chunky-edge: var(--accent-edge);
+    --chunky-glow: color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .chunky-danger {
+    --chunky-edge: var(--danger-edge);
+    --chunky-glow: color-mix(in srgb, var(--danger) 45%, transparent);
+  }
+  /* Con sombra apagada (deshabilitado) el botón queda plano */
+  .chunky:disabled,
+  .chunky[aria-disabled='true'] {
+    --chunky-lip: 0px;
+    box-shadow: none;
+  }
+
+  /* Insignia: píldora gruesa con icono y texto. Tonos: chip-accent | -ok | -warning | -danger | -info. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 1.75rem;
+    max-width: 100%;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    background: var(--surface-3);
+    color: var(--fg-muted);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease,
+      translate 140ms var(--ease-out-strong);
+  }
+  .chip > svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+  }
+  .chip-accent {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+  }
+  .chip-ok {
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+  .chip-warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+  .chip-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+  .chip-info {
+    background: var(--info-soft);
+    color: var(--info);
+  }
+  /* Chip que se puede pulsar (filtro): sube un poco y, seleccionado, se rellena con el azul */
+  button.chip,
+  a.chip {
+    cursor: pointer;
+  }
+  button.chip:active,
+  a.chip:active {
+    scale: 0.96;
+  }
+  button.chip[aria-pressed='true'],
+  button.chip[aria-selected='true'],
+  .chip[data-active='true'] {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 2px 0 0 var(--accent-edge);
+  }
+
+  /* Misión: tarjeta de aviso o tarea. Barra de color a la izquierda según `data-tone` (el estado lleva además icono y texto). */
+  .mission {
+    --tone: var(--line-strong);
+    position: relative;
+    padding: 0.875rem 1rem 0.875rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+    transition:
+      translate 220ms var(--ease-out-strong),
+      box-shadow 220ms ease,
+      border-color 220ms ease;
+  }
+  .mission::before {
+    content: '';
+    position: absolute;
+    inset: 0.75rem auto 0.75rem 0.5rem;
+    width: 0.25rem;
+    border-radius: 9999px;
+    background: var(--tone);
+  }
+  .mission[data-tone='accent'] {
+    --tone: var(--accent);
+  }
+  .mission[data-tone='danger'] {
+    --tone: var(--danger);
+  }
+  .mission[data-tone='warning'] {
+    --tone: var(--warning);
+  }
+  .mission[data-tone='ok'] {
+    --tone: var(--ok);
+  }
+  .mission[data-tone='info'] {
+    --tone: var(--info);
+  }
+  a.mission:active,
+  button.mission:active {
+    scale: 0.985;
+    transition-duration: 100ms;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    a.mission:hover,
+    button.mission:hover {
+      translate: 0 -2px;
+      border-color: var(--line-strong);
+      box-shadow: var(--shadow-lift);
     }
   }
 
-  /* Cambio de pintura: la nueva barre la carta de arriba abajo (clip-path, 380 ms, salida fuerte). Pasa al elegir otro
-     vehículo, unas pocas veces por visita; con movimiento reducido aparece sin barrido. */
+  /* Barra de progreso segmentada: hijos <span>, cada uno con `--f` (0..1) para rellenarse; color en `--seg`. */
+  .segbar {
+    display: flex;
+    gap: 3px;
+    width: 100%;
+    height: 0.625rem;
+  }
+  .segbar > * {
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--seg, var(--accent)) calc(var(--f, 0) * 100%), var(--surface-3) calc(var(--f, 0) * 100%));
+    transform-origin: bottom;
+    animation: cc-seg 260ms var(--ease-out-strong) both;
+    animation-delay: calc(var(--i, 0) * 28ms);
+  }
+
+  /* ───────── Pintura del vehículo: la ficha de color (arcilla con brillo suave) ───────── */
+
+  /*
+   * El color del coche (--paint) con un brillo de arcilla arriba y sombra abajo. El texto encima usa --paint-ink.
+   * `.clay` es el nombre nuevo; `.lacquer` se mantiene como alias hasta que las pantallas lo cambien.
+   */
+  .clay,
+  .lacquer {
+    background-color: var(--paint);
+    background-image: linear-gradient(160deg, rgb(255 255 255 / 0.34) 0%, rgb(255 255 255 / 0.06) 38%, transparent 55%, rgb(0 0 0 / 0.1) 100%);
+    color: var(--paint-ink, #0c1730);
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.38),
+      inset 0 -3px 0 rgb(0 0 0 / 0.14),
+      0 8px 16px -8px hsl(var(--shadow-color) / 0.5);
+  }
+
+  /* Cambio de pintura (heredado de «Carta de colores»): la nueva barre la ficha de arriba abajo. Pasa unas pocas veces por visita. */
   .paint-wipe {
     animation: cc-wipe 380ms var(--ease-out-strong) both;
   }
@@ -481,47 +697,53 @@
 
   /* ───────── Movimiento ───────── */
 
-  /* Entrada al cargar la pantalla. `--i` ordena la cascada (50-70 ms entre elementos); no se usa al hacer scroll. */
+  /* Entrada con muelle corto. `--i` ordena la cascada (40 ms entre elementos); no se usa al hacer scroll. */
+  .pop-in,
   .enter {
-    animation: cc-rise 520ms var(--ease-out-strong) both;
-    animation-delay: calc(var(--i, 0) * 70ms);
+    animation: cc-pop-in 280ms var(--ease-out-strong) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
   }
 
   /* Los hijos directos entran en cascada: se aplica a la raíz de una pantalla o de una lista. */
   .stagger > * {
-    animation: cc-rise 420ms var(--ease-out-strong) both;
+    animation: cc-pop-in 280ms var(--ease-out-strong) both;
   }
   .stagger > :nth-child(2) {
-    animation-delay: 50ms;
+    animation-delay: 40ms;
   }
   .stagger > :nth-child(3) {
-    animation-delay: 100ms;
+    animation-delay: 80ms;
   }
   .stagger > :nth-child(4) {
-    animation-delay: 150ms;
+    animation-delay: 120ms;
   }
   .stagger > :nth-child(5) {
-    animation-delay: 200ms;
+    animation-delay: 160ms;
   }
   .stagger > :nth-child(n + 6) {
-    animation-delay: 250ms;
+    animation-delay: 200ms;
+  }
+  /* El lienzo a sangre lleva un elemento fijo dentro: una animación con transform lo descolocaría */
+  .stagger > .canvas-bleed {
+    animation: cc-fade-in 200ms ease-out both;
   }
 
-  /* Tarjeta enlazada: sube 2 px y el borde se marca. Solo con puntero fino (en táctil, el hover se queda pegado). */
+  /* Tarjeta enlazada: sube y gana sombra. Solo con puntero fino (en táctil, el hover se queda pegado). */
   .lift {
     transition:
-      transform 220ms var(--ease-out-strong),
+      translate 220ms var(--ease-out-strong),
+      scale 220ms var(--ease-out-strong),
       border-color 220ms ease,
       box-shadow 220ms ease,
       background-color 220ms ease;
   }
   .lift:active {
-    transform: scale(0.99);
+    scale: 0.985;
     transition-duration: 100ms;
   }
   @media (hover: hover) and (pointer: fine) {
     .lift:hover {
-      transform: translateY(-2px);
+      translate: 0 -3px;
       border-color: var(--line-strong);
       box-shadow: var(--shadow-lift);
     }
@@ -549,7 +771,8 @@
     content: '';
     position: absolute;
     inset: auto 0 -3px 0;
-    height: 1px;
+    height: 2px;
+    border-radius: 9999px;
     background: currentColor;
     transform: scaleX(0);
     transform-origin: left;
@@ -564,7 +787,7 @@
     transform: scaleX(1);
   }
 
-  /* Cabeceras fijas: cristal sobre el contenido que pasa por debajo (función, no adorno). */
+  /* Cabeceras fijas de la portada: cristal sobre el contenido que pasa por debajo (función, no adorno). */
   .glass {
     background: color-mix(in srgb, var(--base) 72%, transparent);
     -webkit-backdrop-filter: blur(14px) saturate(1.4);
@@ -573,6 +796,36 @@
   @supports not (backdrop-filter: blur(1px)) {
     .glass {
       background: var(--base);
+    }
+  }
+
+  /* ───────── Lienzo a sangre (escenas 3D de fondo, ver CanvasBleed y DESIGN.md) ───────── */
+
+  /* Contenedor de la pantalla: ocupa toda la ventana. La escena va fija detrás y el HUD (paneles) se desplaza encima. */
+  .canvas-bleed {
+    position: relative;
+    isolation: isolate;
+    min-height: 100dvh;
+  }
+  .canvas-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+  /* Capa de paneles: deja pasar el puntero a la escena salvo en los paneles y controles. */
+  .canvas-hud {
+    position: relative;
+    z-index: 1;
+    min-height: 100dvh;
+    padding: 5rem 0.75rem 7rem;
+    pointer-events: none;
+  }
+  .canvas-hud :where(.hud-panel, .hud-bar, .hud-pop, .mission, a, button, input, select, textarea, [role='dialog'], [data-hud]) {
+    pointer-events: auto;
+  }
+  @media (min-width: 768px) {
+    .canvas-hud {
+      padding: 5.25rem 1.5rem 2rem var(--shell-left);
     }
   }
 
@@ -594,7 +847,7 @@
     transform: translateZ(-16px);
   }
 
-  /* Superficie de tarjeta con un filo de luz arriba. */
+  /* Superficie de panel con un filo de luz arriba. */
   .surface-card {
     background: var(--surface);
     box-shadow: var(--shadow-card);
@@ -714,9 +967,4 @@
     size: A4;
     margin: 16mm 14mm;
   }
-}
-
-/* Foco dentro de la barra grafito: el azul claro de la barra (el de calibración no llega a 3:1 sobre grafito). */
-.rail :focus-visible {
-  outline-color: var(--rail-accent);
 }

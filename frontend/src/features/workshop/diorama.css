@@ -1,0 +1,142 @@
+/*
+ * Mundo «Diorama» en las pantallas del taller (11/11/2026): piezas propias del taller que el sistema (`index.css`) no
+ * trae. Solo usa los tokens del sistema, así que sirve igual en claro y en noche. Con `prefers-reduced-motion` el
+ * bloque global del sistema deja las transiciones en 0,01 ms.
+ */
+
+/* ───────── Tablero: carriles de juego ───────── */
+
+/* Un carril por estado: bandeja de cristal con una pestaña de color arriba (el estado va además con icono y texto). */
+.lane {
+  --tone: var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
+  box-shadow: var(--shadow-card);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.lane[data-tone='info'] {
+  --tone: var(--info);
+}
+.lane[data-tone='warning'] {
+  --tone: var(--warning);
+}
+.lane[data-tone='accent'] {
+  --tone: var(--accent);
+}
+.lane[data-tone='ok'] {
+  --tone: var(--ok);
+}
+.lane-cap {
+  height: 0.3125rem;
+  margin: 0 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--tone);
+}
+/* Mientras se arrastra una tarjeta, el carril sobre el que está se ilumina con un borde discontinuo. */
+.lane[data-over='true'] {
+  background: var(--accent-soft);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--shadow-lift);
+}
+.lane-empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  padding: 1.5rem 0.75rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-control);
+  color: var(--fg-subtle);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* ───────── Tarjeta de orden: pieza con canto, sube al pasar el ratón y se hunde al pulsar ───────── */
+.order-card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow:
+    0 3px 0 0 var(--neutral-edge),
+    var(--shadow-card);
+  transition:
+    translate 160ms var(--ease-out-strong),
+    box-shadow 160ms ease,
+    opacity 150ms ease;
+}
+.order-card[data-late='true'] {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+  box-shadow:
+    0 3px 0 0 color-mix(in srgb, var(--danger) 40%, var(--neutral-edge)),
+    var(--shadow-card);
+}
+@media (hover: hover) and (pointer: fine) {
+  .order-card:hover {
+    translate: 0 -2px;
+    box-shadow:
+      0 5px 0 0 var(--neutral-edge),
+      var(--shadow-lift);
+  }
+  .order-card[data-late='true']:hover {
+    box-shadow:
+      0 5px 0 0 color-mix(in srgb, var(--danger) 40%, var(--neutral-edge)),
+      var(--shadow-lift);
+  }
+}
+.order-card:active {
+  translate: 0 1px;
+  box-shadow:
+    0 1px 0 0 var(--neutral-edge),
+    var(--shadow-card);
+}
+.order-card[data-ghost='true'] {
+  border-color: var(--accent);
+  box-shadow:
+    0 8px 0 0 var(--accent-edge),
+    var(--shadow-pop);
+  rotate: 2deg;
+}
+
+/* ───────── Lista de filas dentro de un panel ───────── */
+.slab {
+  overflow: clip;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+/* Lo que antes eran listas y tablas planas sobre el lienzo vive ahora dentro de un panel: las filas respetan sus esquinas. */
+.slab > li,
+.slab > div {
+  padding-inline: 1rem;
+}
+.slab > li:last-child,
+.slab > div:last-child {
+  border-bottom-width: 0;
+}
+.slab table :is(th, td):first-child {
+  padding-left: 1rem;
+}
+.slab table :is(th, td):last-child {
+  padding-right: 1rem;
+}
+.slab table thead {
+  background: var(--surface-2);
+}
+.slab table thead th {
+  font-weight: 700;
+}
+.slab table tbody tr:last-child > * {
+  border-bottom-width: 0;
+}
+.slab summary,
+.slab details li {
+  padding-inline: 1rem;
+}

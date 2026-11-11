@@ -11,15 +11,15 @@ export function Toaster() {
       closeButton
       richColors={false}
       offset={16}
-      mobileOffset={{ bottom: 88 }}
+      mobileOffset={{ bottom: 104 }}
       containerAriaLabel="Notificaciones"
       toastOptions={{
         classNames: {
-          toast: '!rounded-card !border !border-line !bg-surface-2 !text-fg !shadow-2xl !font-sans',
+          toast: '!rounded-2xl !border !border-line !bg-surface !text-fg !shadow-pop !font-sans !font-semibold',
           description: '!text-fg-muted',
-          actionButton: '!bg-accent !text-on-accent !font-medium',
-          cancelButton: '!bg-surface-3 !text-fg',
-          closeButton: '!bg-surface-3 !border-line !text-fg-muted',
+          actionButton: '!rounded-xl !bg-accent !text-on-accent !font-bold',
+          cancelButton: '!rounded-xl !bg-surface-3 !text-fg',
+          closeButton: '!bg-surface !border-line !text-fg-muted',
           success: '[&_[data-icon]]:!text-ok',
           error: '[&_[data-icon]]:!text-danger',
           warning: '[&_[data-icon]]:!text-warning',

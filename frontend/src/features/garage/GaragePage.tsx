@@ -1,14 +1,14 @@
 import { Archive, CarFront, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import { flattenPages, totalFromPages } from "@/api/hooks/shared";
 import { useVehiclesInfinite } from "@/api/hooks/vehicles";
 import { ButtonLink } from "@/components/ui/Button";
 import { SearchInput, Select } from "@/components/ui/inputs";
 import { LoadMore } from "@/components/ui/LoadMore";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyBoard, HudHeader } from "@/components/game/kit";
+import { Chip } from "@/components/ui/Hud";
 import { Guide } from "@/components/ui/Guide";
-import { EmptyState, ErrorState, NoResults } from "@/components/ui/States";
+import { ErrorState, NoResults } from "@/components/ui/States";
 import { CarPreview, type CarSignal } from "@/three";
 import {
   VehicleCard,
@@ -32,7 +32,7 @@ export default function GaragePage() {
   const ctx = useWorkspace();
   const title = ctx.isWorkshop ? "Vehículos" : "Garaje";
   useDocumentTitle(title);
-  const [tab] = useSearchParam("ver", "activos");
+  const [tab, setTab] = useSearchParam("ver", "activos");
   const [sort, setSort] = useSearchParam("orden", "recent");
   const [q, setQ] = useSearchParam("q");
   const [term, setTerm] = useState(q);
@@ -59,12 +59,28 @@ export default function GaragePage() {
 
   return (
     <>
-      <PageHeader
+      <HudHeader
         title={archived ? "Vehículos archivados" : title}
         description={
           ctx.isWorkshop && !archived
             ? "Todos los vehículos que gestiona el taller, con su cliente y su orden abierta."
             : undefined
+        }
+        chips={
+          <div role="group" aria-label="Qué vehículos mostrar" className="flex flex-wrap items-center gap-2">
+            <button type="button" className="chip" aria-pressed={!archived} onClick={() => setTab(null)}>
+              Activos
+            </button>
+            <button type="button" className="chip" aria-pressed={archived} onClick={() => setTab("archivados")}>
+              <Archive aria-hidden />
+              Archivados
+            </button>
+            {total !== null && !query.isPending && (
+              <Chip tone="neutral" aria-live="polite">
+                {total} {total === 1 ? "vehículo" : "vehículos"}
+              </Chip>
+            )}
+          </div>
         }
         crumbs={archived ? [{ label: title, to: `${ctx.base}/garaje` }, { label: 'Archivados' }] : undefined}
         actions={
@@ -82,7 +98,7 @@ export default function GaragePage() {
       />
 
       {showTools && (
-        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="hud-bar mb-5 flex flex-col gap-3 p-3 md:flex-row md:items-center">
           <SearchInput
             value={term}
             onValueChange={setTerm}
@@ -138,13 +154,13 @@ export default function GaragePage() {
             }}
           />
         ) : archived ? (
-          <EmptyState
+          <EmptyBoard
             icon={<Archive />}
             title="No hay vehículos archivados"
             description="Al archivar un vehículo deja de aparecer en el panel, pero conserva todo su historial."
           />
         ) : (
-          <EmptyState
+          <EmptyBoard
             icon={<CarFront />}
             title={
               ctx.isWorkshop
@@ -180,7 +196,7 @@ export default function GaragePage() {
                 />
               </div>
             )}
-          </EmptyState>
+          </EmptyBoard>
         )
       ) : (
         <>
@@ -209,18 +225,6 @@ export default function GaragePage() {
         </>
       )}
 
-      {/* Los archivados, como enlace y no como un control más (5.5) */}
-      {!archived && !query.isPending && !query.isError && (
-        <p className="mt-6 text-sm">
-          <Link
-            to={`${ctx.base}/garaje?ver=archivados`}
-            className="inline-flex min-h-11 items-center gap-1.5 font-medium text-fg-muted underline-offset-4 hover:text-fg hover:underline md:min-h-0"
-          >
-            <Archive aria-hidden className="size-4" />
-            Ver los vehículos archivados
-          </Link>
-        </p>
-      )}
     </>
   );
 }

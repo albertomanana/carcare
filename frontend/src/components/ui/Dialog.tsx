@@ -64,11 +64,11 @@ export function DialogContent({
 
   return (
     <RD.Portal>
-      <RD.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
+      <RD.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-sm data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
       <RD.Content
         {...(description ? {} : { 'aria-describedby': undefined })}
         className={cn(
-          'fixed z-50 flex flex-col overflow-hidden border border-line bg-surface shadow-2xl shadow-black/40 outline-none data-[state=closed]:animate-fade-out',
+          'fixed z-50 flex flex-col overflow-hidden border border-line bg-surface shadow-pop outline-none data-[state=closed]:animate-fade-out',
           placement,
           variant === 'drawer' ? (size === 'xl' ? 'md:max-w-3xl' : size === 'lg' ? 'md:max-w-xl' : 'md:max-w-md') : SIZES[size],
           className,
@@ -90,7 +90,7 @@ export function DialogContent({
           target?.focus()
         }}
       >
-        {variant !== 'center' && <div aria-hidden className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-line-strong md:hidden" />}
+        {variant !== 'center' && <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-12 shrink-0 rounded-full bg-line-strong/60 md:hidden" />}
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 pb-4 pt-4 md:px-6 md:pt-5">
           <div className="min-w-0">
             <RD.Title className="font-display text-lg font-semibold tracking-tight text-fg-warm">{title}</RD.Title>
@@ -100,7 +100,7 @@ export function DialogContent({
             {headerAside}
             {!hideClose && (
               <RD.Close
-                className="-mr-2 -mt-1 grid size-11 place-items-center rounded-control text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg md:size-9"
+                className="-mr-2 -mt-1 grid size-11 place-items-center rounded-full text-fg-muted transition-[color,background-color,scale] duration-150 hover:bg-accent-soft hover:text-fg active:scale-90 md:size-9"
                 aria-label="Cerrar"
               >
                 <X aria-hidden className="size-5" />

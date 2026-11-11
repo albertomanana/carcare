@@ -1,4 +1,5 @@
 import { NotebookPen } from "lucide-react";
+import { EmptyBoard } from '@/components/game/kit'
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { useJournal } from "@/api/hooks/vehicles";
@@ -12,7 +13,7 @@ import type {
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/inputs";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { EmptyState, ErrorState } from "@/components/ui/States";
+import { ErrorState } from "@/components/ui/States"
 import { useQuickActions } from "@/features/quick-actions/quick-actions-context";
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { useSearchParam } from "@/hooks/useSearchParam";
@@ -158,8 +159,7 @@ export function JournalView({
           onRetry={() => void journal.refetch()}
         />
       ) : days.length === 0 ? (
-        <EmptyState
-          compact
+        <EmptyBoard
           icon={<NotebookPen />}
           title={empty.title}
           description={

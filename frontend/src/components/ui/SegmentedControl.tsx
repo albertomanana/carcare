@@ -24,16 +24,16 @@ export interface SegmentedControlProps<T extends string> {
 export function SegmentedControl<T extends string>({ value, onValueChange, options, label, size = 'md', className, block }: SegmentedControlProps<T>) {
   const name = useId()
   return (
-    <div role="radiogroup" aria-label={label} className={cn('inline-flex rounded-control border border-line bg-surface-2 p-1', block && 'flex w-full', className)}>
+    <div role="radiogroup" aria-label={label} className={cn('inline-flex rounded-full border border-line bg-surface-3/70 p-1 shadow-[inset_0_2px_3px_hsl(var(--shadow-color)/0.07)]', block && 'flex w-full', className)}>
       {options.map((opt) => {
         const checked = opt.value === value
         return (
           <label
             key={opt.value}
             className={cn(
-              'relative flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-[6px] px-3 font-medium transition-colors duration-150',
+              'relative flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 font-bold transition-[color,background-color,box-shadow,scale] duration-150 ease-out-soft active:scale-[0.96]',
               size === 'sm' ? 'min-h-9 text-xs md:min-h-8' : 'min-h-10 text-sm md:min-h-9',
-              checked ? 'bg-surface text-fg shadow-sm ring-1 ring-line' : 'text-fg-muted hover:text-fg',
+              checked ? 'bg-surface text-accent-ink shadow-[0_2px_0_0_var(--line),0_6px_10px_-4px_hsl(var(--shadow-color)/0.25)]' : 'text-fg-muted hover:text-fg',
               '[&_svg]:size-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent',
             )}
           >

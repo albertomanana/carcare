@@ -19,7 +19,6 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { Field } from '@/components/ui/Field'
 import { Input, MileageInput, Select, Textarea } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
 import { iconButtonClasses } from '@/components/ui/variants'
@@ -41,6 +40,8 @@ import { PromisedAtField } from './components/PromisedAtField'
 import { StatusStepper } from './components/StatusStepper'
 import { serverTotals } from './components/totals'
 import { useOrderActions } from './components/useOrderActions'
+import { WorkshopHeader } from './components/WorkshopHeader'
+import './diorama.css'
 
 /** Ficha de una orden de trabajo: estado, trabajo, líneas, elevador, mecánico y entrega. */
 export default function OrderDetailPage() {
@@ -50,12 +51,12 @@ export default function OrderDetailPage() {
   const valid = Number.isInteger(id) && id > 0
   const query = useWorkOrder(valid ? id : undefined)
   useDocumentTitle(query.data ? `${query.data.number} · ${query.data.title}` : 'Orden de trabajo')
-  const back = { to: `${ctx.base}/ordenes`, label: 'Órdenes' }
+  const crumbs = [{ label: 'Órdenes', to: `${ctx.base}/ordenes` }, { label: 'Orden de trabajo' }]
 
   if (!valid)
     return (
       <>
-        <PageHeader back={back} title="Orden de trabajo" />
+        <WorkshopHeader crumbs={crumbs} title="Orden de trabajo" />
         <ErrorState title="No encontramos esta orden" />
       </>
     )
@@ -63,14 +64,14 @@ export default function OrderDetailPage() {
   if (query.isError)
     return (
       <>
-        <PageHeader back={back} title="Orden de trabajo" />
+        <WorkshopHeader crumbs={crumbs} title="Orden de trabajo" />
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       </>
     )
   if (query.data.workspace_id !== ctx.id)
     return (
       <>
-        <PageHeader back={back} title="Orden de trabajo" />
+        <WorkshopHeader crumbs={crumbs} title="Orden de trabajo" />
         <ErrorState title="Esta orden no pertenece a este taller" />
       </>
     )
@@ -178,8 +179,8 @@ function OrderDetail({ order }: { order: WorkOrder }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           {!final && (
-            <DropdownMenuItem icon={<Warehouse aria-hidden />} onSelect={() => navigate(`${ctx.base}/taller?orden=${order.id}`)}>
-              Ver en el taller 3D
+            <DropdownMenuItem icon={<Warehouse aria-hidden />} onSelect={() => navigate(`${ctx.base}?orden=${order.id}`)}>
+              Ver en la maqueta del taller
             </DropdownMenuItem>
           )}
           <DropdownMenuItem icon={<History aria-hidden />} onSelect={() => navigate(historyHref)}>
@@ -203,10 +204,10 @@ function OrderDetail({ order }: { order: WorkOrder }) {
 
   return (
     <>
-      <PageHeader crumbs={[{ label: 'Órdenes', to: `${ctx.base}/ordenes` }, { label: order.number }]} title={order.title} description={<OrderMeta order={order} />} actions={headerActions} />
+      <WorkshopHeader crumbs={[{ label: 'Órdenes', to: `${ctx.base}/ordenes` }, { label: order.number }]} title={order.title} description={<OrderMeta order={order} />} actions={headerActions} />
 
       {/* Estado y elevador se aplican al momento, como en el tablero, con «Deshacer» en el aviso. */}
-      <section aria-label="Estado y elevador" className="mb-10 space-y-4">
+      <section aria-label="Estado y elevador" className="hud-panel mb-5 space-y-4 p-4 sm:p-5">
         <StatusStepper order={order} onRequest={editable ? requestStatus : undefined} busy={busy} />
         {editable && (
           <div>
@@ -253,9 +254,9 @@ function OrderDetail({ order }: { order: WorkOrder }) {
       </section>
 
       {editable ? (
-        <form id="order-form" onSubmit={submit()} noValidate className="space-y-10">
+        <form id="order-form" onSubmit={submit()} noValidate className="space-y-5">
           <WorkSection form={form} />
-          <section aria-labelledby="lineas-title" className="space-y-4">
+          <section aria-labelledby="lineas-title" className="hud-panel space-y-4 p-4 sm:p-5">
             <div>
               <SectionTitle id="lineas-title">Piezas y mano de obra</SectionTitle>
               <p className="mt-0.5 text-sm text-fg-muted">
@@ -383,7 +384,7 @@ function OrderMeta({ order }: { order: WorkOrder }) {
 
 function SectionTitle({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="font-display text-lg font-semibold tracking-tight text-fg-warm">
+    <h2 id={id} className="font-display text-lg font-bold tracking-tight text-fg-warm">
       {children}
     </h2>
   )
@@ -393,7 +394,7 @@ function WorkSection({ form }: { form: UseFormReturn<OrderValues> }) {
   const { register, formState } = form
   const e = formState.errors
   return (
-    <section aria-labelledby="trabajo-title" className="space-y-4">
+    <section aria-labelledby="trabajo-title" className="hud-panel space-y-4 p-4 sm:p-5">
       <SectionTitle id="trabajo-title">Trabajo</SectionTitle>
       <Field label="Título" required error={e.title?.message} hint="Es lo que se ve en el tablero y lo que queda en el historial.">
         <Input autoComplete="off" maxLength={120} {...register('title')} />
@@ -420,7 +421,7 @@ function PlanningSection({ form, order }: { form: UseFormReturn<OrderValues>; or
   const current = vehicle.data?.current_mileage ?? null
   const e = formState.errors
   return (
-    <section aria-labelledby="planificacion-title" className="space-y-4">
+    <section aria-labelledby="planificacion-title" className="hud-panel space-y-4 p-4 sm:p-5">
       <SectionTitle id="planificacion-title">Planificación</SectionTitle>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Prioridad" error={e.priority?.message}>
@@ -461,7 +462,7 @@ function PlanningSection({ form, order }: { form: UseFormReturn<OrderValues>; or
 /** Barra de guardar fija: solo aparece con cambios sin guardar (un solo modelo de guardado para el formulario). Opaca (R8). */
 function SaveBar({ saving, onDiscard }: { saving: boolean; onDiscard: () => void }) {
   return (
-    <div className="sticky bottom-24 z-10 flex flex-col gap-2 rounded-card border border-line-strong bg-surface p-3 sm:flex-row sm:items-center md:bottom-4">
+    <div className="hud-bar sticky bottom-24 z-10 flex flex-col gap-2 p-3 sm:flex-row sm:items-center md:bottom-4">
       <p className="flex-1 text-sm text-fg" aria-live="polite">
         Tienes cambios sin guardar.
       </p>
@@ -483,7 +484,7 @@ function OrderDates({ order }: { order: WorkOrder }) {
     ...(order.delivered_at ? [{ label: 'Entregada', value: formatDateTime(order.delivered_at) }] : []),
   ]
   return (
-    <dl className="flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-4 text-sm">
+    <dl className="hud-panel flex flex-wrap gap-x-6 gap-y-1 px-4 py-3 text-sm sm:px-5">
       {rows.map((r) => (
         <div key={r.label} className="flex gap-1.5">
           <dt className="text-fg-muted">{r.label}</dt>
@@ -497,8 +498,8 @@ function OrderDates({ order }: { order: WorkOrder }) {
 function ReadOnlyOrder({ order, showPrices }: { order: WorkOrder; showPrices: boolean }) {
   const text = (v: string | null) => (v ? <span className="whitespace-pre-line">{v}</span> : 'Sin anotar')
   return (
-    <div className="space-y-10">
-      <section aria-labelledby="trabajo-title">
+    <div className="space-y-5">
+      <section aria-labelledby="trabajo-title" className="hud-panel p-4 sm:p-5">
         <SectionTitle id="trabajo-title">Trabajo</SectionTitle>
         <p className="mt-0.5 text-sm text-fg-muted">La orden está {order.status === 'delivered' ? 'entregada' : 'cancelada'}: ya no admite cambios.</p>
         <DataList
@@ -512,7 +513,7 @@ function ReadOnlyOrder({ order, showPrices }: { order: WorkOrder; showPrices: bo
           ]}
         />
       </section>
-      <section aria-labelledby="lineas-title" className="space-y-4">
+      <section aria-labelledby="lineas-title" className="hud-panel space-y-4 p-4 sm:p-5">
         <SectionTitle id="lineas-title">Piezas y mano de obra</SectionTitle>
         <OrderLinesTable items={order.items} showPrices={showPrices} />
         <OrderTotals data={serverTotals(order)} showPrices={showPrices} className="ml-auto max-w-sm border-t border-line pt-3" />

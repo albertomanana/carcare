@@ -3,31 +3,46 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Logo } from '@/components/layout/Logo'
 import { ThemeToggle } from '@/components/layout/UserMenu'
+import { HeroImage } from '@/three'
 
 /**
- * Pantallas de acceso (entrar, registro, recuperar y restablecer la contraseña):
- * una sola columna centrada con el logotipo, el título, el formulario y el enlace alternativo.
+ * Pantallas de acceso (entrar, registro, recuperar y restablecer la contraseña), en el mundo «Diorama»: sobre el lienzo
+ * azul, un panel de cristal con el formulario y, en escritorio, una maqueta del coche a su lado (imagen fija, sin WebGL).
+ * El texto de la maqueta es el mismo de siempre: no promete nada que la app no haga.
  */
 export function AuthLayout({ title, description, children, footer }: { title: string; description?: ReactNode; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas px-4 sm:px-8">
-      <header className="mx-auto flex h-16 w-full max-w-[26rem] items-center justify-between">
+      <header className="mx-auto flex h-16 w-full max-w-[64rem] items-center justify-between">
         <Link to="/" className="rounded-control" aria-label="CarCare, volver a la portada">
           <Logo />
         </Link>
         <ThemeToggle />
       </header>
-      <main id="contenido" className="flex flex-1 justify-center pb-10 pt-6 sm:pt-12">
-        <div className="w-full max-w-[26rem] animate-rise">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-fg text-balance sm:text-3xl">{title}</h1>
-          {description && <p className="mt-2 text-fg-muted">{description}</p>}
-          <div className="mt-8">{children}</div>
-          {footer && <div className="mt-8 border-t border-line pt-6 text-sm text-fg-muted">{footer}</div>}
-        </div>
-      </main>
-      <p className="mx-auto w-full max-w-[26rem] pb-6 text-xs text-fg-subtle">
-        CarCare guarda el historial, los gastos y los vencimientos de tus vehículos o los de tu taller.
-      </p>
+      <div className="mx-auto grid w-full max-w-[64rem] flex-1 items-center gap-8 pb-10 pt-4 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-14">
+        <aside aria-hidden className="relative hidden lg:block">
+          <div className="relative mx-auto max-w-xl">
+            <svg viewBox="0 0 400 120" className="absolute inset-x-0 bottom-0 w-full" fill="none">
+              <ellipse cx="200" cy="82" rx="190" ry="30" fill="hsl(var(--shadow-color))" opacity="0.12" />
+              <path d="M10 70 200 112 390 70 390 60 200 100 10 60Z" fill="var(--line-strong)" opacity="0.4" />
+              <path d="M200 20 390 60 200 100 10 60Z" fill="var(--surface)" stroke="var(--line)" />
+            </svg>
+            <HeroImage alt="" priority sizes="40vw" className="relative z-10 w-full" />
+          </div>
+          <p className="mx-auto mt-6 max-w-sm text-center text-sm text-fg-muted">CarCare guarda el historial, los gastos y los vencimientos de tus vehículos o los de tu taller.</p>
+        </aside>
+        <main id="contenido" className="w-full animate-pop-in lg:max-w-[26rem]">
+          <div className="hud-panel mx-auto max-w-[26rem] p-6 sm:p-8 lg:mx-0">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-fg-warm text-balance sm:text-3xl">{title}</h1>
+            {description && <p className="mt-2 text-fg-muted">{description}</p>}
+            <div className="mt-7">{children}</div>
+            {footer && <div className="mt-7 border-t border-line pt-5 text-sm text-fg-muted">{footer}</div>}
+          </div>
+          <p className="mx-auto mt-5 max-w-[26rem] text-center text-xs text-fg-subtle lg:hidden">
+            CarCare guarda el historial, los gastos y los vencimientos de tus vehículos o los de tu taller.
+          </p>
+        </main>
+      </div>
     </div>
   )
 }

@@ -96,7 +96,9 @@ export interface SearchInputProps extends Omit<InputProps, 'type' | 'prefix' | '
 
 export function SearchInput({ value, onValueChange, placeholder = 'Buscar…', className, ...props }: SearchInputProps) {
   return (
-    <div className={cn('relative flex items-center', className)}>
+    // min-w-28 va el último: en una fila con flex-wrap el buscador pasa a la línea siguiente en vez de encogerse
+    // hasta que el relleno del campo se salga de su caja (visto a 768 px en Órdenes, 11/11/2026)
+    <div className={cn('relative flex items-center', className, 'min-w-28')}>
       <Search aria-hidden className="pointer-events-none absolute left-3 size-4 text-fg-subtle" />
       <input
         type="search"

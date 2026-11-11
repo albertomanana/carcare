@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { useLogout } from '@/api/hooks/auth'
 import { useTheme } from '@/app/theme-context'
+import { initials } from '@/lib/text'
 import { Avatar } from '@/components/ui/Avatar'
 import { IconButton } from '@/components/ui/Button'
 import {
@@ -42,8 +43,8 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="grid size-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-surface-2 data-[state=open]:bg-surface-2 md:size-10"
-        aria-label={`Menú de usuario de ${user?.name ?? ''}`}
+        className="grid size-11 shrink-0 place-items-center rounded-full transition-[background-color,scale] duration-150 hover:bg-accent-soft active:scale-90 data-[state=open]:bg-accent-soft md:size-10"
+        aria-label={`${initials(user?.name)} · Menú de usuario de ${user?.name ?? ''}`}
       >
         <Avatar name={user?.name} size="sm" />
       </DropdownMenuTrigger>

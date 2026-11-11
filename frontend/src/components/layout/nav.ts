@@ -43,7 +43,7 @@ export interface NavGroup {
 /**
  * Secciones del espacio, agrupadas por tarea (10/11/2026, "más intuitiva"): el taller tenía 9 entradas planas. Ninguna
  * lleva a una pantalla vacía (hallazgo C2): Analítica solo sale para quien puede verla (`manage`).
- * Las rutas no cambian; solo los nombres ("Inicio" en vez de "Centro de control", "Taller" en vez de "Taller 3D").
+ * 11/11/2026: en el taller, "Inicio" y "Taller" se fusionan en una sola portada, "Taller" (la maqueta con su HUD), en `base`; `/taller` redirige.
  */
 export function navGroups(ctx: WorkspaceContextValue | null): NavGroup[] {
   if (!ctx) return [{ id: 'cuenta', label: null, items: [SETTINGS_ITEM] }]
@@ -57,12 +57,12 @@ export function navGroups(ctx: WorkspaceContextValue | null): NavGroup[] {
         items: [
           {
             to: base,
-            label: 'Inicio',
-            icon: House,
+            label: 'Taller',
+            icon: Warehouse,
             end: true,
             mobile: true,
-            description: 'Lo que va tarde, las entregas de hoy y los elevadores',
-            keywords: 'centro de control panel resumen',
+            description: 'La maqueta del taller con sus elevadores, la flota y lo que va tarde',
+            keywords: 'inicio centro de control panel resumen taller 3d elevadores nave maqueta flota',
           },
           {
             to: `${base}/ordenes`,
@@ -71,13 +71,6 @@ export function navGroups(ctx: WorkspaceContextValue | null): NavGroup[] {
             mobile: true,
             description: 'El tablero de trabajos, de la entrada a la entrega',
             keywords: 'tablero kanban ot trabajos',
-          },
-          {
-            to: `${base}/taller`,
-            label: 'Taller',
-            icon: Warehouse,
-            description: 'La nave con sus elevadores y quién está en cada uno',
-            keywords: 'taller 3d elevadores nave',
           },
           {
             to: `${base}/solicitudes`,

@@ -6,10 +6,10 @@ import type { RepairRequest } from '@/api/types'
 import { Plate } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyBoard, HudHeader } from '@/components/game/kit'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { ErrorState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useSearchParam } from '@/hooks/useSearchParam'
@@ -38,7 +38,7 @@ export default function MyRequestsPage() {
 
   return (
     <>
-      <PageHeader title="Mis solicitudes" description="Reparaciones que has pedido a talleres de CarCare." actions={newAction} />
+      <HudHeader title="Mis solicitudes" description="Reparaciones que has pedido a talleres de CarCare." actions={newAction} />
 
       <SegmentedControl<Filter>
         label="Qué solicitudes ver"
@@ -57,14 +57,13 @@ export default function MyRequestsPage() {
         <ErrorState error={list.error} onRetry={() => void list.refetch()} />
       ) : requests.length === 0 ? (
         filter === 'abiertas' ? (
-          <EmptyState
-            compact
+          <EmptyBoard
             icon={<ClipboardList />}
             title="No tienes solicitudes abiertas"
             description="Las que ya terminaron están en «Todas»."
           />
         ) : (
-          <EmptyState
+          <EmptyBoard
             icon={<ClipboardList />}
             title="Todavía no has pedido ninguna reparación"
             description="Busca un taller de CarCare, cuéntale qué le pasa a tu coche y te responderá con un presupuesto."

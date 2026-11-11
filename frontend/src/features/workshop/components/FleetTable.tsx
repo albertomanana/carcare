@@ -28,7 +28,6 @@ export interface FleetTableProps {
   onOpenChange: (open: boolean) => void
   /** Ruta de «Nueva orden» si el rol puede crearla (estado vacío). */
   newOrderHref: string | null
-  floating: boolean
   /** Alto máximo del cuerpo plegable cuando flota sobre la maqueta. */
   bodyClassName?: string
   className?: string
@@ -55,7 +54,6 @@ export function FleetTable({
   open,
   onOpenChange,
   newOrderHref,
-  floating,
   bodyClassName,
   className,
   style,
@@ -96,7 +94,7 @@ export function FleetTable({
     body = (
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-fg-muted">
         <p>Ningún coche en «{FILTER_LABEL[filter]}» ahora mismo.</p>
-        <button type="button" onClick={onClearFilter} className="font-medium text-accent-ink hover:underline">
+        <button type="button" onClick={onClearFilter} className="font-bold text-accent-ink hover:underline">
           Ver todos
         </button>
       </div>
@@ -107,7 +105,7 @@ export function FleetTable({
         <caption className="sr-only">
           Coches en el taller: {caption}. Elige una fila para ver la ficha y enfocar el coche en la maqueta.
         </caption>
-        <thead className="sticky top-0 z-[1] bg-surface text-left">
+        <thead className="sticky top-0 z-[1] bg-[color-mix(in_srgb,var(--surface)_96%,transparent)] text-left backdrop-blur">
           <tr className="border-b border-line [&>th]:px-3 [&>th]:py-2 [&>th]:font-normal">
             <th scope="col" className="hidden w-[6.5rem] @[44rem]:table-cell">
               <span className="tag-label text-fg-muted">Matrícula</span>
@@ -142,17 +140,17 @@ export function FleetTable({
   }
 
   return (
-    <section ref={boxRef} style={style} aria-labelledby={FLEET_TITLE_ID} className={cn('@container flex min-h-0 min-w-0 flex-col', floating ? 'floor-glass overflow-hidden' : 'list-panel mb-0', className)}>
+    <section ref={boxRef} style={style} aria-labelledby={FLEET_TITLE_ID} className={cn('@container flex min-h-0 min-w-0 flex-col', 'hud-panel overflow-hidden', className)}>
       <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
-        <h2 id={FLEET_TITLE_ID} tabIndex={-1} className="font-display text-base font-semibold text-fg-warm outline-none">
+        <h2 id={FLEET_TITLE_ID} tabIndex={-1} className="font-display text-base font-bold text-fg-warm outline-none">
           Coches en el taller
         </h2>
-        <p className="tabular text-sm text-fg-muted">{caption}</p>
+        <p className="chip tabular">{caption}</p>
         {filter !== 'all' && !loading && !error && (
           <button
             type="button"
             onClick={onClearFilter}
-            className="inline-flex min-h-8 items-center gap-1 rounded-[5px] bg-surface-3 px-2 text-xs font-medium text-fg hover:bg-line"
+            className="chip chip-accent min-h-8 hover:brightness-95"
           >
             <span>Filtro: {FILTER_LABEL[filter]}</span>
             <X aria-hidden className="size-3.5" />
@@ -165,7 +163,7 @@ export function FleetTable({
           aria-expanded={open}
           aria-controls={BODY_ID}
           onClick={() => onOpenChange(!open)}
-          className="-mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm font-medium text-fg-muted hover:bg-surface-2 hover:text-fg md:min-h-9"
+          className="-mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm font-bold text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg md:min-h-9"
         >
           {open ? 'Ocultar lista' : 'Mostrar lista'}
           <ChevronDown aria-hidden className={cn('size-4 transition-transform duration-200 ease-out-soft motion-reduce:transition-none', open && 'rotate-180')} />
@@ -187,7 +185,7 @@ function FleetRow({ order: o, selected, onSelect }: { order: WorkOrder; selected
       onClick={() => onSelect(o.id)}
       className={cn(
         'cursor-pointer border-b border-line align-middle transition-colors duration-150 last:border-b-0 [&>td]:px-3 [&>td]:py-2',
-        selected ? 'bg-surface-3 [box-shadow:inset_3px_0_0_var(--fg-warm)]' : 'hover:bg-surface-2',
+        selected ? 'bg-accent-soft [box-shadow:inset_4px_0_0_var(--accent)]' : 'hover:bg-accent-soft/50',
       )}
     >
       <td className="hidden @[44rem]:table-cell">
@@ -205,7 +203,7 @@ function FleetRow({ order: o, selected, onSelect }: { order: WorkOrder; selected
           }}
           className="flex w-full min-w-0 items-center gap-2.5 rounded-control py-0.5 text-left"
         >
-          <VehicleSwatch vehicle={o.vehicle} size="sm" className="size-6 rounded" />
+          <VehicleSwatch vehicle={o.vehicle} size="sm" className="size-7 rounded-lg" />
           <span className="min-w-0">
             <span className="block truncate font-medium text-fg">
               <span className="sr-only">{o.number}, </span>

@@ -17,7 +17,7 @@ export function Checkbox({ label, description, className, id: idProp, ...props }
         <input
           id={id}
           type="checkbox"
-          className="peer size-5 cursor-pointer appearance-none rounded-[6px] border border-line-strong bg-surface-2 transition-colors checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="peer size-5 cursor-pointer appearance-none rounded-lg border-2 border-line-strong bg-surface-2 transition-colors checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           {...props}
         />
         <Check aria-hidden className="pointer-events-none absolute size-3.5 text-on-accent opacity-0 peer-checked:opacity-100" strokeWidth={3} />
@@ -58,14 +58,14 @@ export function Switch({ checked, onCheckedChange, label, description, disabled,
         onClick={() => onCheckedChange(!checked)}
         className={cn(
           'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-150',
-          checked ? 'border-accent bg-accent' : 'border-line-strong bg-surface-3',
+          checked ? 'border-accent bg-accent shadow-[0_2px_0_0_var(--accent-edge)]' : 'border-line-strong bg-surface-3',
           disabled && 'opacity-50',
         )}
       >
         <span
           aria-hidden
           className={cn(
-            'inline-block size-5 rounded-full shadow transition-transform duration-200 ease-out-soft',
+            'inline-block size-5 rounded-full shadow-md transition-transform duration-200 ease-out-soft',
             checked ? 'translate-x-6 bg-on-accent' : 'translate-x-1 bg-fg-muted',
           )}
         />

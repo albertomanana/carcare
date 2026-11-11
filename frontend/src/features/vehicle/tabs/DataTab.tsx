@@ -152,7 +152,7 @@ export default function DataTab() {
 
   // Secciones con título y separador, sin cajas (R3); los documentos, debajo (5.2: Documentos + Datos → Datos)
   return (
-    <div className="space-y-10">
+    <div className="hud-panel space-y-10 p-4 sm:p-6">
       <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
         <Section title="Identificación" action={editLink}>
           <DataList items={identity} className="rounded-card border border-line px-4" />

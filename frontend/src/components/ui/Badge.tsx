@@ -13,9 +13,9 @@ export function Badge({ tone = 'neutral', icon, size = 'md', className, children
   return (
     <span
       className={cn(
-        // etiqueta de muestra: rectángulo de esquina corta, Archivo estrecho en versalitas
-        'inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-[5px] font-semibold uppercase tracking-[0.07em] [font-stretch:78%] [&_svg]:shrink-0',
-        size === 'sm' ? 'h-5 px-1.5 text-[11px] [&_svg]:size-3' : 'h-6 px-2 text-xs [&_svg]:size-3.5',
+        // insignia de juego: píldora gruesa con icono y texto
+        'inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full font-bold [&_svg]:shrink-0',
+        size === 'sm' ? 'h-5 px-2 text-[11px] [&_svg]:size-3' : 'h-6 px-2.5 text-xs [&_svg]:size-3.5',
         TONE_CLASSES[tone].soft,
         className,
       )}
@@ -41,7 +41,7 @@ export function StatusPill({ status, size, className, label }: { status: StatusD
 export function Plate({ value, className }: { value: string | null | undefined; className?: string }) {
   if (!value) return null
   return (
-    <span className={cn('whitespace-nowrap font-semibold uppercase tracking-[0.06em] text-fg-muted [font-stretch:82%]', className)}>
+    <span className={cn('tag-label whitespace-nowrap text-fg-muted', className)}>
       <span className="sr-only">Matrícula </span>
       {formatPlate(value)}
     </span>

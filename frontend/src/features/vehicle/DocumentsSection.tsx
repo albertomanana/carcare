@@ -8,6 +8,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { EmptyBoard } from '@/components/game/kit'
 import {
   type DragEvent,
   lazy,
@@ -46,7 +47,7 @@ import {
 } from "@/components/ui/DropdownMenu";
 import { Select } from "@/components/ui/inputs";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { EmptyState, ErrorState, NoResults } from "@/components/ui/States";
+import { ErrorState, NoResults } from "@/components/ui/States"
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { useSearchParam } from "@/hooks/useSearchParam";
 import { cn } from "@/lib/cn";
@@ -273,8 +274,7 @@ export function DocumentsSection({ vehicle }: { vehicle: Vehicle }) {
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : all.length === 0 ? (
-        <EmptyState
-          compact
+        <EmptyBoard
           icon={<FileUp />}
           title="Sin documentos todavía"
           description="Guarda aquí facturas, la póliza del seguro, la ITV o el permiso de circulación."
@@ -294,7 +294,7 @@ export function DocumentsSection({ vehicle }: { vehicle: Vehicle }) {
               También puedes arrastrar el archivo hasta aquí.
             </p>
           )}
-        </EmptyState>
+        </EmptyBoard>
       ) : docs.length === 0 ? (
         <NoResults
           what="documentos"

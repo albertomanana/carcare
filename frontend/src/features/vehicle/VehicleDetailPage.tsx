@@ -1,7 +1,6 @@
-import { Archive, ArchiveRestore, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
-import { BrandLogo } from '@/components/vehicles/BrandLogo'
-import { paintVars } from '@/lib/colors'
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { Archive, ArchiveRestore, BellPlus, CarFront, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
+import { PaintToken } from '@/components/game/kit'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { errorMessage } from '@/api/client'
@@ -77,8 +76,8 @@ export default function VehicleDetailPage() {
 const tabLinkClass = (active: boolean) =>
   cn(
     // A 360 px, 13 px de letra y 4 px de margen bastan para que quepan las 5 pestañas del particular (5.2)
-    'inline-flex min-h-12 items-center whitespace-nowrap border-b-2 px-1 text-[13px] font-medium transition-colors sm:px-3 sm:text-sm',
-    active ? 'border-fg text-fg' : 'border-transparent text-fg-muted hover:text-fg',
+    'inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-2 text-[13px] font-bold transition-[color,background-color,box-shadow,scale] duration-150 active:scale-[0.96] sm:px-4 sm:text-sm',
+    active ? 'bg-accent-soft text-accent-ink shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--accent)_28%,transparent)]' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
   )
 
 /**
@@ -120,7 +119,7 @@ function VehicleTabs({ tabs }: { tabs: Tab[] }) {
   }, [labels, activeIndex])
 
   return (
-    <nav aria-label="Secciones del vehículo" className="no-print sticky top-16 z-10 mb-6 border-b border-line bg-canvas">
+    <nav aria-label="Secciones del vehículo" className="no-print sticky top-16 z-10 mb-5">
       <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute left-0 top-0 flex h-0 w-max overflow-hidden whitespace-nowrap">
         {tabs.map((t) => (
           <span key={t.to} className={tabLinkClass(false)}>
@@ -134,7 +133,7 @@ function VehicleTabs({ tabs }: { tabs: Tab[] }) {
           </span>
         ))}
       </div>
-      <ul ref={listRef} className="-mb-px flex min-w-0 max-sm:justify-between">
+      <ul ref={listRef} className="hud-bar flex min-w-0 gap-1 !rounded-full p-1.5 max-sm:justify-between">
         {tabs.slice(0, shown).map((t) => (
           <li key={t.to} className="shrink-0">
             <NavLink to={t.to} end={t.end} className={({ isActive: active }) => tabLinkClass(active)}>
@@ -214,7 +213,7 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
     })
 
   return (
-    <header className="mb-4">
+    <header className="hud-panel mb-5 p-4 sm:p-5">
       <Breadcrumbs
         className="mb-1 md:mb-2"
         items={[
@@ -237,20 +236,9 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
       )}
 
       <div className="flex items-start justify-between gap-3">
-        {/*
-          Placa de muestra del vehículo: su pintura real con el logotipo de la marca y el código de color. Entra con el barrido
-          de pintura al llegar desde el abanico de la barra lateral (key por vehículo). Decorativa: todo está en el texto.
-        */}
-        <span aria-hidden className="shrink-0 [perspective:700px]">
-          <span
-            key={vehicle.id}
-            style={paintVars(vehicle.color_hex) as CSSProperties}
-            className="lacquer paint-wipe flex h-20 w-28 flex-col [--wipe-r:0.75rem] justify-between rounded-xl p-2.5 [transform:rotateY(-12deg)] md:h-24 md:w-36 md:p-3"
-          >
-            <BrandLogo make={vehicle.make} className="size-6 self-end opacity-90 md:size-7" />
-            <span className="tag-label truncate opacity-85">{vehicle.color_hex ? vehicle.color_hex.toUpperCase() : 'Sin color'}</span>
-          </span>
-        </span>
+        <PaintToken color={vehicle.color_hex} size="lg" className="max-sm:size-14">
+          <CarFront />
+        </PaintToken>
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-bold text-fg-warm text-balance md:text-3xl">
             {vehicle.display_name}
@@ -288,7 +276,7 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
                 </Link>
               )}
               {overdue > 0 && (
-                <Link to={`${base}/recordatorios`} className="inline-flex items-center gap-1 text-danger underline-offset-4 hover:underline">
+                <Link to={`${base}/recordatorios`} className="chip chip-danger">
                   <OctagonAlert aria-hidden className="size-4" />
                   {plural(overdue, 'aviso vencido', 'avisos vencidos')}
                 </Link>
@@ -405,14 +393,14 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
 
 function HeaderSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="mb-6">
+    <div role="status" aria-live="polite" className="hud-panel mb-6 p-5">
       <span className="sr-only">Cargando vehículo…</span>
-      <div aria-hidden className="mt-8 space-y-3">
+      <div aria-hidden className="space-y-3">
         <Skeleton className="h-8 w-64 max-w-full" />
         <Skeleton className="h-4 w-80 max-w-full" />
         <Skeleton className="h-4 w-40" />
       </div>
-      <Skeleton className="mt-6 h-12 w-full" />
+      
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { Gauge, Trash2 } from "lucide-react";
+import { EmptyBoard } from '@/components/game/kit'
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -10,7 +11,7 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LoadMore } from "@/components/ui/LoadMore";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { EmptyState, ErrorState } from "@/components/ui/States";
+import { ErrorState } from "@/components/ui/States"
 import { useQuickActions } from "@/features/quick-actions/quick-actions-context";
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { formatDate, formatKm } from "@/lib/format";
@@ -43,8 +44,7 @@ export function MileageView({ vehicle }: { vehicle: Vehicle }) {
     );
   if (!items.length)
     return (
-      <EmptyState
-        compact
+      <EmptyBoard
         icon={<Gauge />}
         title="Sin lecturas de kilometraje"
         description="Cada vez que anotas los km, o registras una intervención o un repostaje con km, queda aquí."

@@ -5,7 +5,8 @@ import type { Reminder, ReminderState, ReminderStatus } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/inputs'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { EmptyBoard } from '@/components/game/kit'
+import { ErrorState } from '@/components/ui/States'
 import { ReminderItem, ReminderList, ReminderListSkeleton } from '@/components/vehicles/ReminderItem'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useHashTarget, useRevealHashTarget } from '@/hooks/useHashTarget'
@@ -56,7 +57,7 @@ export default function RemindersTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="hud-bar flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
         {/* En el móvil, selector nativo: las 4 opciones no caben en una fila y no se esconden en un scroll lateral (I4) */}
         <Select aria-label="Estado de los recordatorios" value={status} onChange={(e) => setStatus(e.target.value)} className="sm:hidden">
           {STATUSES.map((s) => (
@@ -72,7 +73,7 @@ export default function RemindersTab() {
           </Button>
         )}
       </div>
-      <p className="text-sm text-fg-muted">
+      <p className="px-1 text-sm text-fg-muted">
         {INTERVAL_DISCLAIMER}. El estado se calcula con la fecha de hoy y el kilometraje actual ({formatKm(vehicle.current_mileage, { empty: 'sin lecturas' })}).
       </p>
 
@@ -81,8 +82,7 @@ export default function RemindersTab() {
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : reminders.length === 0 ? (
-        <EmptyState
-          compact
+        <EmptyBoard
           icon={<CalendarClock />}
           title={status === 'pending' ? 'No hay recordatorios pendientes' : `Sin recordatorios en «${statusLabel.toLowerCase()}»`}
           description={status === 'pending' ? 'ITV, seguro, impuesto, aceite, neumáticos… Por fecha, por kilómetros o lo que llegue antes.' : undefined}
@@ -108,9 +108,9 @@ export default function RemindersTab() {
           <h2 id="recordatorios-lista" className="sr-only">
             Recordatorios: {statusLabel.toLowerCase()}
           </h2>
-          <ReminderList aria-labelledby="recordatorios-lista">
+          <ReminderList variant="missions" aria-labelledby="recordatorios-lista">
             {reminders.map((r) => (
-              <ReminderItem key={r.id} reminder={r} actions={actions} highlighted={hashId === String(r.id)} />
+              <ReminderItem key={r.id} variant="mission" reminder={r} actions={actions} highlighted={hashId === String(r.id)} />
             ))}
           </ReminderList>
         </>
@@ -156,9 +156,9 @@ function Group({ state, items, actions, hashId }: { state: ReminderState; items:
         )}
       </h2>
       {open && (
-        <ReminderList id={listId}>
+        <ReminderList variant="missions" id={listId}>
           {items.map((r) => (
-            <ReminderItem key={r.id} reminder={r} actions={actions} highlighted={hashId === String(r.id)} />
+            <ReminderItem key={r.id} variant="mission" reminder={r} actions={actions} highlighted={hashId === String(r.id)} />
           ))}
         </ReminderList>
       )}

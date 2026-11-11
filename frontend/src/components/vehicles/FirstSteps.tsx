@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { Vehicle } from "@/api/types";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { Progress } from "@/components/ui/Progress";
 import { useQuickActions } from "@/features/quick-actions/quick-actions-context";
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { cn } from "@/lib/cn";
@@ -51,7 +52,7 @@ export function FirstStepsGuide({
         <div className="min-w-0">
           <h2
             id={`${id}-title`}
-            className="font-display text-lg font-semibold tracking-tight text-fg-warm"
+            className="font-display text-lg font-bold tracking-tight text-fg-warm"
           >
             {title}
           </h2>
@@ -66,54 +67,32 @@ export function FirstStepsGuide({
           </Button>
         )}
       </div>
-      {/* Progreso: un tramo por paso, en tinta (el azul queda para la acción) */}
-      <div aria-hidden className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
-        {steps.map((s, i) => (
-          <span
-            key={s.key}
-            className={cn(
-              "h-1 rounded-full transition-colors duration-300 motion-reduce:transition-none",
-              s.done ? "bg-fg" : i === currentIndex ? "bg-line-strong" : "bg-surface-3",
-            )}
-          />
-        ))}
-      </div>
-      <ol className="mt-3 list-panel">
+      {/* Progreso: una pieza por paso, rellena con los pasos hechos */}
+      <Progress value={done / steps.length} segments={steps.length} tone="accent" label="Primeros pasos" valueText={`${done} de ${steps.length} pasos hechos`} className="mt-3" />
+      <ol className="mt-3 grid gap-2.5">
         {steps.map((s, i) => {
           const current = i === currentIndex;
           return (
             <li
               key={s.key}
               aria-current={current ? "step" : undefined}
-              className={cn("flex gap-3 py-3", current && "py-4")}
+              data-tone={s.done ? "ok" : current ? "accent" : undefined}
+              className={cn("mission flex gap-3", !current && !s.done && "opacity-80")}
             >
               <span
                 aria-hidden
                 className={cn(
-                  "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold tabular",
-                  s.done
-                    ? "text-ok"
-                    : current
-                      ? "bg-fg text-canvas"
-                      : "border border-line-strong text-fg-muted",
+                  "grid size-10 shrink-0 place-items-center rounded-xl text-sm font-extrabold tabular",
+                  s.done ? "bg-ok-soft text-ok" : current ? "bg-accent text-on-accent" : "bg-surface-3 text-fg-muted",
                 )}
               >
                 {s.done ? <CircleCheck className="size-5" /> : i + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <h3
-                  className={cn(
-                    "font-medium",
-                    current ? "text-fg" : "text-fg-muted",
-                  )}
-                >
+                <h3 className={cn("font-bold", current ? "text-fg-warm" : "text-fg-muted")}>
                   <span className="sr-only">Paso {i + 1}: </span>
                   {s.title}
-                  {s.done && (
-                    <span className="ml-2 text-sm font-normal text-ok">
-                      Hecho
-                    </span>
-                  )}
+                  {s.done && <span className="ml-2 text-sm font-normal text-ok">Hecho</span>}
                 </h3>
                 {current && (
                   <div key={s.key} className="animate-fade-in">

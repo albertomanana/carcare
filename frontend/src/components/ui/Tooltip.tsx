@@ -11,7 +11,7 @@ export function Tooltip({ content, children, side = 'top' }: { content: ReactNod
         <RT.Content
           side={side}
           sideOffset={6}
-          className="z-[60] max-w-xs rounded-control border border-line bg-surface-3 px-2.5 py-1.5 text-xs text-fg shadow-lg data-[state=delayed-open]:animate-fade-in"
+          className="hud-pop z-[60] max-w-xs !rounded-xl px-3 py-2 text-xs font-medium text-fg data-[state=delayed-open]:animate-pop-in"
         >
           {content}
         </RT.Content>

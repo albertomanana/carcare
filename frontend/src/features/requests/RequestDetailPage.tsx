@@ -12,10 +12,10 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Disclosure } from '@/components/ui/Disclosure'
 import { Field } from '@/components/ui/Field'
 import { Textarea } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyBoard, HudHeader } from '@/components/game/kit'
 import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { ErrorState } from '@/components/ui/States'
 import { VehicleThumb } from '@/components/vehicles/VehicleVisuals'
 import { useAuth } from '@/features/auth/auth-context'
 import { telHref } from '@/features/workshop/components/floor'
@@ -47,9 +47,9 @@ export default function RequestDetailPage() {
     const notFound = !id || (isApiError(query.error) && query.error.status === 404)
     return (
       <>
-        <PageHeader title="Solicitud" back={back} />
+        <HudHeader title="Solicitud" back={back} />
         {notFound ? (
-          <EmptyState
+          <EmptyBoard
             icon={<CircleSlash />}
             title="Esta solicitud ya no existe"
             description="Puede que se borrara junto con el coche o la cuenta, o que el enlace no sea correcto."
@@ -75,14 +75,14 @@ function RequestDetail({ request: r, back }: { request: RepairRequest; back: { t
 
   return (
     <>
-      <PageHeader title={r.title} back={back}>
+      <HudHeader title={r.title} back={back}>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-muted">
           <RequestStatusLabel request={r} />
           <span>
             {r.vehicle.display_name} · {r.workshop.name} · Enviada el <span className="tabular">{formatDate(r.created_at)}</span>
           </span>
         </p>
-      </PageHeader>
+      </HudHeader>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
         <div className="min-w-0 space-y-10">
@@ -416,7 +416,7 @@ function CancelRequest({ request: r }: { request: RepairRequest }) {
 function DetailSkeleton({ back }: { back: { to: string; label: string } }) {
   return (
     <>
-      <PageHeader title={<Skeleton className="h-8 w-64 max-w-full" />} back={back} />
+      <HudHeader title={<Skeleton className="h-8 w-64 max-w-full" />} back={back} />
       <div role="status" aria-live="polite" className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
         <span className="sr-only">Cargando la solicitud…</span>
         <div aria-hidden className="space-y-3">

@@ -36,7 +36,7 @@ import {
   SearchInput,
   Select,
 } from "@/components/ui/inputs";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { HudHeader } from "@/components/game/kit";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/States";
 import { useWorkspace } from "@/features/workspace/workspace-context";
@@ -320,7 +320,7 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
 
   return (
     <>
-      <PageHeader
+      <HudHeader
         crumbs={[
           { label: ctx.isWorkshop ? "Vehículos" : "Garaje", to: `${ctx.base}/garaje` },
           ...(vehicle
@@ -348,7 +348,7 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
             : "max-w-3xl",
         )}
       >
-        <div className="min-w-0 space-y-6">
+        <div className="hud-panel min-w-0 space-y-6 p-5 sm:p-7">
           {!isEdit && (
             <Stepper
               steps={steps.map((s) => s.title)}
@@ -494,8 +494,8 @@ function Stepper({
                 <span
                   aria-hidden
                   className={cn(
-                    "h-1 rounded-full transition-colors",
-                    done || active ? "bg-accent" : "bg-surface-3",
+                    "h-2.5 rounded-full transition-colors",
+                    done || active ? "bg-accent shadow-[0_2px_0_0_var(--accent-edge)]" : "bg-surface-3",
                   )}
                 />
                 <span

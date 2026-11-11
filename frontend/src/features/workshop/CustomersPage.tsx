@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/inputs'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { WorkshopHeader } from '@/features/workshop/components/WorkshopHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState, NoResults } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
@@ -41,7 +41,7 @@ export default function CustomersPage() {
   if (!ctx.isWorkshop)
     return (
       <>
-        <PageHeader title="Clientes" />
+        <WorkshopHeader title="Clientes" />
         <EmptyState icon={<UsersRound />} title="Los clientes son del modo taller" description="Cambia a un espacio de taller para gestionar clientes." />
       </>
     )
@@ -55,7 +55,7 @@ export default function CustomersPage() {
 
   return (
     <>
-      <PageHeader
+      <WorkshopHeader
         title="Clientes"
         description={total !== null && !q ? `${plural(total, 'cliente', 'clientes')} en ${ctx.workspace.name}.` : 'Personas y empresas que traen sus coches al taller.'}
         actions={createAction}
@@ -128,7 +128,7 @@ function CustomerList({ customers }: { customers: Customer[] }) {
     [plural(c.vehicles_count, 'vehículo', 'vehículos'), c.open_orders_count > 0 ? plural(c.open_orders_count, 'orden abierta', 'órdenes abiertas') : null].filter(Boolean).join(' · ')
   return (
     <>
-      <ul className="border-t border-line lg:hidden" aria-label="Clientes">
+      <ul className="slab lg:hidden" aria-label="Clientes">
         {customers.map((c) => (
           <li
             key={c.id}
@@ -156,7 +156,8 @@ function CustomerList({ customers }: { customers: Customer[] }) {
         ))}
       </ul>
 
-      <table className="hidden w-full table-fixed border-y border-line text-sm lg:table">
+      <div className="slab hidden lg:block">
+      <table className="w-full table-fixed text-sm">
         <caption className="sr-only">Clientes del taller</caption>
         <thead className="border-b border-line text-left text-xs text-fg-muted">
           <tr>
@@ -218,13 +219,14 @@ function CustomerList({ customers }: { customers: Customer[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </>
   )
 }
 
 function CustomersSkeleton() {
   return (
-    <div role="status" aria-live="polite" className="border-t border-line">
+    <div role="status" aria-live="polite" className="slab">
       <span className="sr-only">Cargando clientes…</span>
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} aria-hidden className="space-y-2 border-b border-line px-1 py-3">

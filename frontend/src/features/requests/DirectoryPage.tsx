@@ -4,9 +4,9 @@ import { useDirectory } from '@/api/hooks/repairRequests'
 import type { DirectoryWorkshop, WorkshopService } from '@/api/types'
 import { ButtonLink } from '@/components/ui/Button'
 import { SearchInput, Select } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyBoard, HudHeader } from '@/components/game/kit'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { ErrorState } from '@/components/ui/States'
 import { telHref } from '@/features/workshop/components/floor'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
@@ -48,7 +48,7 @@ export default function DirectoryPage() {
 
   return (
     <>
-      <PageHeader
+      <HudHeader
         title="Buscar taller"
         description={
           canRequest
@@ -86,14 +86,13 @@ export default function DirectoryPage() {
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : workshops.length === 0 ? (
         filtered ? (
-          <EmptyState
-            compact
+          <EmptyBoard
             icon={<Store />}
             title="No hay talleres con ese nombre o ciudad"
             description={service ? `Ni con el servicio «${WORKSHOP_SERVICE_LABEL[service as WorkshopService] ?? service}». Prueba con otra búsqueda.` : 'Prueba con otra búsqueda.'}
           />
         ) : (
-          <EmptyState icon={<Store />} title="Todavía no hay talleres en el directorio" description="Cuando un taller de CarCare se publique, aparecerá aquí." />
+          <EmptyBoard icon={<Store />} title="Todavía no hay talleres en el directorio" description="Cuando un taller de CarCare se publique, aparecerá aquí." />
         )
       ) : (
         <>

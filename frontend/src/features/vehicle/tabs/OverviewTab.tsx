@@ -1,8 +1,10 @@
+import { Gauge, History, Target, CircleCheck } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router'
 import { useVehicleSummary, useZones } from '@/api/hooks/vehicles'
 import type { Vehicle, VehicleSummary, Zone } from '@/api/types'
-import { Section } from '@/components/ui/Section'
+import { GamePanel, PanelLink } from '@/components/game/kit'
+import { Mission } from '@/components/ui/Hud'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
 import { VehicleFirstSteps } from '@/components/vehicles/FirstSteps'
@@ -42,9 +44,9 @@ export default function OverviewTab() {
   const guide = s && canOperate && !hiddenGuide.hidden ? vehicleFirstSteps(vehicle, s, ctx.canExpenses) : []
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-5">
       {summary.isPending ? (
-        <div role="status" aria-live="polite" className="space-y-3">
+        <div role="status" aria-live="polite" className="hud-panel space-y-3 p-5">
           <span className="sr-only">Cargando el resumen…</span>
           <Skeleton aria-hidden className="h-6 w-32" />
           <Skeleton aria-hidden className="h-12 w-full" />
@@ -75,7 +77,7 @@ export default function OverviewTab() {
 
       {/* Con la guía de primeros pasos no se repiten vacíos: el kilometraje solo sale si ya hay alguna cifra */}
       {s && (!guide.length || hasMileageData(s)) && (
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
           <Mileage vehicle={vehicle} summary={s} />
           {!guide.length && <SinceLast vehicle={vehicle} summary={s} canOperate={canOperate} />}
         </div>
@@ -99,32 +101,37 @@ function Pending({ vehicle, summary: s, actions }: { vehicle: Vehicle; summary: 
   const link = `${ctx.base}/vehiculos/${vehicle.id}/recordatorios`
 
   return (
-    <Section title="Pendiente" description={`${INTERVAL_DISCLAIMER}.`}>
+    <GamePanel
+      id="pendiente"
+      title="Pendiente"
+      icon={<Target />}
+      description={`${INTERVAL_DISCLAIMER}.`}
+      action={vehicle.stats.pending_reminders > 0 && <PanelLink to={link}>Recordatorios</PanelLink>}
+    >
       {shown.length ? (
-        <ReminderList aria-label="Avisos vencidos y próximos">
+        <ReminderList variant="missions" aria-label="Avisos vencidos y próximos">
           {shown.map((r) => (
-            <ReminderItem key={r.id} reminder={r} compact actions={actions} />
+            <ReminderItem key={r.id} variant="mission" reminder={r} compact actions={actions} />
           ))}
         </ReminderList>
       ) : (
-        <p className="rounded-card border border-line px-4 py-3 text-sm text-fg-muted">
-          {vehicle.stats.pending_reminders > 0 ? 'Nada vencido ni próximo.' : 'Este vehículo no tiene recordatorios.'}{' '}
-          {canOperate && vehicle.stats.pending_reminders === 0 && (
-            <button type="button" onClick={() => quick.run('reminder', vehicle.id)} className="font-medium text-accent-ink underline-offset-4 hover:underline">
-              Crear uno
-            </button>
-          )}
-        </p>
+        <Mission
+          tone="ok"
+          icon={<CircleCheck aria-hidden />}
+          title={vehicle.stats.pending_reminders > 0 ? 'Todo al día' : 'Sin recordatorios'}
+          description={vehicle.stats.pending_reminders > 0 ? 'Nada vencido ni próximo.' : 'Este vehículo no tiene recordatorios.'}
+          trailing={
+            canOperate &&
+            vehicle.stats.pending_reminders === 0 && (
+              <button type="button" onClick={() => quick.run('reminder', vehicle.id)} className="text-sm font-bold text-accent-ink underline-offset-4 hover:underline">
+                Crear uno
+              </button>
+            )
+          }
+        />
       )}
-      {vehicle.stats.pending_reminders > 0 && (
-        <p className="mt-2 text-sm text-fg-muted">
-          {rest > 0 && `${plural(rest, 'otro en plazo', 'otros en plazo')} · `}
-          <Link to={link} className="font-medium text-accent-ink underline-offset-4 hover:underline">
-            Ver recordatorios
-          </Link>
-        </p>
-      )}
-    </Section>
+      {vehicle.stats.pending_reminders > 0 && rest > 0 && <p className="mt-3 text-sm text-fg-muted">{plural(rest, 'otro en plazo', 'otros en plazo')}</p>}
+    </GamePanel>
   )
 }
 
@@ -142,23 +149,16 @@ function Mileage({ vehicle, summary: s }: { vehicle: Vehicle; summary: VehicleSu
     { label: 'Media diaria (90 días)', value: s.mileage.avg_daily_km !== null ? `${formatKm(s.mileage.avg_daily_km)}/día` : null },
   ]
   return (
-    <Section
-      title="Kilometraje"
-      action={
-        <Link to={`${ctx.base}/vehiculos/${vehicle.id}/historial?ver=km`} className="text-sm font-medium text-accent-ink underline-offset-4 hover:underline">
-          Ver lecturas
-        </Link>
-      }
-    >
-      <dl className="list-panel text-sm">
+    <GamePanel id="kilometraje" title="Kilometraje" icon={<Gauge />} flush action={<PanelLink to={`${ctx.base}/vehiculos/${vehicle.id}/historial?ver=km`}>Lecturas</PanelLink>}>
+      <dl className="list-flat text-sm">
         {rows.map((r) => (
           <div key={r.label} className="flex items-baseline justify-between gap-3 py-2.5">
             <dt className="text-fg-muted">{r.label}</dt>
-            <dd className={r.value ? 'font-medium text-fg tabular' : 'text-fg-subtle'}>{r.value ?? missing}</dd>
+            <dd className={r.value ? 'font-bold text-fg tabular' : 'text-fg-subtle'}>{r.value ?? missing}</dd>
           </div>
         ))}
       </dl>
-    </Section>
+    </GamePanel>
   )
 }
 
@@ -166,15 +166,8 @@ function SinceLast({ vehicle, summary: s, canOperate }: { vehicle: Vehicle; summ
   const ctx = useWorkspace()
   const base = `${ctx.base}/vehiculos/${vehicle.id}`
   return (
-    <Section
-      title="Desde el último"
-      action={
-        <Link to={`${base}/historial?ver=intervenciones`} className="text-sm font-medium text-accent-ink underline-offset-4 hover:underline">
-          Ver historial
-        </Link>
-      }
-    >
-      <ul className="list-panel text-sm">
+    <GamePanel id="desde-el-ultimo" title="Desde el último" icon={<History />} flush action={<PanelLink to={`${base}/historial?ver=intervenciones`}>Historial</PanelLink>}>
+      <ul className="list-flat text-sm">
         {s.since_last.map((item) => (
           <li key={item.kind} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2.5">
             <span className="min-w-0">
@@ -197,6 +190,6 @@ function SinceLast({ vehicle, summary: s, canOperate }: { vehicle: Vehicle; summ
           </li>
         ))}
       </ul>
-    </Section>
+    </GamePanel>
   )
 }

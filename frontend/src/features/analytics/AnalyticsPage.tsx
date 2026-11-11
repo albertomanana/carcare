@@ -13,8 +13,8 @@ import { useAnalytics } from '@/api/hooks/workspaces'
 import type { WorkspaceAnalytics } from '@/api/types'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Select } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { EmptyBoard, HudHeader } from '@/components/game/kit'
+import { ErrorState } from '@/components/ui/States'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -44,8 +44,8 @@ export default function AnalyticsPage() {
   if (!allowed || (isApiError(query.error) && query.error.status === 403)) {
     return (
       <div className="max-w-3xl">
-        <PageHeader title="Analítica" />
-        <EmptyState
+        <HudHeader title="Analítica" />
+        <EmptyBoard
           title="Tu rol no incluye la analítica"
           description="La ven los propietarios y gerentes del espacio. Si la necesitas, pide a uno de ellos que cambie tu rol."
           action={<ButtonLink to={ctx.base}>{ctx.isWorkshop ? 'Ir al centro de control' : 'Ir al inicio'}</ButtonLink>}
@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader
+      <HudHeader
         title="Analítica"
         description={
           noVehicles
@@ -117,7 +117,7 @@ function PersonalAnalytics({ data }: { data: WorkspaceAnalytics }) {
 
   if (total === 0) {
     return ctx.workspace.vehicles_count === 0 ? (
-      <EmptyState
+      <EmptyBoard
         title="Aún no hay vehículos"
         description="Añade tu vehículo y anota repostajes, seguro o talleres: aquí verás en qué se va el dinero."
         action={
@@ -129,7 +129,7 @@ function PersonalAnalytics({ data }: { data: WorkspaceAnalytics }) {
         }
       />
     ) : (
-      <EmptyState
+      <EmptyBoard
         title="Sin gastos en este periodo"
         description="Anota repostajes, seguro, impuestos o parking. Las intervenciones con coste cuentan solas como gasto. También puedes elegir otro periodo."
         action={
@@ -144,7 +144,7 @@ function PersonalAnalytics({ data }: { data: WorkspaceAnalytics }) {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-5">
       <Figures
         label="Resumen del periodo"
         items={[
@@ -200,7 +200,7 @@ function WorkshopAnalytics({ data }: { data: WorkspaceAnalytics }) {
   const w = data.workshop
   if (!w || w.orders_delivered === 0) {
     return (
-      <EmptyState
+      <EmptyBoard
         title="Aún no hay órdenes entregadas en este periodo"
         description="El importe, el ticket medio y el tiempo en el taller se calculan con las órdenes entregadas. Elige otro periodo o entrega las que estén listas."
         action={<ButtonLink to={`${ctx.base}/ordenes`}>Ver órdenes</ButtonLink>}
@@ -211,7 +211,7 @@ function WorkshopAnalytics({ data }: { data: WorkspaceAnalytics }) {
   const days = w.avg_days_in_shop
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-5">
       <Figures
         label="Resumen del periodo"
         items={[

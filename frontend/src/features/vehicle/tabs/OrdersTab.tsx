@@ -1,11 +1,12 @@
 import { ClipboardList, ClipboardPlus, History } from 'lucide-react'
+import { EmptyBoard } from '@/components/game/kit'
 import { Link } from 'react-router'
 import { flattenPages, totalFromPages } from '@/api/hooks/shared'
 import { useWorkOrdersInfinite } from '@/api/hooks/workshop'
 import { ButtonLink } from '@/components/ui/Button'
 import { LoadMore } from '@/components/ui/LoadMore'
 import { Section } from '@/components/ui/Section'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { ErrorState } from '@/components/ui/States'
 import { OrderRow, OrderRowSkeleton } from '@/features/workshop/components/OrderList'
 import { isFinalStatus } from '@/features/workshop/components/orderUtils'
 import { useWorkspace } from '@/features/workspace/workspace-context'
@@ -26,7 +27,7 @@ export default function OrdersTab() {
   const orderHref = (id: number) => `${ctx.base}/ordenes/${id}`
 
   if (!ctx.isWorkshop)
-    return <EmptyState icon={<ClipboardList />} title="Las órdenes de trabajo son del modo taller" description="En tu garaje, lo que se hace al coche se registra como intervención en el historial." />
+    return <EmptyBoard icon={<ClipboardList />} title="Las órdenes de trabajo son del modo taller" description="En tu garaje, lo que se hace al coche se registra como intervención en el historial." />
 
   const createAction = canCreate && (
     <ButtonLink to={newHref} icon={<ClipboardPlus aria-hidden />}>
@@ -41,7 +42,7 @@ export default function OrdersTab() {
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : orders.length === 0 ? (
-        <EmptyState
+        <EmptyBoard
           icon={<ClipboardList />}
           title="Este vehículo no tiene órdenes"
           description={

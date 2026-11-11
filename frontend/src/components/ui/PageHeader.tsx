@@ -34,7 +34,7 @@ export function PageHeader({ title, description, eyebrow, actions, back, crumbs,
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           {eyebrow && <div className="mb-1 text-sm text-fg-muted">{eyebrow}</div>}
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-fg-warm text-balance md:text-3xl">{title}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-fg-warm text-balance md:text-3xl">{title}</h1>
           {description && <p className="mt-1 max-w-2xl text-sm text-fg-muted md:text-base">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

@@ -104,15 +104,16 @@ export function OrdersTable({ orders, orderHref, vehicleHref, onRequest, showTot
   return (
     <>
       {groupByStatus ? (
-        <GroupedOrderRows orders={orders} orderHref={orderHref} showTotal={showTotal} className="xl:hidden" />
+        <GroupedOrderRows orders={orders} orderHref={orderHref} showTotal={showTotal} className="slab xl:hidden" />
       ) : (
-        <ul className="border-t border-line xl:hidden" aria-label={caption}>
+        <ul className="slab xl:hidden" aria-label={caption}>
           {orders.map((o) => (
             <OrderRow key={o.id} order={o} to={orderHref(o)} showTotal={showTotal} />
           ))}
         </ul>
       )}
-      <table className="hidden w-full table-fixed border-y border-line text-sm xl:table">
+      <div className="slab hidden xl:block">
+      <table className="w-full table-fixed text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="border-b border-line text-left text-xs text-fg-muted">
           <tr>
@@ -187,6 +188,7 @@ export function OrdersTable({ orders, orderHref, vehicleHref, onRequest, showTot
           ))}
         </tbody>
       </table>
+      </div>
     </>
   )
 }

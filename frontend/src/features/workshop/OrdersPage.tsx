@@ -8,7 +8,6 @@ import type { WorkOrder, WorkOrderStatus } from '@/api/types'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { SearchInput, Select } from '@/components/ui/inputs'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { PageHeader } from '@/components/ui/PageHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { EmptyState, ErrorState, NoResults } from '@/components/ui/States'
 import { useAuth } from '@/features/auth/auth-context'
@@ -22,6 +21,7 @@ import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { plural } from '@/lib/text'
 import { assigneePatch, resolveAssignee, type AssigneeChoice, type AssigneeContext } from './components/assignee'
 import { KanbanBoard, KanbanSkeleton } from './components/KanbanBoard'
+import { WorkshopHeader } from './components/WorkshopHeader'
 import { OrderRowSkeleton, OrdersTable } from './components/OrderList'
 import { useOrderActions } from './components/useOrderActions'
 
@@ -122,9 +122,9 @@ export default function OrdersPage() {
 
   return (
     <>
-      <PageHeader title="Órdenes de trabajo" description={description} actions={createAction} />
+      <WorkshopHeader title="Órdenes de trabajo" description={description} actions={createAction} />
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
+      <div className="hud-bar mb-5 flex flex-wrap items-center gap-2 p-2">
         <SearchInput
           value={term}
           onValueChange={setTerm}

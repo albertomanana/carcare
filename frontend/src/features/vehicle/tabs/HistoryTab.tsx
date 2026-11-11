@@ -46,7 +46,7 @@ export default function HistoryTab() {
 
   return (
     <div className="space-y-5">
-      <div>
+      <div className="hud-bar p-2.5">
         {/* En el móvil no caben las 5 opciones en una fila: selector nativo (nada escondido en un scroll lateral, I4) */}
         <Select
           aria-label="Qué mostrar en el historial"
@@ -73,13 +73,15 @@ export default function HistoryTab() {
         />
       </div>
 
-      {view === "intervenciones" ? (
-        <RecordsView vehicle={vehicle} />
-      ) : view === "km" ? (
-        <MileageView vehicle={vehicle} />
-      ) : (
-        <JournalView vehicle={vehicle} view={view} />
-      )}
+      <div className="hud-panel p-3 sm:p-5">
+        {view === "intervenciones" ? (
+          <RecordsView vehicle={vehicle} />
+        ) : view === "km" ? (
+          <MileageView vehicle={vehicle} />
+        ) : (
+          <JournalView vehicle={vehicle} view={view} />
+        )}
+      </div>
     </div>
   );
 }

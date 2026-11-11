@@ -18,13 +18,13 @@ export function EmptyState({ icon, title, description, action, className, compac
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-card border border-dashed border-line text-center',
+        'flex flex-col items-center justify-center rounded-card border-2 border-dashed border-line bg-surface/50 text-center',
         compact ? 'gap-2 px-4 py-8' : 'gap-3 px-6 py-14',
         className,
       )}
     >
       {icon && (
-        <span className={cn('grid place-items-center rounded-full bg-surface-2 text-fg-muted', compact ? 'size-10 [&_svg]:size-5' : 'size-14 [&_svg]:size-6')}>{icon}</span>
+        <span className={cn('grid place-items-center rounded-2xl bg-accent-soft text-accent-ink shadow-[0_3px_0_0_var(--line)]', compact ? 'size-10 [&_svg]:size-5' : 'size-14 [&_svg]:size-6')}>{icon}</span>
       )}
       <div className="max-w-md">
         <h3 className={cn('font-display font-semibold text-fg-warm', compact ? 'text-sm' : 'text-lg')}>{title}</h3>
@@ -66,12 +66,12 @@ export function ErrorState({ error, title, onRetry, className, compact }: ErrorS
     <div
       role="alert"
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-card border border-danger/30 bg-danger-soft/40 text-center',
+        'flex flex-col items-center justify-center gap-3 rounded-card border-2 border-danger/30 bg-danger-soft text-center',
         compact ? 'px-4 py-6' : 'px-6 py-12',
         className,
       )}
     >
-      <span className="grid size-11 place-items-center rounded-full bg-danger-soft text-danger">
+      <span className="grid size-11 place-items-center rounded-2xl bg-surface text-danger shadow-[0_3px_0_0_var(--line)]">
         <Icon aria-hidden className="size-5" />
       </span>
       <div className="max-w-md">

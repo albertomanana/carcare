@@ -87,8 +87,8 @@ function PanelHeader({ eyebrow, title, onClose }: { eyebrow?: ReactNode; title: 
   return (
     <div className="flex items-start justify-between gap-2 pb-3">
       <div className="min-w-0">
-        {eyebrow && <p className="mb-1 text-sm text-fg-muted">{eyebrow}</p>}
-        <h2 id={FLOOR_DETAIL_TITLE_ID} tabIndex={-1} className="font-display text-lg font-semibold leading-snug text-fg-warm outline-none">
+        {eyebrow && <p className="chip mb-1.5">{eyebrow}</p>}
+        <h2 id={FLOOR_DETAIL_TITLE_ID} tabIndex={-1} className="font-display text-lg font-bold leading-snug text-fg-warm outline-none">
           {title}
         </h2>
       </div>
@@ -119,7 +119,7 @@ function SubTitle({ children }: { children: ReactNode }) {
 function WaitingLine({ order }: { order: WorkOrder }) {
   return (
     <>
-      <VehicleSwatch vehicle={order.vehicle} size="sm" className="size-6 rounded" />
+      <VehicleSwatch vehicle={order.vehicle} size="sm" className="size-8 rounded-lg" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm text-fg">{order.vehicle.display_name}</span>
         <span className="block truncate text-xs text-fg-muted">
@@ -327,9 +327,9 @@ function OrderSheet({
           </p>
         </div>
 
-        <dl className="border-y border-line text-sm">
+        <dl className="rounded-control bg-surface-2/70 px-3 text-sm">
           {details.map((d) => (
-            <div key={d.label} className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-b-0">
+            <div key={d.label} className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 last:border-b-0">
               <dt className="shrink-0 text-fg-muted">{d.label}</dt>
               <dd className="min-w-0 text-right text-fg">{d.value}</dd>
             </div>

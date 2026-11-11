@@ -8,7 +8,7 @@ export function Section({ title, description, action, children, className, id }:
     <section className={cn('min-w-0', className)} aria-labelledby={headingId} id={id}>
       <div className="mb-3 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <h2 id={headingId} className="font-display text-lg font-semibold tracking-tight text-fg-warm">
+          <h2 id={headingId} className="font-display text-lg font-bold tracking-tight text-fg-warm">
             {title}
           </h2>
           {description && <p className="mt-0.5 text-sm text-fg-muted">{description}</p>}

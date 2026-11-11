@@ -15,9 +15,9 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { Disclosure } from '@/components/ui/Disclosure'
 import { Field, Fieldset } from '@/components/ui/Field'
 import { DateInput, Input, MileageInput, MoneyInput, Select, Textarea } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyBoard, HudHeader } from '@/components/game/kit'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState, ErrorState } from '@/components/ui/States'
+import { ErrorState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
@@ -136,8 +136,8 @@ export default function MaintenanceFormPage() {
   if (blocked)
     return (
       <>
-        <PageHeader back={{ to: history, label: vehicle.display_name }} title={record ? 'Editar intervención' : 'Nueva intervención'} />
-        <EmptyState
+        <HudHeader back={{ to: history, label: vehicle.display_name }} title={record ? 'Editar intervención' : 'Nueva intervención'} />
+        <EmptyBoard
           icon={blocked.icon}
           title={blocked.title}
           description={blocked.description}
@@ -253,7 +253,7 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
 
   return (
     <>
-      <PageHeader
+      <HudHeader
         crumbs={[
           { label: ctx.isWorkshop ? 'Vehículos' : 'Garaje', to: `${ctx.base}/garaje` },
           { label: vehicle.display_name, to: base },
@@ -264,7 +264,7 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
         description={isEdit ? record.title : 'Cualquier cosa que se le haya hecho al vehículo: una revisión, una reparación, la ITV… Solo el título y la fecha son obligatorios.'}
       />
 
-      <form onSubmit={onSubmit} noValidate className="max-w-3xl space-y-6">
+      <form onSubmit={onSubmit} noValidate className="hud-panel max-w-3xl space-y-6 p-5 sm:p-7">
         <WhatSection form={form} onQuick={applyQuick} />
 
         <div className={section}>

@@ -17,7 +17,7 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 6, 
         sideOffset={sideOffset}
         collisionPadding={12}
         className={cn(
-          'z-[60] min-w-52 overflow-hidden rounded-card border border-line bg-surface-2 p-1.5 shadow-2xl shadow-black/30 data-[state=open]:animate-pop-in',
+          'hud-pop z-[60] min-w-52 overflow-hidden p-1.5 data-[state=open]:animate-pop-in',
           className,
         )}
         {...props}
@@ -27,8 +27,8 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 6, 
 }
 
 const itemClasses =
-  'relative flex min-h-11 cursor-pointer select-none items-center gap-2.5 rounded-control px-2.5 text-sm text-fg outline-none md:min-h-9 ' +
-  'data-[highlighted]:bg-surface-3 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-muted'
+  'relative flex min-h-11 cursor-pointer select-none items-center gap-2.5 rounded-control px-2.5 text-sm font-semibold text-fg outline-none transition-colors duration-100 md:min-h-9 ' +
+  'data-[highlighted]:bg-accent-soft data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-muted'
 
 export function DropdownMenuItem({ className, icon, danger, children, ...props }: ComponentProps<typeof DM.Item> & { icon?: ReactNode; danger?: boolean }) {
   return (
@@ -51,7 +51,7 @@ export function DropdownMenuRadioItem({ className, children, ...props }: Compone
 }
 
 export function DropdownMenuLabel({ className, ...props }: ComponentProps<typeof DM.Label>) {
-  return <DM.Label className={cn('px-2.5 pb-1 pt-2 text-xs font-medium text-fg-subtle', className)} {...props} />
+  return <DM.Label className={cn('tag-label px-2.5 pb-1 pt-2 text-fg-subtle', className)} {...props} />
 }
 
 export function DropdownMenuSeparator({ className, ...props }: ComponentProps<typeof DM.Separator>) {

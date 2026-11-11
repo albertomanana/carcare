@@ -8,7 +8,7 @@ import { Plate, StatusPill } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { DataList } from '@/components/ui/Card'
 import { Disclosure } from '@/components/ui/Disclosure'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { WorkshopHeader } from '@/features/workshop/components/WorkshopHeader'
 import { Section } from '@/components/ui/Section'
 import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
@@ -52,7 +52,7 @@ export default function WorkshopRequestDetailPage() {
     const notFound = !id || (isApiError(query.error) && query.error.status === 404)
     return (
       <>
-        <PageHeader title="Solicitud" back={back} />
+        <WorkshopHeader title="Solicitud" back={back} />
         {notFound ? (
           <EmptyState
             icon={<CircleSlash />}
@@ -114,7 +114,7 @@ function RequestDetail({ request: r, back }: { request: RepairRequest; back: { t
 
   return (
     <>
-      <PageHeader title={r.title} back={back} actions={actions}>
+      <WorkshopHeader title={r.title} back={back} actions={actions}>
         <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           {status.attention ? (
             <StatusPill status={status} />
@@ -129,11 +129,11 @@ function RequestDetail({ request: r, back }: { request: RepairRequest; back: { t
           </span>
         </p>
         <StatusExplanation request={r} canManage={ctx.can('manage')} />
-      </PageHeader>
+      </WorkshopHeader>
 
       {/* Móvil: qué le pasa, coche y contacto, presupuesto e historial. Escritorio: coche y contacto a la derecha */}
-      <div className="grid gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
-        <Section title="Qué le pasa" className="lg:col-start-1">
+      <div className="grid gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+        <Section title="Qué le pasa" className="hud-panel p-4 sm:p-5 lg:col-start-1">
           <p className="whitespace-pre-line text-sm text-fg">{r.description}</p>
           <DataList
             className="mt-3 border-t border-line"
@@ -145,14 +145,14 @@ function RequestDetail({ request: r, back }: { request: RepairRequest; back: { t
           />
         </Section>
 
-        <aside className="min-w-0 space-y-8 lg:col-start-2 lg:row-span-3 lg:row-start-1" aria-label="Coche y contacto">
+        <aside className="min-w-0 space-y-5 lg:col-start-2 lg:row-span-3 lg:row-start-1" aria-label="Coche y contacto">
           <VehicleCopy request={r} />
           <Contact request={r} />
           {r.status === 'converted' && <OrderSummary request={r} />}
         </aside>
 
         {latest && (
-          <section aria-label="Presupuesto" className="min-w-0 space-y-4 lg:col-start-1">
+          <section aria-label="Presupuesto" className="hud-panel min-w-0 space-y-4 p-4 sm:p-5 lg:col-start-1">
             <QuoteCard quote={latest} perspective="workshop" showPrices={ctx.can('manage')} />
             {older.length > 0 && (
               <Disclosure label="Versiones anteriores" summary={plural(older.length, 'versión', 'versiones')} open={showOld} onOpenChange={setShowOld}>
@@ -225,7 +225,7 @@ function VehicleCopy({ request: r }: { request: RepairRequest }) {
   const v = r.vehicle
   const color = vehicleColorName(v.color_hex)
   return (
-    <Section title="Coche" description={`Datos que envió el cliente el ${formatDate(r.created_at)}.`}>
+    <Section className="hud-panel p-4" title="Coche" description={`Datos que envió el cliente el ${formatDate(r.created_at)}.`}>
       <VehicleThumb vehicle={v} className="mx-auto w-full max-w-60" />
       <p className="mt-2 font-medium text-fg">
         {v.display_name}
@@ -262,7 +262,7 @@ function VehicleCopy({ request: r }: { request: RepairRequest }) {
 
 function Contact({ request: r }: { request: RepairRequest }) {
   return (
-    <Section title="Contacto">
+    <Section className="hud-panel p-4" title="Contacto">
       <p className="font-medium text-fg">{r.requester.name}</p>
       <ul className="mt-1 space-y-1 text-sm">
         <li>
@@ -292,7 +292,7 @@ function Contact({ request: r }: { request: RepairRequest }) {
 function OrderSummary({ request: r }: { request: RepairRequest }) {
   const o = r.work_order
   return (
-    <Section title="Orden de trabajo">
+    <Section className="hud-panel p-4" title="Orden de trabajo">
       {o ? (
         <DataList
           className="border-t border-line"
@@ -321,6 +321,7 @@ function SharedHistory({ request: r }: { request: RepairRequest }) {
 
   return (
     <Section
+      className="hud-panel p-4 sm:p-5"
       title={r.history_available ? 'Historial compartido por el cliente' : 'Historial del coche'}
       description={r.history_available ? 'Sin importes ni notas. Solo mientras la solicitud esté abierta.' : undefined}
     >
@@ -340,8 +341,8 @@ function SharedHistory({ request: r }: { request: RepairRequest }) {
 function DetailSkeleton({ back }: { back: { to: string; label: string } }) {
   return (
     <>
-      <PageHeader title="Solicitud" back={back} />
-      <div role="status" aria-live="polite" className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <WorkshopHeader title="Solicitud" back={back} />
+      <div role="status" aria-live="polite" className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <span className="sr-only">Cargando la solicitud…</span>
         <div aria-hidden className="space-y-4">
           <Skeleton className="h-6 w-1/2" />

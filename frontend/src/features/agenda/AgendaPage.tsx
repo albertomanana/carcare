@@ -8,10 +8,10 @@ import {
 import type { Reminder, ReminderState } from "@/api/types";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Select } from "@/components/ui/inputs";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyBoard, HudHeader } from "@/components/game/kit";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { EmptyState, ErrorState, NoResults } from "@/components/ui/States";
+import { ErrorState, NoResults } from "@/components/ui/States"
 import {
   ReminderItem,
   ReminderList,
@@ -132,7 +132,7 @@ export default function AgendaPage() {
 
   return (
     <>
-      <PageHeader
+      <HudHeader
         title={title}
         description={
           query.isSuccess && all.length > 0 ? statusLine(counts) : undefined
@@ -145,7 +145,7 @@ export default function AgendaPage() {
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : all.length === 0 ? (
-        <EmptyState
+        <EmptyBoard
           icon={<CalendarCheck />}
           title="No hay nada pendiente"
           description={
@@ -170,7 +170,7 @@ export default function AgendaPage() {
       ) : (
         <div className="space-y-6">
           {/* Filtros en una fila; el de estado es un selector para que quepa a 360 px (hallazgo I4) */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="hud-bar flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Select
               aria-label="Filtrar por estado"
               value={stateFilter}
@@ -290,9 +290,9 @@ export default function AgendaPage() {
               })}
             </div>
           ) : (
-            <ReminderList aria-label={GROUP_TITLE[stateFilter].title}>
+            <ReminderList variant="missions" aria-label={GROUP_TITLE[stateFilter].title}>
               {filtered.map((r) => (
-                <ReminderItem
+                <ReminderItem variant="mission"
                   key={r.id}
                   reminder={r}
                   actions={actions}
@@ -375,9 +375,9 @@ function AgendaGroup({
         {GROUP_TITLE[state].description}
       </p>
       {open && (
-        <ReminderList id={listId}>
+        <ReminderList variant="missions" id={listId}>
           {items.map((r) => (
-            <ReminderItem
+            <ReminderItem variant="mission"
               key={r.id}
               reminder={r}
               actions={actions}

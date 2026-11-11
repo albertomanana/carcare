@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import type { Reminder } from '@/api/types'
 import { StatusPill } from '@/components/ui/Badge'
 import { Button, IconButton } from '@/components/ui/Button'
+import { Progress } from '@/components/ui/Progress'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { cn } from '@/lib/cn'
 import { formatDate, formatKm, formatPlate } from '@/lib/format'
@@ -21,8 +22,8 @@ export interface ReminderActions {
 }
 
 /** Lista de recordatorios: filas con separador fino, sin cajas (reglas R3 y R4 del informe de UX). */
-export function ReminderList({ className, ...props }: ComponentProps<'ul'>) {
-  return <ul className={cn('list-panel', className)} {...props} />
+export function ReminderList({ className, variant = 'rows', ...props }: ComponentProps<'ul'> & { variant?: 'rows' | 'missions' }) {
+  return <ul className={cn(variant === 'missions' ? 'grid gap-2.5' : 'list-panel', className)} {...props} />
 }
 
 /**
@@ -38,6 +39,7 @@ export function ReminderItem({
   actions = {},
   compact,
   highlighted,
+  variant = 'row',
 }: {
   reminder: Reminder
   /** Si se indica, muestra el vehículo enlazado (agenda, inicio). */
@@ -46,7 +48,10 @@ export function ReminderItem({
   compact?: boolean
   /** Destino de un enlace `#recordatorio-{id}`: se resalta y puede recibir el foco. */
   highlighted?: boolean
+  /** `mission`: tarjeta de misión (mundo «Diorama»), con barra de estado, icono y barra segmentada del intervalo. */
+  variant?: 'row' | 'mission'
 }) {
+  const mission = variant === 'mission'
   const state = reminder.state ? REMINDER_STATE[reminder.state] : null
   const pending = reminder.status === 'pending'
   const attention = pending && (reminder.state === 'overdue' || reminder.state === 'soon')
@@ -67,11 +72,18 @@ export function ReminderItem({
     <li
       id={`recordatorio-${reminder.id}`}
       tabIndex={highlighted ? -1 : undefined}
+      data-tone={mission && pending && state && state.tone !== 'neutral' ? state.tone : mission && reminder.status === 'done' ? 'ok' : undefined}
       className={cn(
-        '@container flex scroll-mt-32 items-start gap-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:gap-3',
-        highlighted && 'rounded-control bg-surface-2 px-2',
+        '@container flex scroll-mt-32 items-start gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:gap-3',
+        mission ? 'mission' : 'py-3',
+        highlighted && (mission ? 'ring-2 ring-accent' : 'rounded-control bg-surface-2 px-2'),
       )}
     >
+      {mission && (
+        <span aria-hidden className={cn('grid size-10 shrink-0 place-items-center rounded-xl [&_svg]:size-5', pending && state ? TONE_CLASSES[state.tone].soft : 'bg-ok-soft text-ok')}>
+          {pending && StateIcon ? <StateIcon /> : <CircleCheck />}
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           {attention && state ? (
@@ -92,7 +104,7 @@ export function ReminderItem({
         <p className="mt-0.5 text-sm text-fg-muted tabular">
           {vehicleLink && reminder.vehicle && (
             <>
-              <Link to={vehicleLink} className="text-fg underline-offset-4 hover:underline">
+              <Link to={vehicleLink} className="font-bold text-fg underline decoration-fg-subtle underline-offset-4 hover:decoration-fg">
                 {reminder.vehicle.display_name}
                 {/* espacios de no separación: la matrícula no se parte y cada «·» va pegado a lo que le sigue */}
                 {reminder.vehicle.plate ? ` · ${formatPlate(reminder.vehicle.plate).replace(' ', ' ')}` : ''}
@@ -105,6 +117,9 @@ export function ReminderItem({
           </span>
         </p>
         {extra && <p className="mt-0.5 text-xs text-fg-subtle">{extra}</p>}
+        {mission && pending && !compact && pct !== null && (
+          <Progress value={reminder.progress} tone={state?.tone ?? 'accent'} label={`Intervalo de ${reminder.title}`} valueText={`${pct} % del intervalo`} className="mt-2 max-w-xs" />
+        )}
       </div>
       {/* el plazo, pegado al margen derecho con cifras tabulares (en filas estrechas va bajo el título) */}
       <p className={cn('tabular hidden max-w-[14rem] shrink-0 self-center text-right text-sm @[32rem]:block', pending && reminder.state === 'overdue' ? 'text-danger' : 'text-fg-muted')}>{whenText}</p>
@@ -112,7 +127,7 @@ export function ReminderItem({
         <div className="flex shrink-0 items-center gap-1">
           {actions.onComplete && (
             <>
-              <Button variant="ghost" size="sm" onClick={() => actions.onComplete?.(reminder)} className="hidden @[40rem]:inline-flex" aria-label={`Marcar como hecho: ${reminder.title}`}>
+              <Button variant="ghost" size="sm" onClick={() => actions.onComplete?.(reminder)} className="hidden @[40rem]:inline-flex" aria-label={`Marcar hecho: ${reminder.title}`}>
                 Marcar hecho
               </Button>
               <IconButton label={`Marcar como hecho: ${reminder.title}`} size="sm" onClick={() => actions.onComplete?.(reminder)} className="@[40rem]:hidden">

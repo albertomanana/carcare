@@ -59,10 +59,10 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
   }
 
   return (
-    <section aria-labelledby="zonas-title" className="min-w-0">
+    <section aria-labelledby="zonas-title" className="hud-panel min-w-0 p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="zonas-title" className="font-display text-lg font-semibold tracking-tight text-fg-warm">
+          <h2 id="zonas-title" className="font-display text-lg font-bold tracking-tight text-fg-warm">
             Zonas
           </h2>
           <p className="mt-0.5 text-sm text-fg-muted">{INTERVAL_DISCLAIMER}: el estado sale de tus recordatorios.</p>
@@ -85,7 +85,7 @@ export function ZoneMap({ vehicle, zones, canOperate, onCreateReminder, recordHr
 
       {/* La caja solo rodea el visor (R3); la lista y el detalle van al lado, sin caja */}
       <div className="grid gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
-        <div className={cn('relative overflow-hidden rounded-card border border-line bg-surface', effectiveView === '3d' ? 'min-h-[300px] sm:min-h-[340px] lg:min-h-[400px]' : 'min-h-[180px] sm:min-h-[260px] lg:min-h-[400px]')}>
+        <div className={cn('relative overflow-hidden rounded-xl bg-[radial-gradient(90%_70%_at_50%_100%,color-mix(in_srgb,var(--accent)_8%,var(--surface-2)),var(--surface-2)_75%)]', effectiveView === '3d' ? 'min-h-[300px] sm:min-h-[340px] lg:min-h-[400px]' : 'min-h-[180px] sm:min-h-[260px] lg:min-h-[400px]')}>
           {effectiveView === '3d' ? (
             <CarViewer
               appearance={appearance}
@@ -146,10 +146,9 @@ function ZoneList({ zones, selected, onSelect }: { zones: ZoneStatus[]; selected
                 type="button"
                 onClick={() => onSelect(z.zone)}
                 aria-pressed={selected === z.zone}
-                aria-label={`${z.label}: ${d.label}`}
                 className="flex min-h-11 w-full min-w-0 items-center gap-3 rounded-control px-1 text-left transition-colors hover:bg-surface-2"
               >
-                <span className="min-w-0 flex-1 truncate text-sm text-fg">{z.label}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-fg">{z.label}</span>{' '}
                 <span className={cn('inline-flex shrink-0 items-center gap-1 text-xs', TONE_CLASSES[d.tone].text)}>
                   <StateIcon aria-hidden className="size-3.5" />
                   {d.label}

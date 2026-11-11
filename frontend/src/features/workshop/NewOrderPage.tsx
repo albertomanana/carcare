@@ -13,7 +13,7 @@ import { FormErrors } from '@/components/forms/MileageConflictNotice'
 import { Button } from '@/components/ui/Button'
 import { Field } from '@/components/ui/Field'
 import { Input, MileageInput, Select, Textarea } from '@/components/ui/inputs'
-import { PageHeader } from '@/components/ui/PageHeader'
+import { WorkshopHeader } from './components/WorkshopHeader'
 import { EmptyState } from '@/components/ui/States'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -66,7 +66,7 @@ export default function NewOrderPage() {
   if (!ctx.isWorkshop)
     return (
       <>
-        <PageHeader title="Nueva orden" />
+        <WorkshopHeader title="Nueva orden" />
         <EmptyState icon={<ClipboardList />} title="Las órdenes de trabajo son del modo taller" description="Cambia a un espacio de taller desde el selector de espacios para abrir órdenes." />
       </>
     )
@@ -159,14 +159,14 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
 
   return (
     <>
-      <PageHeader
+      <WorkshopHeader
         crumbs={[{ label: 'Órdenes', to: `${ctx.base}/ordenes` }, { label: 'Nueva orden' }]}
         title="Nueva orden de trabajo"
         description="Para un coche que entra al taller. Solo el vehículo y el título son obligatorios; la orden empieza en «Recibido»."
       />
 
-      <form onSubmit={onSubmit} noValidate className="max-w-3xl space-y-10">
-        <section aria-labelledby="vehiculo-title" className="space-y-4">
+      <form onSubmit={onSubmit} noValidate className="max-w-3xl space-y-5">
+        <section aria-labelledby="vehiculo-title" className="hud-panel space-y-4 p-4 sm:p-5">
           <div>
             <SectionTitle id="vehiculo-title">1. Vehículo</SectionTitle>
             <p className="mt-0.5 text-sm text-fg-muted">El cliente de la orden es el del vehículo.</p>
@@ -176,7 +176,7 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
 
         <WorkFields form={form} />
 
-        <section aria-labelledby="mas-opciones-title" className="space-y-5 border-t border-line pt-5">
+        <section aria-labelledby="mas-opciones-title" className="hud-panel space-y-5 p-4 sm:p-5">
           <h2 id="mas-opciones-title" className="text-base font-medium text-fg">
             <button
               type="button"
@@ -240,7 +240,7 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
           )}
           <FormErrors messages={orphans} />
 
-          <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
+          <div className="hud-bar flex flex-col-reverse gap-2 p-3 sm:flex-row sm:items-center sm:justify-end">
             <Link to={`${ctx.base}/ordenes`} className="inline-flex min-h-11 items-center justify-center px-3 text-sm text-fg-muted hover:text-fg">
               Cancelar
             </Link>
@@ -257,7 +257,7 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
 
 function SectionTitle({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="font-display text-lg font-semibold tracking-tight text-fg-warm">
+    <h2 id={id} className="font-display text-lg font-bold tracking-tight text-fg-warm">
       {children}
     </h2>
   )
@@ -268,7 +268,7 @@ function WorkFields({ form }: { form: Form }) {
   const title = useWatch({ control: form.control, name: 'title' })
   const e = formState.errors
   return (
-    <section aria-labelledby="que-le-pasa-title" className="space-y-4">
+    <section aria-labelledby="que-le-pasa-title" className="hud-panel space-y-4 p-4 sm:p-5">
       <SectionTitle id="que-le-pasa-title">2. Qué le pasa</SectionTitle>
       <Field label="Título" required error={e.title?.message} hint="Es lo que verá el equipo en el tablero.">
         <Input autoComplete="off" maxLength={120} placeholder="P. ej. Ruido en la suspensión delantera" {...register('title')} />

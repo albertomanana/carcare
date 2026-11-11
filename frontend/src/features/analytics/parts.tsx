@@ -8,7 +8,7 @@ import { type ReactNode, useId, useState } from 'react'
 import type { Money, YearMonth } from '@/api/types'
 import { HBarList, MonthlyBars } from '@/components/charts/Charts'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
+import { StatTile } from '@/components/game/kit'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { currentMonthKey } from '@/lib/analytics'
 import { formatMoney, formatMonth } from '@/lib/format'
@@ -25,16 +25,10 @@ export interface Figure {
 
 export function Figures({ items, label }: { items: [Figure] | [Figure, Figure] | [Figure, Figure, Figure]; label: string }) {
   return (
-    <section aria-label={label}>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
-        {items.map((item) => (
-          <div key={item.label} className="min-w-0">
-            <dt className="text-sm text-fg-muted">{item.label}</dt>
-            <dd className="mt-1 font-display text-xl font-semibold tracking-tight text-fg-warm tabular md:text-2xl">{item.value}</dd>
-            {item.hint && <dd className="mt-0.5 text-xs text-fg-muted">{item.hint}</dd>}
-          </div>
-        ))}
-      </dl>
+    <section aria-label={label} className="hud-panel grid grid-cols-2 overflow-hidden sm:grid-cols-3 [&>*+*]:border-l [&>*+*]:border-line">
+      {items.map((item) => (
+        <StatTile key={item.label} label={item.label} value={item.value} note={item.hint} />
+      ))}
     </section>
   )
 }
@@ -43,8 +37,8 @@ export function Figures({ items, label }: { items: [Figure] | [Figure, Figure] |
 
 export function Block({ id, title, description, children }: { id: string; title: string; description?: ReactNode; children: ReactNode }) {
   return (
-    <section aria-labelledby={`${id}-titulo`} className="min-w-0">
-      <h2 id={`${id}-titulo`} className="font-display text-lg font-semibold tracking-tight text-fg-warm">
+    <section aria-labelledby={`${id}-titulo`} className="hud-panel min-w-0 p-4 sm:p-5">
+      <h2 id={`${id}-titulo`} className="font-display text-lg font-bold tracking-tight text-fg-warm">
         {title}
       </h2>
       {description && <p className="mt-0.5 text-sm text-fg-muted">{description}</p>}
@@ -61,7 +55,7 @@ export function Block({ id, title, description, children }: { id: string; title:
  */
 export function MonthlyChart({ data, label, valueHeader }: { data: { month: YearMonth; total: Money }[]; label: string; valueHeader: string }) {
   return (
-    <Card className="p-4 sm:p-5">
+    <div>
       <MonthlyBars data={data} label={label} highlightMonth={currentMonthKey()} srTable={false} height={200} />
       <details className="group mt-3 border-t border-line pt-1">
         <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-control text-sm text-fg-muted hover:text-fg md:min-h-9 [&::-webkit-details-marker]:hidden">
@@ -92,7 +86,7 @@ export function MonthlyChart({ data, label, valueHeader }: { data: { month: Year
           </tbody>
         </table>
       </details>
-    </Card>
+    </div>
   )
 }
 
