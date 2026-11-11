@@ -35,9 +35,8 @@ const SPECS: Record<BodyType, ClaySpec> = {
 
 export interface ClayCarGeometry {
   paint: THREE.BufferGeometry
-  glass: THREE.BufferGeometry
-  /** Neumáticos, tapacubos, parachoques y pilotos (color por vértice). */
-  trim: THREE.BufferGeometry
+  /** Todo lo que no es pintura (lunas, neumáticos, tapacubos, parachoques, pilotos…), con color por vértice. */
+  rest: THREE.BufferGeometry
   size: { length: number; width: number; height: number }
 }
 
@@ -47,6 +46,7 @@ const BUMPER = new THREE.Color('#41474e')
 const HEAD = new THREE.Color('#fff3d2')
 const TAIL = new THREE.Color('#c4473c')
 const SEAT = new THREE.Color('#3b4148')
+const GLASS = new THREE.Color('#3f4c5a')
 
 /** Prepara una pieza para fusionar: sin UV, sin índice y (si se da) con color por vértice. */
 function prep(g: THREE.BufferGeometry, color?: THREE.Color): THREE.BufferGeometry {
@@ -113,10 +113,10 @@ function build(type: BodyType): ClayCarGeometry {
   const cw = W * 0.84
   if (s.kind === 'open') {
     // descapotable: parabrisas fino y asientos
-    glass.push(prep(cabinPrism(z(ft) - 0.05, z(ft) - 0.02, z(ft) + 0.02, z(fb), top - 0.02, s.cabinH, cw, 0.03)))
+    glass.push(prep(cabinPrism(z(ft) - 0.05, z(ft) - 0.02, z(ft) + 0.02, z(fb), top - 0.02, s.cabinH, cw, 0.03), GLASS))
     for (const sx of [-1, 1]) trim.push(prep(box(0.56, 0.5, 0.55, 0.12, sx * W * 0.22, top + 0.18, z(0.5)), SEAT))
   } else {
-    glass.push(prep(cabinPrism(z(rb), z(rt), z(ft), z(fb), top - 0.04, s.cabinH, cw)))
+    glass.push(prep(cabinPrism(z(rb), z(rt), z(ft), z(fb), top - 0.04, s.cabinH, cw), GLASS))
     // techo de pintura sobre las lunas
     const roofLen = z(ft) - z(rt) + 0.12
     paint.push(prep(box(cw + 0.08, 0.11, roofLen, 0.05, 0, top - 0.04 + s.cabinH + 0.03, (z(ft) + z(rt)) / 2)))
@@ -159,7 +159,7 @@ function build(type: BodyType): ClayCarGeometry {
   }
 
   const height = s.kind === 'van' ? top + s.cabinH + 0.1 : top + s.cabinH + 0.1
-  return { paint: merge(paint), glass: merge(glass), trim: merge(trim), size: { length: L, width: W, height } }
+  return { paint: merge(paint), rest: merge([...glass, ...trim]), size: { length: L, width: W, height } }
 }
 
 const cache = new Map<BodyType, ClayCarGeometry>()
@@ -187,18 +187,16 @@ export function clayPaint(color: string): THREE.MeshStandardMaterial {
   return m
 }
 
-let trimMat: THREE.MeshStandardMaterial | null = null
-export function clayTrim(): THREE.MeshStandardMaterial {
-  trimMat ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.1 })
-  return trimMat
+let restMat: THREE.MeshStandardMaterial | null = null
+/** Resto del coche (lunas, ruedas, parachoques…): mate, con el color en los vértices. */
+export function clayRest(): THREE.MeshStandardMaterial {
+  restMat ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.1 })
+  return restMat
 }
 
-const glassCache = new Map<string, THREE.MeshStandardMaterial>()
-export function clayGlass(color: string): THREE.MeshStandardMaterial {
-  let m = glassCache.get(color)
-  if (!m) {
-    m = new THREE.MeshStandardMaterial({ color, roughness: 0.32, metalness: 0.1 })
-    glassCache.set(color, m)
-  }
-  return m
+let vertexClay: THREE.MeshStandardMaterial | null = null
+/** Material de arcilla con color por vértice (nave, marcas, elevadores): uno para toda la escena. */
+export function clayVertex(): THREE.MeshStandardMaterial {
+  vertexClay ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.1 })
+  return vertexClay
 }

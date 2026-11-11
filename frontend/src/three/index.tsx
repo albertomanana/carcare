@@ -10,9 +10,9 @@
  * Los nombres exportados y sus props (./types.ts) son el contrato con `frontend-react`.
  */
 import { lazy, Suspense, useRef } from 'react'
-import type { CarPreviewProps, CarSilhouetteProps, CarThumbnailProps, CarViewerProps, HeroImageProps, HeroSceneProps, WorkshopSceneProps } from './types'
+import type { CarPreviewProps, CarSilhouetteProps, CarThumbnailProps, CarViewerProps, GarageSceneProps, HeroImageProps, HeroSceneProps, WorkshopSceneProps } from './types'
 import { useSeenOnce, useWebGLAvailable } from './env'
-import { SilhouetteBox, ThreeBoundary, Workshop2D, ZoneMap2D } from './fallbacks'
+import { Garage2D, SilhouetteBox, ThreeBoundary, Workshop2D, ZoneMap2D } from './fallbacks'
 import { CarSilhouette as Silhouette } from './silhouette/CarSilhouette'
 import { HeroImageImpl } from './still/HeroImage'
 import { CarThumbnailImpl } from './thumbnail/CarThumbnail'
@@ -22,6 +22,7 @@ export type * from './types'
 const CarViewerCanvas = lazy(() => import('./scenes/CarViewerCanvas'))
 const CarPreviewCanvas = lazy(() => import('./scenes/CarPreviewCanvas'))
 const WorkshopCanvas = lazy(() => import('./scenes/WorkshopCanvas'))
+const GarageDioramaCanvas = lazy(() => import('./scenes/GarageDioramaCanvas'))
 const HeroCanvas = lazy(() => import('./scenes/HeroCanvas'))
 
 export { useWebGLAvailable } from './env'
@@ -94,6 +95,32 @@ export function WorkshopScene(props: WorkshopSceneProps) {
     <ThreeBoundary fallback={fallback}>
       <Suspense fallback={loading}>
         <WorkshopCanvas {...props} />
+      </Suspense>
+    </ThreeBoundary>
+  )
+}
+
+/**
+ * Garaje 3D para particulares: diorama isométrico de arcilla con una plaza por vehículo (máx. 6), coches que entran en
+ * cola, foco de cámara y plataforma giratoria al seleccionar. `compact` ⇒ cabecera pequeña (~260 px). Se monta al
+ * hacerse visible; mientras carga, si falla o sin WebGL, tarjetas 2D con los mismos botones.
+ */
+export function GarageScene(props: GarageSceneProps) {
+  const webgl = useWebGLAvailable()
+  const holder = useRef<HTMLDivElement>(null)
+  const seen = useSeenOnce(holder)
+  const fallback = <Garage2D {...props} />
+  const loading = (
+    <div ref={seen ? undefined : holder} className={['grid min-h-40 place-items-center rounded-card bg-surface-2 text-sm text-fg-subtle', props.className].filter(Boolean).join(' ')} aria-busy="true">
+      Cargando garaje 3D…
+    </div>
+  )
+  if (!webgl) return fallback
+  if (!seen) return loading
+  return (
+    <ThreeBoundary fallback={fallback}>
+      <Suspense fallback={loading}>
+        <GarageDioramaCanvas {...props} />
       </Suspense>
     </ThreeBoundary>
   )

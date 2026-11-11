@@ -5,7 +5,7 @@
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Bay, WorkOrder, Zone, ZoneStatus } from '@/api/types'
 import { WORK_ORDER_STATUS } from '@/lib/status'
-import type { CarAppearance, CarViewerProps, WorkshopSceneProps } from './types'
+import type { CarAppearance, CarViewerProps, GarageSceneProps, WorkshopSceneProps } from './types'
 import { getCarLayout } from './car/anchors'
 import { resolveBody } from './car/specs'
 import { useThemeTokens } from './env'
@@ -13,6 +13,7 @@ import { ZONE_DISCLAIMER, ZoneMarkerButton } from './markers/ZoneMarkerButton'
 import { CarSilhouette } from './silhouette/CarSilhouette'
 import { describeCar } from './silhouette/describe'
 import { getSilhouettePaths } from './silhouette/paths'
+import { vehicleAria } from './scenes/garage/layout'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -166,6 +167,40 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrd
       </ul>
       {group('En espera', parked)}
       {group('Listas para entregar', ready)}
+    </div>
+  )
+}
+
+/** Garaje sin WebGL: una tarjeta por vehículo con su silueta, como botones (misma selección que el diorama). */
+export function Garage2D({ vehicles, selectedId = null, onSelect, compact = false, className }: GarageSceneProps) {
+  const shown = vehicles.slice(0, 6)
+  return (
+    <div className={cx('grid content-start gap-2 overflow-auto p-2', className)} role="group" aria-label="Garaje (vista 2D)">
+      <ul className={cx('grid gap-2', compact ? 'grid-flow-col auto-cols-[8rem] overflow-x-auto' : 'grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]')}>
+        {shown.map((v, i) => {
+          const sel = selectedId === v.id
+          const aria = `Plaza ${i + 1}: ${vehicleAria(v)}`
+          return (
+            <li key={v.id}>
+              <button
+                type="button"
+                aria-pressed={sel}
+                aria-label={aria}
+                onClick={() => onSelect?.(sel ? null : v.id)}
+                className={cx(
+                  'flex w-full flex-col items-stretch gap-1 rounded-card border bg-surface p-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                  sel ? 'border-accent' : 'border-line',
+                )}
+              >
+                <CarSilhouette appearance={{ bodyType: v.body ?? null, colorHex: v.color ?? null }} className={compact ? 'h-10 w-full' : 'h-14 w-full'} title={v.name} />
+                <span className="truncate font-medium text-fg">{v.name}</span>
+                {v.plate && <span className="truncate text-fg-muted">{v.plate}</span>}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      {vehicles.length > shown.length && <p className="text-xs text-fg-subtle">Se ven {shown.length} de {vehicles.length} vehículos</p>}
     </div>
   )
 }

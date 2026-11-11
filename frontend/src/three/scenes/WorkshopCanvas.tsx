@@ -2,20 +2,19 @@
  * Taller 3D (chunk diferido): maqueta isométrica «de arcilla», como un juego de estrategia.
  *  - Cámara ortográfica de ángulo fijo (azimut 45°, elevación 35°): se desplaza arrastrando y se acerca con la rueda o
  *    pellizcando, pero no gira; al elegir un coche o un elevador la cámara se acerca con GSAP (0,8 s, `power3.out`).
- *  - Nave: entrada a la derecha → calzada → espera (órdenes sin elevador que no están «Listo») → elevadores numerados
- *    (uno por `bays[i]`) → entrega (órdenes «Listo» sin elevador).
- *  - Coches de bloques redondeados con el color real del vehículo en tono mate. Un coche solo se mueve cuando cambia
- *    el estado real de su orden (o al entrar en escena): recorre la calzada con GSAP por una CatmullRomCurve3.
+ *  - Nave: entrada a la derecha → calzada de dos carriles → espera (órdenes sin elevador que no están «Listo») →
+ *    elevadores numerados (uno por `bays[i]`) → entrega (órdenes «Listo» sin elevador).
+ *  - Coches con la carrocería real de cada vehículo y su color real en tono mate (roughness 0,7, metalness 0,1, sin
+ *    reflejos). Un coche solo se mueve cuando cambia el estado real de su orden (o al entrar en escena): el controlador
+ *    de tráfico (`workshop/traffic.ts`) planifica las salidas para que nunca se toquen y las lleva con GSAP.
  *  - Con `prefers-reduced-motion`: sin trayectos, sin entrada y sin vuelos de cámara (posición final directa).
  *  - Rótulos HTML accesibles (un botón por elevador y por coche aparcado) proyectados sobre la escena.
  * Un único <Canvas>, `frameloop="demand"` (no pinta nada en reposo) y sombras que solo se recalculan cuando algo se mueve.
  */
-import { OrbitControls, useCursor } from '@react-three/drei'
+import { useCursor } from '@react-three/drei'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import gsap from 'gsap'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { Bay, WorkOrder, WorkOrderStatus } from '@/api/types'
 import { TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
 import type { WorkshopSceneProps } from '../types'
@@ -24,12 +23,14 @@ import { useInView, usePrefersReducedMotion, useThemeTokens, type ThemeTokens } 
 import { toneColor } from '../markers/ZoneMarkerButton'
 import { ReleaseOnUnmount, ResumeOnVisible } from './common'
 import { canvasDpr } from './dpr'
-import { fitOrtho, type FitInset } from './fit'
 import { OverlayItem, OverlayLayer, OverlayProjector, type OverlayAnchor } from './overlay'
 import { useOverlayStore, type OverlayStore } from './overlayStore'
 import { useCanvasLabel } from './useCanvasLabel'
-import { clayGlass, clayPaint, clayTrim, getClayCar } from './workshop/clayCar'
-import { buildDecals, buildMarkings, buildStatic, dioramaPalette, liftCarriage, POST_X, selectionOutline, type DioramaPalette } from './workshop/diorama'
+import { carDims, getClayModel } from './workshop/clayReal'
+import { buildDecals, buildMarkings, buildStatic, dioramaPalette, liftCarriage, selectionOutline, type DioramaPalette } from './workshop/diorama'
+import { boxPoints, CAM_DIST, focusFrom, ISO_DIR, useCompileGate, useDevHook, useEscape, useRedraw, useSize, useTrafficController, type CamFocus } from './workshop/iso'
+import { clayVertex } from './workshop/clayCar'
+import { CarMesh, IsoRig, StudioLights } from './workshop/IsoParts'
 import { BayLabel, CarLabel } from './workshop/labels'
 import {
   assignSpots,
@@ -37,14 +38,15 @@ import {
   BAY_W,
   clayColor,
   computeFloorLayout,
-  driveDuration,
   entrancePose,
+  floorObstacles,
   planRoute,
-  polyLength,
   POST_H,
+  POST_X,
   sameSpot,
   SLAB_H,
   slotCapacity,
+  spotFromKey,
   spotKey,
   spotPose,
   STALL_D,
@@ -52,39 +54,11 @@ import {
   WALL_H,
   WALL_T,
   type FloorLayout,
-  type P2,
-  type Pose,
   type Spot,
 } from './workshop/layout'
+import type { CarHandle, Desired, TrafficWorld } from './workshop/traffic'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
-
-// ───────────────────────── Cámara isométrica ─────────────────────────
-
-const AZIMUTH = THREE.MathUtils.degToRad(45)
-const ELEVATION = THREE.MathUtils.degToRad(35)
-/** Del objetivo a la cámara. */
-const ISO_DIR = new THREE.Vector3(Math.cos(ELEVATION) * Math.sin(AZIMUTH), Math.sin(ELEVATION), Math.cos(ELEVATION) * Math.cos(AZIMUTH))
-const CAM_DIST = 70
-/** Sol: de la nave hacia la luz (arriba, a la izquierda y al frente): las sombras caen hacia el fondo a la derecha. */
-const SUN_DIR = new THREE.Vector3(-0.5, 1, 0.42).normalize()
-
-interface CamFocus {
-  x: number
-  z: number
-  zoom: number
-}
-
-function boxPoints(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number): THREE.Vector3[] {
-  const out: THREE.Vector3[] = []
-  for (const x of [x0, x1]) for (const y of [y0, y1]) for (const z of [z0, z1]) out.push(new THREE.Vector3(x, y, z))
-  return out
-}
-
-function focusFrom(points: THREE.Vector3[], w: number, h: number, inset: FitInset, pad: number): CamFocus {
-  const f = fitOrtho(points, ISO_DIR, w, h, inset, pad)
-  return { x: f.target[0], z: f.target[2], zoom: f.zoom }
-}
 
 // ───────────────────────── Componente público ─────────────────────────
 
@@ -117,17 +91,6 @@ export default function WorkshopCanvas({
   if (!sameSlots(prevSlots, assignment.slots)) setPrevSlots(assignment.slots)
   const cars = assignment.cars
 
-  // Coches que aparecen en esta actualización: entran por la entrada escalonados. Los retardos se guardan con el
-  // conjunto de coches conocidos (estado ajustado durante el render) y cada coche solo los lee al montarse.
-  const [entry, setEntry] = useState(() => ({ known: new Set<number>(), delays: new Map<number, number>() }))
-  const fresh = cars.filter((c) => !entry.known.has(c.order.id))
-  if (fresh.length > 0 || entry.known.size !== cars.length) {
-    const delays = new Map<number, number>()
-    fresh.forEach((c, k) => delays.set(c.order.id, Math.min(1.6, k * 0.14)))
-    setEntry({ known: new Set(cars.map((c) => c.order.id)), delays: fresh.length > 0 ? delays : entry.delays })
-  }
-  const enterDelay = entry.delays
-
   // Selección: un coche (de cualquier zona) o un elevador
   const selCar = selectedOrderId != null ? (cars.find((c) => c.order.id === selectedOrderId) ?? null) : null
   const focusBay = selCar ? (selCar.spot.kind === 'bay' ? selCar.spot.bay : null) : selectedBay
@@ -143,7 +106,7 @@ export default function WorkshopCanvas({
   const overview = useMemo<CamFocus | null>(() => {
     if (size.w < 40 || size.h < 40) return null
     const pts = boxPoints(layout.minX - WALL_T, layout.apronX, -SLAB_H, WALL_H, layout.backZ - WALL_T, layout.frontZ)
-    return focusFrom(pts, size.w, size.h, { right: insetR, top: insetT + 40, bottom: insetB + 30 }, size.w < 520 ? 10 : 20)
+    return focusFrom(pts, size.w, size.h, { right: insetR, top: insetT + 26, bottom: insetB + 24 }, size.w < 520 ? 8 : 14)
   }, [layout, size.w, size.h, insetR, insetT, insetB])
   const focus = useMemo<CamFocus | null>(() => {
     if (!overview) return null
@@ -181,21 +144,10 @@ export default function WorkshopCanvas({
     },
     [deselect, onSelectBay],
   )
+  const onUserMove = useCallback(() => setUserMoved(true), [])
 
-  // Escape: vuelve al encuadre general (salvo que lo use un diálogo, un menú o un campo)
   const canReset = hasSelection || userMoved
-  useEffect(() => {
-    if (!canReset) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return
-      const t = e.target as HTMLElement | null
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
-      if (document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return
-      deselect()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [canReset, deselect])
+  useEscape(canReset, deselect)
 
   // Rótulos compactos si los elevadores quedan a menos de ~175 px en pantalla
   const compact = !!focus && focus.zoom * BAY_W * Math.SQRT1_2 < 175
@@ -247,7 +199,6 @@ export default function WorkshopCanvas({
             layout={layout}
             tokens={tokens}
             reduced={reduced}
-            enterDelay={enterDelay}
             focusBay={focusBay}
             focusStall={focusStall}
             selectedOrderId={selCar?.order.id ?? null}
@@ -258,7 +209,7 @@ export default function WorkshopCanvas({
             focus={focus}
             overview={overview}
             selKey={selKey}
-            onUserMove={() => setUserMoved(true)}
+            onUserMove={onUserMove}
             inset={inset}
           />
         )}
@@ -309,20 +260,6 @@ function sameSlots(a: Map<number, Spot>, b: Map<number, Spot>) {
   return true
 }
 
-function useSize(ref: React.RefObject<HTMLElement | null>) {
-  const [s, setS] = useState({ w: 0, h: 0 })
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    setS({ w: Math.round(el.clientWidth), h: Math.round(el.clientHeight) })
-    if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(([e]) => setS({ w: Math.round(e.contentRect.width), h: Math.round(e.contentRect.height) }))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [ref])
-  return s
-}
-
 // ───────────────────────── Escena ─────────────────────────
 
 interface WorldProps {
@@ -331,7 +268,6 @@ interface WorldProps {
   layout: FloorLayout
   tokens: ThemeTokens
   reduced: boolean
-  enterDelay: Map<number, number>
   focusBay: number | null
   focusStall: Spot | null
   selectedOrderId: number | null
@@ -346,20 +282,12 @@ interface WorldProps {
   inset: { right: number; top: number; bottom: number }
 }
 
-/** Material de arcilla con color por vértice (nave, marcas, elevadores): uno para toda la escena. */
-let vertexClay: THREE.MeshStandardMaterial | null = null
-function clayVertex() {
-  vertexClay ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.1 })
-  return vertexClay
-}
-
 function WorkshopWorld({
   bays,
   cars,
   layout,
   tokens,
   reduced,
-  enterDelay,
   focusBay,
   focusStall,
   selectedOrderId,
@@ -375,64 +303,66 @@ function WorkshopWorld({
 }: WorldProps) {
   useCanvasLabel(label)
   const pal = useMemo(() => dioramaPalette(tokens), [tokens])
-  const get = useThree((s) => s.get)
   const gl = useThree((s) => s.gl)
-  const invalidate = useThree((s) => s.invalidate)
+  const markShadows = useRedraw()
 
-  // Sombras: el mapa solo se recalcula cuando algo cambia o se mueve (mover la cámara no lo necesita)
-  const markShadows = useCallback(() => {
-    get().gl.shadowMap.needsUpdate = true
-    invalidate()
-  }, [get, invalidate])
-  useEffect(() => {
-    markShadows()
+  // Objetos que mueve el controlador de tráfico: los coches y los carros de los elevadores
+  const [handles] = useState(() => new Map<number, CarHandle>())
+  const [carriages] = useState(() => new Map<number, THREE.Object3D>())
+  const [registerCar] = useState(() => (id: number, h: CarHandle | null) => {
+    if (h) handles.set(id, h)
+    else handles.delete(id)
   })
+  const traffic = useTrafficController(handles, carriages, markShadows)
+  const armed = useCompileGate(handles)
 
+  // Plan de la nave para el controlador: dónde aparecen los coches, qué obstáculos hay y cómo se va de una plaza a otra
+  const world = useMemo<TrafficWorld>(
+    () => ({
+      entrance: (d) => entrancePose(layout, spotFromKey(d.key)!),
+      obstacles: floorObstacles(layout),
+      route: (from, fromKey, to) => {
+        const toSpot = spotFromKey(to.key)
+        const fromSpot = fromKey === 'entrance' ? 'entrance' : spotFromKey(fromKey)
+        return toSpot && fromSpot ? planRoute(layout, from, fromSpot, toSpot, to.pose) : null
+      },
+    }),
+    [layout],
+  )
+  const desired = useMemo<Desired[]>(
+    () =>
+      cars.flatMap((c) => {
+        const pose = spotPose(layout, c.spot, c.order.status)
+        if (!pose) return []
+        return [{ id: c.order.id, dims: carDims(resolveBody(c.order.vehicle.body_type)), key: spotKey(c.spot), pose, bay: c.spot.kind === 'bay' ? c.spot.bay : null }]
+      }),
+    [cars, layout],
+  )
+  useLayoutEffect(() => {
+    traffic.sync(world, desired, { reduced, armed })
+  }, [traffic, world, desired, reduced, armed])
 
-
-  const carriages = useMemo(() => new Map<number, THREE.Object3D>(), [])
-  const carObjects = useMemo(() => new Map<number, THREE.Object3D>(), [])
-  // La entrada de los coches espera a que los shaders estén compilados: si no, en equipos lentos la animación
-  // transcurre mientras el hilo está bloqueado compilando y no se ve. Se compila con los coches visibles un instante
-  // (compile() solo recorre lo visible) para que sus materiales entren también.
-  const [armed, setArmed] = useState(false)
-  useEffect(() => {
-    let alive = true
-    const { gl: r, scene, camera } = get()
-    const objs = [...carObjects.values()]
-    const was = objs.map((o) => o.visible)
-    for (const o of objs) o.visible = true
-    const done = () => {
-      if (alive) setArmed(true)
-    }
-    r.compileAsync(scene, camera).then(done, done)
-    objs.forEach((o, i) => (o.visible = was[i]))
-    return () => {
-      alive = false
-    }
-  }, [get, carObjects])
-
-  // Medición (solo en desarrollo): window.__workshop3d.info.render → draw calls y triángulos del último fotograma
-  useEffect(() => {
-    if (!import.meta.env.DEV) return
-    const w = window as unknown as { __workshop3d?: unknown }
-    // project(x, y, z) → px del lienzo; car(id) → px del centro del coche (para apuntar en las pruebas)
-    const project = (x: number, y: number, z: number) => {
-      const { camera, size } = get()
-      const v = new THREE.Vector3(x, y, z).project(camera)
-      return { x: (v.x * 0.5 + 0.5) * size.width, y: (-v.y * 0.5 + 0.5) * size.height }
-    }
-    const car = (id: number) => {
-      const o = carObjects.get(id)
-      if (!o) return null
-      const p = o.getWorldPosition(new THREE.Vector3())
-      return project(p.x, p.y + 0.35, p.z)
-    }
-    w.__workshop3d = { info: gl.info, invalidate, shadows: markShadows, project, car, layout }
-    return () => {
-      delete w.__workshop3d
-    }
-  }, [gl, invalidate, markShadows, get, carObjects, layout])
+  const devExtra = useCallback(
+    (api: { project: (x: number, y: number, z: number) => { x: number; y: number } }) => ({
+      shadows: markShadows,
+      layout,
+      /** px del lienzo del centro de un coche (para apuntar en las pruebas) y si está visible. */
+      car: (id: number) => {
+        const o = handles.get(id)?.root
+        if (!o) return null
+        const p = o.getWorldPosition(new THREE.Vector3())
+        return { ...api.project(p.x, p.y + 0.35, p.z), visible: o.visible }
+      },
+      /** Posición real (en este instante) de todos los coches, con sus medidas: para medir distancias en pruebas. */
+      poses: () =>
+        desired.flatMap((d) => {
+          const o = handles.get(d.id)?.root
+          return o ? [{ id: d.id, x: o.position.x, z: o.position.z, heading: o.rotation.y, visible: o.visible, length: d.dims.length, width: d.dims.width }] : []
+        }),
+    }),
+    [markShadows, layout, handles, desired],
+  )
+  useDevHook('__workshop3d', devExtra)
 
   const [hover, setHover] = useState<string | null>(null)
   useCursor(!!hover, 'pointer', '', gl.domElement)
@@ -453,12 +383,12 @@ function WorkshopWorld({
     for (const c of cars) {
       if (c.spot.kind === 'bay') continue
       const id = c.order.id
-      const h = getClayCar(resolveBody(c.order.vehicle.body_type)).size.height
+      const h = getClayModel(resolveBody(c.order.vehicle.body_type)).size.height
       const sel = selectedOrderId === id
       list.push({
         id: `car-${id}`,
         position: [0, h + 0.3, 0],
-        track: () => carObjects.get(id),
+        track: () => handles.get(id)?.root,
         pivot: 'bottom',
         priority: sel ? 9 : 1,
         fixed: sel,
@@ -466,15 +396,20 @@ function WorkshopWorld({
       })
     }
     return list
-  }, [layout, bays, cars, focusBay, focusStall, selectedOrderId, carObjects])
+  }, [layout, bays, cars, focusBay, focusStall, selectedOrderId, handles])
 
   const selStallPose = focusStall ? spotPose(layout, focusStall, 'received') : null
   const selBayPos = focusBay != null ? layout.bays.find((b) => b.number === focusBay) : null
+  const lightBox = useMemo(
+    () => ({ x0: layout.minX - 2, x1: layout.apronX + 3, z0: layout.backZ - 3, z1: layout.frontZ + 1, y0: -SLAB_H, y1: WALL_H + 1.6 }),
+    [layout],
+  )
+  const bounds = useMemo(() => ({ x0: layout.minX - 6, x1: layout.apronX + 6, z0: layout.backZ - 6, z1: layout.frontZ + 8 }), [layout])
 
   return (
     <>
       <color attach="background" args={[pal.background]} />
-      <Lights layout={layout} pal={pal} small={gl.domElement.clientWidth < 640} />
+      <StudioLights box={lightBox} pal={pal} small={gl.domElement.clientWidth < 640} />
       <Diorama layout={layout} pal={pal} />
       {layout.bays.map((b) => {
         const bay = bays.find((x) => x.number === b.number)
@@ -497,102 +432,21 @@ function WorkshopWorld({
         )
       })}
       {cars.map((c) => (
-        <ClayCarActor
+        <CarMesh
           key={c.order.id}
-          order={c.order}
-          spot={c.spot}
-          layout={layout}
-          pal={pal}
-          reduced={reduced}
-          armed={armed}
-          enterDelay={enterDelay.get(c.order.id) ?? 0}
-          carriages={carriages}
-          register={(o) => {
-            if (o) carObjects.set(c.order.id, o)
-            else carObjects.delete(c.order.id)
-          }}
-          markShadows={markShadows}
+          id={c.order.id}
+          body={resolveBody(c.order.vehicle.body_type)}
+          color={clayColor(c.order.vehicle.color_hex, c.order.vehicle.id)}
+          register={registerCar}
           onSelect={() => onSelectOrder(selectedOrderId === c.order.id ? null : c.order.id)}
           onHover={(on) => setHover(on ? `car-${c.order.id}` : null)}
         />
       ))}
       {selBayPos && <SelectionOutline kind="bay" x={selBayPos.x} z={selBayPos.z} color={tokens.accent} />}
       {selStallPose && <SelectionOutline kind="stall" x={selStallPose.x} z={selStallPose.z} color={tokens.accent} />}
-      <IsoRig focus={focus} overview={overview} selKey={selKey} reduced={reduced} layout={layout} onUserMove={onUserMove} />
+      <IsoRig focus={focus} overview={overview} selKey={selKey} reduced={reduced} bounds={bounds} onUserMove={onUserMove} />
       <OverlayProjector store={overlay} anchors={anchors} inset={inset} />
       <ReleaseOnUnmount />
-    </>
-  )
-}
-
-// ───────────────────────── Luz de estudio ─────────────────────────
-
-function Lights({ layout, pal, small }: { layout: FloorLayout; pal: DioramaPalette; small: boolean }) {
-  const light = useRef<THREE.DirectionalLight>(null)
-  const target = useMemo(() => new THREE.Object3D(), [])
-  const center = useMemo(
-    () => new THREE.Vector3((layout.minX + layout.apronX) / 2, 0, (layout.backZ + layout.frontZ) / 2),
-    [layout],
-  )
-  const invalidate = useThree((s) => s.invalidate)
-  const get = useThree((s) => s.get)
-
-  useLayoutEffect(() => {
-    const l = light.current
-    if (!l) return
-    l.position.copy(center).addScaledVector(SUN_DIR, 40)
-    target.position.copy(center)
-    target.updateMatrixWorld()
-    l.target = target
-    // Cámara de sombra ajustada a la nave (y a la sombra de la losa sobre la mesa), proyectando sus esquinas
-    const cam = new THREE.OrthographicCamera()
-    cam.position.copy(l.position)
-    cam.lookAt(center)
-    cam.updateMatrixWorld()
-    const inv = cam.matrixWorldInverse
-    let x0 = Infinity
-    let x1 = -Infinity
-    let y0 = Infinity
-    let y1 = -Infinity
-    let z0 = Infinity
-    let z1 = -Infinity
-    for (const p of boxPoints(layout.minX - 2, layout.apronX + 3, -SLAB_H, WALL_H + 1.6, layout.backZ - 3, layout.frontZ + 1)) {
-      p.applyMatrix4(inv)
-      x0 = Math.min(x0, p.x)
-      x1 = Math.max(x1, p.x)
-      y0 = Math.min(y0, p.y)
-      y1 = Math.max(y1, p.y)
-      z0 = Math.min(z0, p.z)
-      z1 = Math.max(z1, p.z)
-    }
-    const sc = l.shadow.camera
-    sc.left = x0
-    sc.right = x1
-    sc.bottom = y0
-    sc.top = y1
-    sc.near = Math.max(0.5, -z1 - 1)
-    sc.far = -z0 + 1
-    sc.updateProjectionMatrix()
-    l.shadow.needsUpdate = true
-    get().gl.shadowMap.needsUpdate = true
-    invalidate()
-  }, [center, layout, target, get, invalidate])
-
-  const map = small ? 1024 : 2048
-  return (
-    <>
-      <hemisphereLight args={[pal.hemiSky, pal.hemiGround, pal.hemi]} />
-      <directionalLight
-        ref={light}
-        color="#fff5e8"
-        intensity={pal.sun}
-        castShadow
-        shadow-mapSize={[map, map]}
-        shadow-bias={-0.0004}
-        shadow-normalBias={0.03}
-        shadow-radius={3}
-      />
-      <primitive object={target} />
     </>
   )
 }
@@ -715,333 +569,4 @@ function SelectionOutline({ kind, x, z, color }: { kind: 'bay' | 'stall'; x: num
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 0.95, depthWrite: false }), [color])
   useEffect(() => () => mat.dispose(), [mat])
   return <mesh geometry={geo} material={mat} position={[x, 0, z]} renderOrder={2} />
-}
-
-// ───────────────────────── Coche ─────────────────────────
-
-let blobTex: THREE.Texture | null = null
-function blobTexture(): THREE.Texture | null {
-  if (blobTex || typeof document === 'undefined') return blobTex
-  const c = document.createElement('canvas')
-  c.width = c.height = 64
-  const g = c.getContext('2d')
-  if (!g) return null
-  const grad = g.createRadialGradient(32, 32, 4, 32, 32, 32)
-  grad.addColorStop(0, 'rgba(0,0,0,0.6)')
-  grad.addColorStop(0.55, 'rgba(0,0,0,0.3)')
-  grad.addColorStop(1, 'rgba(0,0,0,0)')
-  g.fillStyle = grad
-  g.fillRect(0, 0, 64, 64)
-  blobTex = new THREE.CanvasTexture(c)
-  return blobTex
-}
-let blobMat: THREE.MeshBasicMaterial | null = null
-function blobMaterial() {
-  blobMat ??= new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, toneMapped: false, opacity: 0.55 })
-  return blobMat
-}
-const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)
-
-const _p = new THREE.Vector3()
-const _t = new THREE.Vector3()
-
-function curveOf(pts: P2[]) {
-  return new THREE.CatmullRomCurve3(
-    pts.map(([x, z]) => new THREE.Vector3(x, 0, z)),
-    false,
-    'centripetal',
-  )
-}
-
-function ClayCarActor({
-  order,
-  spot,
-  layout,
-  pal,
-  reduced,
-  armed,
-  enterDelay,
-  carriages,
-  register,
-  markShadows,
-  onSelect,
-  onHover,
-}: {
-  order: WorkOrder
-  spot: Spot
-  layout: FloorLayout
-  pal: DioramaPalette
-  reduced: boolean
-  /** false hasta que la escena está compilada: los coches que entran esperan ocultos en la entrada. */
-  armed: boolean
-  enterDelay: number
-  carriages: Map<number, THREE.Object3D>
-  register: (o: THREE.Object3D | null) => void
-  markShadows: () => void
-  onSelect: () => void
-  onHover: (on: boolean) => void
-}) {
-  const body = resolveBody(order.vehicle.body_type)
-  const geo = getClayCar(body)
-  const paint = clayPaint(clayColor(order.vehicle.color_hex, order.vehicle.id))
-  const glass = clayGlass(pal.glass)
-  const group = useRef<THREE.Group>(null)
-  const blob = useRef<THREE.Mesh>(null)
-  /** Pose actual, plaza en la que está parado (null: de camino) y elevador cuyo carro le acompaña en altura. */
-  const pose = useRef<Pose | null>(null)
-  const at = useRef<Spot | 'entrance' | null>(null)
-  const bayAt = useRef<number | null>(null)
-
-  const target = spotPose(layout, spot, order.status)
-  const tx = target?.x ?? 0
-  const tz = target?.z ?? 0
-  const ty = target?.y ?? 0
-  const th = target?.heading ?? 0
-  const key = `${spotKey(spot)}|${tx.toFixed(2)}|${tz.toFixed(2)}|${ty}`
-
-  useLayoutEffect(() => {
-    const g = group.current
-    if (!g || !target) return
-    const final: Pose = { x: tx, z: tz, y: ty, heading: th }
-    const apply = (p: Pose) => {
-      g.position.set(p.x, p.y, p.z)
-      g.rotation.y = p.heading
-      pose.current = p
-      const c = bayAt.current != null ? carriages.get(bayAt.current) : null
-      if (c) c.position.y = p.y
-      if (blob.current) {
-        blob.current.position.y = 0.012 - p.y
-        ;(blob.current.material as THREE.MeshBasicMaterial).opacity = 0.55
-      }
-      markShadows()
-    }
-    const toSpot = spot
-
-    if (reduced) {
-      // Movimiento reducido: posición final directa (también al entrar)
-      if (bayAt.current != null && (toSpot.kind !== 'bay' || toSpot.bay !== bayAt.current)) {
-        const old = carriages.get(bayAt.current)
-        if (old) old.position.y = 0
-      }
-      bayAt.current = toSpot.kind === 'bay' ? toSpot.bay : null
-      at.current = toSpot
-      g.visible = true
-      g.scale.setScalar(1)
-      apply(final)
-      return
-    }
-
-    if (pose.current == null || at.current === 'entrance') {
-      // Primera vez: aparece en la entrada y espera su turno
-      bayAt.current = null
-      at.current = 'entrance'
-      g.visible = false
-      apply(entrancePose(layout))
-    }
-    const cur = pose.current!
-    const from = at.current
-    const entering = from === 'entrance'
-    if (entering && !armed) return
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ delay: entering ? enterDelay : 0 })
-      if (from && from !== 'entrance' && sameSpot(from, toSpot)) {
-        // Misma plaza: solo cambia la altura del elevador
-        if (Math.abs(cur.y - final.y) > 0.001) {
-          const h = { y: cur.y }
-          tl.to(h, { y: final.y, duration: 0.8, ease: 'power2.inOut', onUpdate: () => apply({ ...pose.current!, y: h.y }) })
-        }
-        return
-      }
-      if (entering) {
-        tl.call(() => {
-          g.visible = true
-          markShadows()
-        })
-        tl.fromTo(g.scale, { x: 0.6, y: 0.6, z: 0.6 }, { x: 1, y: 1, z: 1, duration: 0.3, ease: 'back.out(2)', onUpdate: markShadows })
-      }
-      if (cur.y > 0.001) {
-        const h = { y: cur.y }
-        tl.to(h, { y: 0, duration: 0.55, ease: 'power2.inOut', onUpdate: () => apply({ ...pose.current!, y: h.y }) })
-      }
-      tl.call(() => {
-        at.current = null
-        bayAt.current = null
-      })
-      const route = planRoute(layout, { ...cur, y: 0 }, from, toSpot, final)
-      const follow = (curve: THREE.CatmullRomCurve3, u: number, backwards: boolean) => {
-        curve.getPointAt(u, _p)
-        curve.getTangentAt(u, _t)
-        const heading = backwards ? Math.atan2(-_t.x, -_t.z) : Math.atan2(_t.x, _t.z)
-        apply({ x: _p.x, z: _p.z, y: 0, heading })
-      }
-      if (route.reverse) {
-        const curve = curveOf(route.reverse)
-        const prog = { u: 0 }
-        tl.to(prog, { u: 1, duration: Math.min(1.4, Math.max(0.8, polyLength(route.reverse) / 3.5)), ease: 'power1.inOut', onUpdate: () => follow(curve, prog.u, true) })
-      }
-      const curve = curveOf(route.forward)
-      const prog = { u: 0 }
-      tl.to(
-        prog,
-        { u: 1, duration: driveDuration(polyLength(route.forward)), ease: 'power2.inOut', onUpdate: () => follow(curve, prog.u, false) },
-        '>',
-      )
-      tl.call(() => {
-        at.current = toSpot
-        bayAt.current = toSpot.kind === 'bay' ? toSpot.bay : null
-        apply({ ...final, y: 0 })
-      })
-      if (final.y > 0.001) {
-        const h = { y: 0 }
-        tl.to(h, { y: final.y, duration: 0.75, ease: 'power2.out', onUpdate: () => apply({ ...pose.current!, y: h.y }) })
-      }
-    })
-    return () => ctx.kill()
-    // la clave resume la plaza y la altura de destino; el resto se lee de refs
-  }, [key, reduced, armed]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Al desaparecer (orden entregada o cancelada), el elevador que ocupaba vuelve al suelo
-  useEffect(
-    () => () => {
-      const c = bayAt.current != null ? carriages.get(bayAt.current) : null
-      if (c) c.position.y = 0
-    },
-    [carriages],
-  )
-
-  const { length, width, height } = geo.size
-  return (
-    <group
-      ref={(o) => {
-        group.current = o
-        register(o)
-      }}
-      name={`coche-${order.id}`}
-    >
-      <mesh ref={blob} geometry={blobGeo} material={blobMaterial()} scale={[width * 1.5, 1, length * 1.22]} position={[0, 0.012, 0]} renderOrder={-1} />
-      <mesh geometry={geo.paint} material={paint} castShadow receiveShadow />
-      <mesh geometry={geo.glass} material={glass} castShadow />
-      {/* ruedas y pilotos sin sombra propia (la mancha de oclusión ya asienta el coche): 13 draw calls menos en la pasada de sombras */}
-      <mesh geometry={geo.trim} material={clayTrim()} receiveShadow />
-      {/* Zona de clic (invisible) */}
-      <mesh
-        geometry={unitBox}
-        material={PROXY_MAT}
-        visible={false}
-        position={[0, height / 2, 0]}
-        scale={[width + 0.2, height + 0.2, length + 0.2]}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
-          e.stopPropagation()
-          if (e.delta > 6) return
-          onSelect()
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation()
-          onHover(true)
-        }}
-        onPointerOut={() => onHover(false)}
-      />
-    </group>
-  )
-}
-
-// ───────────────────────── Cámara ─────────────────────────
-
-function IsoRig({
-  focus,
-  overview,
-  selKey,
-  reduced,
-  layout,
-  onUserMove,
-}: {
-  focus: CamFocus
-  overview: CamFocus
-  selKey: string
-  reduced: boolean
-  layout: FloorLayout
-  onUserMove: () => void
-}) {
-  const controls = useRef<OrbitControlsImpl>(null)
-  const get = useThree((s) => s.get)
-  const invalidate = useThree((s) => s.invalidate)
-  const lastSel = useRef<string | null>(null)
-  const tween = useRef<gsap.core.Tween | null>(null)
-
-  const fx = Math.round(focus.x * 100) / 100
-  const fz = Math.round(focus.z * 100) / 100
-  const fzoom = Math.round(focus.zoom * 100) / 100
-
-  useLayoutEffect(() => {
-    const c = controls.current
-    if (!c) return
-    const camera = get().camera as THREE.OrthographicCamera
-    const apply = (x: number, z: number, zoom: number) => {
-      c.target.set(x, 0, z)
-      camera.position.set(x + ISO_DIR.x * CAM_DIST, ISO_DIR.y * CAM_DIST, z + ISO_DIR.z * CAM_DIST)
-      camera.zoom = zoom
-      camera.updateProjectionMatrix()
-      c.update()
-      invalidate()
-    }
-    // Vuela si cambia la selección o si ya había un vuelo en marcha (p. ej. el panel de la página cambia el margen
-    // justo después de elegir): se reencamina sin saltos. Un cambio de tamaño en reposo se aplica directamente.
-    const flying = !!tween.current?.isActive()
-    tween.current?.kill()
-    const animate = !reduced && lastSel.current !== null && (lastSel.current !== selKey || flying)
-    lastSel.current = selKey
-    if (!animate) {
-      apply(fx, fz, fzoom)
-      return
-    }
-    const s = { x: c.target.x, z: c.target.z, zoom: camera.zoom }
-    tween.current = gsap.to(s, { x: fx, z: fz, zoom: fzoom, duration: 0.8, ease: 'power3.out', onUpdate: () => apply(s.x, s.z, s.zoom) })
-    return () => {
-      tween.current?.kill()
-    }
-  }, [fx, fz, fzoom, selKey, reduced, get, invalidate])
-
-  // Paneo acotado a la maqueta (con algo de holgura)
-  const bounds = useMemo(
-    () => ({ x0: layout.minX - 6, x1: layout.apronX + 6, z0: layout.backZ - 6, z1: layout.frontZ + 8 }),
-    [layout],
-  )
-  const onChange = () => {
-    const c = controls.current
-    if (!c) return
-    const t = c.target
-    const nx = Math.min(bounds.x1, Math.max(bounds.x0, t.x))
-    const nz = Math.min(bounds.z1, Math.max(bounds.z0, t.z))
-    if (nx !== t.x || nz !== t.z) {
-      const camera = get().camera
-      camera.position.x += nx - t.x
-      camera.position.z += nz - t.z
-      t.x = nx
-      t.z = nz
-    }
-  }
-
-  return (
-    <OrbitControls
-      ref={controls}
-      makeDefault
-      enableRotate={false}
-      enablePan
-      screenSpacePanning={false}
-      enableZoom
-      enableDamping
-      dampingFactor={0.14}
-      zoomSpeed={0.9}
-      minZoom={overview.zoom * 0.7}
-      maxZoom={overview.zoom * 5}
-      mouseButtons={{ LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
-      touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN }}
-      onStart={() => {
-        tween.current?.kill()
-        onUserMove()
-      }}
-      onChange={onChange}
-    />
-  )
 }

@@ -82,6 +82,35 @@ export interface WorkshopSceneProps {
   focusInset?: { right?: number; top?: number; bottom?: number }
 }
 
+/** Un vehículo del garaje isométrico. Todo opcional salvo `id` y `name`: sin carrocería ⇒ 'hatchback'; sin color ⇒ azul, amarillo, blanco o rojo de maqueta según el id. */
+export interface GarageVehicle {
+  id: number
+  /** Nombre para mostrar (apodo o «marca modelo»). */
+  name: string
+  plate?: string | null
+  /** `color_hex` del vehículo. */
+  color?: string | null
+  /** `body_type` del vehículo. */
+  body?: BodyType | null
+}
+
+export interface GarageSceneProps {
+  /** Vehículos del garaje: una plaza por vehículo, máximo 6 visibles (los demás se cuentan en la leyenda). */
+  vehicles: GarageVehicle[]
+  /** Vehículo elegido: la cámara lo enfoca y su coche sube a una plataforma giratoria suave. */
+  selectedId?: number | null
+  /** Elegir un vehículo (clic en el coche o en su rótulo); `null` = deseleccionar (clic en el vacío, Escape o «Ver todo el garaje»). */
+  onSelect?: (id: number | null) => void
+  /** Márgenes en px tapados por paneles HTML encima del lienzo (como en `WorkshopSceneProps`). */
+  focusInset?: { right?: number; top?: number; bottom?: number }
+  /**
+   * Cabecera pequeña (alto ~260 px): el garaje entero siempre a la vista (sin paneo, zoom ni vuelos de cámara),
+   * rótulos cortos y sin leyenda. Sin `compact`: pantalla completa con paneo, zoom y foco.
+   */
+  compact?: boolean
+  className?: string
+}
+
 /**
  * Imagen fija de la portada: render propio del coche procedural (berlina azul, sin marca) en WebP con transparencia,
  * 1280×720 y 640×360. No descarga three.js. La sombra está dentro de la imagen y funciona en tema claro y oscuro.

@@ -36,7 +36,14 @@ export type MatKey =
   | 'spring'
   | 'seat'
 
-export type Detail = 'high' | 'low'
+/**
+ * 'high' (ficha), 'low' (taller anterior, miniaturas) y 'clay' (maquetas isométricas: malla gruesa, sin interior ni
+ * detalle de llantas; ver build.ts). Todo lo que no sea 'high' usa los recuentos de 'low' salvo donde se indique.
+ */
+export type Detail = 'high' | 'low' | 'clay'
+
+/** Elige un recuento según el nivel de detalle. */
+export const lv = (d: Detail, high: number, low: number, clay: number) => (d === 'high' ? high : d === 'clay' ? clay : low)
 
 export interface GeoPart {
   geometry: THREE.BufferGeometry
@@ -53,25 +60,29 @@ function uniq(xs: number[], minGap: number) {
 }
 
 function lowerStations(s: BodyShape, detail: Detail): number[] {
-  const step = detail === 'high' ? 0.028 : 0.07
+  const step = lv(detail, 0.028, 0.07, 0.2)
   const xs: number[] = []
   for (let x = s.rear; x <= s.front; x += step) xs.push(x)
   xs.push(s.rear, s.front)
   // Extremos: muy densos (el redondeo en planta cambia deprisa)
-  const K = detail === 'high' ? 34 : 14
+  const K = lv(detail, 34, 14, 5)
   for (let k = 1; k <= K; k++) {
     const t = Math.pow(k / K, 2)
     xs.push(s.front - s.spec.planFront[0] * t * 1.1, s.rear + s.spec.planRear[0] * t * 1.1)
   }
   // Pasos de rueda: muestreo angular + discontinuidad exacta
-  const A = detail === 'high' ? 44 : 18
+  const A = lv(detail, 44, 18, 7)
   for (const ax of [s.axleFront, s.axleRear]) {
     for (let k = 0; k <= A; k++) xs.push(ax + s.archR * Math.cos((Math.PI * k) / A))
     xs.push(ax - s.archR - 0.0012, ax + s.archR + 0.0012, ax - s.archR + 0.0006, ax + s.archR - 0.0006)
   }
   const o = s.spec.bed ?? s.spec.cockpit
   if (o) xs.push(o.from - 0.0012, o.from + 0.0012, o.to - 0.0012, o.to + 0.0012)
-  for (const x of s.top.samples) xs.push(x[0])
+  // Maqueta: una de cada tres muestras del perfil (el perfil trae ~100; la silueta se conserva)
+  const every = detail === 'clay' ? 3 : 1
+  s.top.samples.forEach((x, i) => {
+    if (i % every === 0 || i === s.top.samples.length - 1) xs.push(x[0])
+  })
   return uniq(
     xs.filter((x) => x >= s.rear - 1e-9 && x <= s.front + 1e-9),
     0.0004,
@@ -81,11 +92,14 @@ function lowerStations(s: BodyShape, detail: Detail): number[] {
 function ghStations(s: BodyShape, detail: Detail): number[] {
   if (!s.ghRange || !s.roof) return []
   const [a, b] = s.ghRange
-  const step = detail === 'high' ? 0.025 : 0.07
+  const step = lv(detail, 0.025, 0.07, 0.2)
   const xs: number[] = [a, b]
   for (let x = a; x <= b; x += step) xs.push(x)
-  for (const p of s.roof.samples) xs.push(p[0])
-  const K = detail === 'high' ? 16 : 6
+  const everyGh = detail === 'clay' ? 3 : 1
+  s.roof.samples.forEach((p, i) => {
+    if (i % everyGh === 0 || i === s.roof!.samples.length - 1) xs.push(p[0])
+  })
+  const K = lv(detail, 16, 6, 3)
   for (let k = 1; k <= K; k++) {
     const t = Math.pow(k / K, 2) * 0.12
     xs.push(a + t, b - t)
@@ -247,23 +261,22 @@ function subGeometry(pos: Float32Array, nrm: Float32Array, idx: number[], uv?: F
 // ───────────────────────── Carrocería baja ─────────────────────────
 
 export function buildLowerBody(s: BodyShape, detail: Detail): GeoPart[] {
-  const hi = detail === 'high'
   const stations = lowerStations(s, detail)
   const secs: LowerSection[] = stations.map((x) => s.lower(x))
   const spec = s.spec
   // Costado: filas PARAMÉTRICAS por estación (hombro → línea de carácter → [plástico] → bajos).
   // Así ninguna fila se recorta donde el capó baja (evita triángulos astilla y reflejos en escalera)
   // y siempre hay una fila exacta en la línea de carácter y en el borde del plástico inferior.
-  const nA = hi ? 10 : 3
-  const nB = hi ? (spec.cladding ? 9 : 13) : spec.cladding ? 3 : 5
-  const nC = spec.cladding ? (hi ? 5 : 2) : 0
-  const n1 = hi ? 9 : 4
-  const n2 = hi ? 3 : 2
-  const n3 = hi ? 4 : 2
-  const n4 = hi ? 16 : 5
+  const nA = lv(detail, 10, 3, 2)
+  const nB = spec.cladding ? lv(detail, 9, 3, 2) : lv(detail, 13, 5, 3)
+  const nC = spec.cladding ? lv(detail, 5, 2, 1) : 0
+  const n1 = lv(detail, 9, 4, 3)
+  const n2 = lv(detail, 3, 2, 1)
+  const n3 = lv(detail, 4, 2, 1)
+  const n4 = lv(detail, 16, 5, 3)
   const n5 = 1 + nA + nB + nC
-  const n6 = hi ? 6 : 3
-  const n7 = hi ? 4 : 2
+  const n6 = lv(detail, 6, 3, 2)
+  const n7 = lv(detail, 4, 2, 1)
   const sizes = [n1 + 1, n2 + 1, n3 + 1, n4 + 1, n5, n6 + 1, n7 + 1]
   const sideRows = (c: LowerSection): number[] => {
     const top = c.yT - c.rty
@@ -370,12 +383,11 @@ export function buildLowerBody(s: BodyShape, detail: Detail): GeoPart[] {
 
 export function buildGreenhouse(s: BodyShape, detail: Detail): GeoPart[] {
   if (!s.roof || !s.ghRange) return []
-  const hi = detail === 'high'
   const stations = ghStations(s, detail)
   const secs = stations.map((x) => s.gh(x)!)
-  const nRows = hi ? 14 : 5
-  const m1 = hi ? 10 : 4
-  const m2 = hi ? 8 : 3
+  const nRows = lv(detail, 14, 5, 3)
+  const m1 = lv(detail, 10, 4, 3)
+  const m2 = lv(detail, 8, 3, 2)
   const sizes = [m1 + 1, m2 + 1, nRows + 1]
   const spec = s.spec
   const byX = new Map<number, GreenhouseSection>()

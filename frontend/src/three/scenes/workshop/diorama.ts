@@ -11,7 +11,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { mixHex } from '../../color'
 import type { ThemeTokens } from '../../env'
-import { BAY_D, BAY_W, LANE_W, POST_H, SLAB_H, STALL_D, STALL_W, WALL_H, WALL_T, type FloorLayout } from './layout'
+import { BAY_D, BAY_W, LANE_W, POST_H, POST_X, PORTAL_DX, SLAB_H, STALL_D, STALL_W, WALL_H, WALL_T, type FloorLayout } from './layout'
 
 export interface DioramaPalette {
   background: string
@@ -36,7 +36,8 @@ export interface DioramaPalette {
 /** Paleta de maqueta a partir de los tokens del tema (gris claro con un tinte azul pastel; en oscuro, cabina apagada). */
 export function dioramaPalette(t: ThemeTokens): DioramaPalette {
   if (t.light) {
-    const background = mixHex(t.base, '#d3deea', 0.5)
+    // el fondo es --base tal cual: la escena se funde con la página
+    const background = t.base
     const slab = mixHex(t.surface, '#eaf0f6', 0.35)
     return {
       background,
@@ -58,7 +59,7 @@ export function dioramaPalette(t: ThemeTokens): DioramaPalette {
       shadowOpacity: 0.16,
     }
   }
-  const background = mixHex(t.base, '#121a24', 0.35)
+  const background = t.base
   const slab = mixHex(t.surface3, '#3d4a59', 0.4)
   return {
     background,
@@ -83,7 +84,7 @@ export function dioramaPalette(t: ThemeTokens): DioramaPalette {
 
 // ───────────────────────── Utilidades ─────────────────────────
 
-function colored(g: THREE.BufferGeometry, hex: string): THREE.BufferGeometry {
+export function colored(g: THREE.BufferGeometry, hex: string): THREE.BufferGeometry {
   let out = g.index ? g.toNonIndexed() : g
   if (out !== g) g.dispose()
   out.deleteAttribute('uv')
@@ -100,28 +101,25 @@ function colored(g: THREE.BufferGeometry, hex: string): THREE.BufferGeometry {
   return out
 }
 
-function rbox(w: number, h: number, d: number, r: number, x: number, y: number, z: number, seg = 2): THREE.BufferGeometry {
+export function rbox(w: number, h: number, d: number, r: number, x: number, y: number, z: number, seg = 2): THREE.BufferGeometry {
   const g = new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001))
   g.translate(x, y, z)
   return g
 }
 
-function cyl(r: number, h: number, x: number, y: number, z: number, seg = 18): THREE.BufferGeometry {
+export function cyl(r: number, h: number, x: number, y: number, z: number, seg = 18): THREE.BufferGeometry {
   const g = new THREE.CylinderGeometry(r, r, h, seg, 1)
   g.translate(x, y, z)
   return g
 }
 
-function mergeAndDispose(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
+export function mergeAndDispose(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const g = mergeGeometries(parts, false)
   for (const p of parts) p.dispose()
   g.computeBoundingSphere()
   g.computeBoundingBox()
   return g
 }
-
-/** Separación de las columnas del elevador respecto a su centro (m). */
-export const POST_X = 1.62
 
 // ───────────────────────── Estático ─────────────────────────
 
@@ -149,9 +147,9 @@ export function buildStatic(L: FloorLayout, pal: DioramaPalette): THREE.BufferGe
   if (L.frontZ - laneHi > 0.4) parts.push(colored(rbox(0.22, curbH, L.frontZ - 0.5 - laneHi, 0.06, L.maxX, curbH / 2, (laneHi + L.frontZ - 0.5) / 2), pal.propDark))
   // Pórtico de la entrada (dos pilares y dintel), sobre el borde de la nave
   for (const side of [-1, 1]) {
-    parts.push(colored(rbox(0.34, 2.6, 0.34, 0.08, L.maxX, 1.3, L.laneZ + side * (LANE_W / 2 + 0.25)), pal.post))
+    parts.push(colored(rbox(0.34, 2.6, 0.34, 0.08, L.maxX + PORTAL_DX, 1.3, L.laneZ + side * (LANE_W / 2 + 0.25)), pal.post))
   }
-  parts.push(colored(rbox(0.4, 0.3, LANE_W + 0.9, 0.08, L.maxX, 2.62, L.laneZ), pal.postDark))
+  parts.push(colored(rbox(0.4, 0.3, LANE_W + 0.9, 0.08, L.maxX + PORTAL_DX, 2.62, L.laneZ), pal.postDark))
 
   // Elevadores: bases y columnas (la parte móvil va aparte)
   for (const b of L.bays) {
@@ -186,7 +184,7 @@ export function buildStatic(L: FloorLayout, pal: DioramaPalette): THREE.BufferGe
 
 // ───────────────────────── Marcas del suelo ─────────────────────────
 
-function strip(w: number, d: number, x: number, z: number, y = 0.006): THREE.BufferGeometry {
+export function strip(w: number, d: number, x: number, z: number, y = 0.006): THREE.BufferGeometry {
   const g = new THREE.PlaneGeometry(w, d)
   g.rotateX(-Math.PI / 2)
   g.translate(x, y, z)
@@ -226,7 +224,7 @@ export function buildMarkings(L: FloorLayout, pal: DioramaPalette): THREE.Buffer
 
 // ───────────────────────── Rótulos del suelo (atlas) ─────────────────────────
 
-interface DecalItem {
+export interface DecalItem {
   text: string
   /** Altura de la letra en metros. */
   size: number
@@ -252,7 +250,12 @@ export function buildDecals(L: FloorLayout, color: string): Decals | null {
   items.push({ text: 'ESPERA', size: 0.5, x: midPark, z: zText, spacing: 14 })
   items.push({ text: 'ENTREGA', size: 0.5, x: midReady, z: zText, spacing: 14 })
   items.push({ text: 'ENTRADA', size: 0.42, x: (L.maxX + L.apronX) / 2, z: L.laneZ + LANE_W / 2 + 0.55, spacing: 12 })
+  return atlasDecals(items, color)
+}
 
+/** Rótulos del suelo (texto en metros sobre el plano y = 0) en una textura y una geometría. null si no hay canvas 2D. */
+export function atlasDecals(items: DecalItem[], color: string): Decals | null {
+  if (typeof document === 'undefined') return null
   const PX = 96 // px por cada `size` de 1 (alto de la letra en el atlas)
   const font = (px: number) => `650 ${px}px "Archivo Variable", system-ui, sans-serif`
   const measure = document.createElement('canvas').getContext('2d')

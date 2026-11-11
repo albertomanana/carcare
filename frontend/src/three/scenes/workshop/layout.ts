@@ -3,28 +3,51 @@
  * Lógica pura (sin React ni WebGL): se prueba con Vitest.
  *
  *   fondo (−z)   [muro]  E1  E2  E3  E4  …            ← elevadores, el coche entra de morro (mira a −z)
- *                ═══════ calzada ═══════════════ ← ENTRADA (por la derecha, +x)
+ *                ═══ carril N ═══ calzada ═══ carril S ═══ ← ENTRADA (por la derecha, +x)
  *   frente (+z)  P P P P P P   ·   L L L             ← espera (izquierda) y entrega (derecha, junto a la salida)
  *
+ * La calzada tiene dos carriles: los coches que van a un elevador circulan por el N (lado de los elevadores) y los que
+ * van a la espera o a la entrega, por el S. Cada giro a una plaza es un arco de radio fijo: el coche llega alineado.
  * Un coche solo cambia de sitio cuando cambia el estado real de su orden: entra, sube a un elevador, pasa a «Listo».
  */
 import type { Bay, WorkOrder, WorkOrderStatus } from '@/api/types'
+import type { Box, P2, Pose, Route } from './motion'
 
 // ───────────────────────── Medidas (m) ─────────────────────────
 
+/** Los coches reales de las 9 carrocerías miden como máximo 5,35 × 2,02 m (se comprueba en los tests). */
+export const CAR_MAX_L = 5.4
+export const CAR_MAX_W = 2.05
+
 export const BAY_W = 4.6
 export const BAY_D = 6.6
-export const LANE_W = 3.6
-export const STALL_W = 2.65
-export const STALL_D = 5.2
+export const LANE_W = 4.8
+/** Separación del eje de cada carril respecto al eje de la calzada. */
+export const LANE_OFF = 1.2
+export const STALL_W = 3.3
+export const STALL_D = 5.8
 /** Explanada de la entrada, a la derecha de la nave. */
-export const APRON = 4.6
+export const APRON = 5.4
 export const MARGIN = 0.7
 export const ZONE_GAP = 1.3
 export const WALL_H = 2.2
 export const WALL_T = 0.32
 export const SLAB_H = 0.5
 export const POST_H = 2.5
+/** Separación de las columnas del elevador respecto a su centro. */
+export const POST_X = 1.62
+/** Hueco entre la boca de un elevador y el borde de la calzada: el coche termina el giro antes de llegar a las columnas. */
+export const LANE_GAP = 1.5
+/** Hueco entre el borde de la calzada y la boca de las plazas de espera y entrega (margen para incorporarse en diagonal). */
+export const STALL_GAP = 0.9
+/** Longitud de la incorporación diagonal de un carril a otro. */
+export const MERGE = 3.6
+/** Radio del giro hacia una plaza de espera o entrega, hacia un elevador, y de la marcha atrás al salir. */
+export const R_TURN = 3.4
+export const R_BAY = 2.6
+export const R_REV = 2.2
+/** Distancia del pórtico de la entrada al borde de la nave (hacia la explanada): fuera de la zona de giro. */
+export const PORTAL_DX = 2.9
 
 /** Altura del coche sobre el elevador según el estado (m): en reparación o esperando piezas, arriba. */
 export const LIFT_HEIGHT: Record<WorkOrderStatus, number> = {
@@ -39,14 +62,6 @@ export const LIFT_HEIGHT: Record<WorkOrderStatus, number> = {
 
 // ───────────────────────── Tipos ─────────────────────────
 
-/** Posición de un coche: centro en planta, rumbo (rad, morro hacia (sin θ, cos θ) en x/z) y altura. */
-export interface Pose {
-  x: number
-  z: number
-  heading: number
-  y: number
-}
-
 export type Spot = { kind: 'bay'; bay: number } | { kind: 'park'; slot: number } | { kind: 'ready'; slot: number }
 
 export interface FloorLayout {
@@ -55,6 +70,10 @@ export interface FloorLayout {
   ready: { x: number; z: number }[]
   bayZ: number
   laneZ: number
+  /** Eje del carril de los elevadores (lado del fondo). */
+  laneN: number
+  /** Eje del carril de la espera y la entrega (lado del frente). */
+  laneS: number
   stallZ: number
   /** Borde interior izquierdo (cara del muro). */
   minX: number
@@ -87,8 +106,8 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
   const maxX = inner / 2
 
   const bayZ = 0
-  const laneZ = bayZ + BAY_D / 2 + 0.3 + LANE_W / 2
-  const stallZ = laneZ + LANE_W / 2 + 0.3 + STALL_D / 2
+  const laneZ = bayZ + BAY_D / 2 + LANE_GAP + LANE_W / 2
+  const stallZ = laneZ + LANE_W / 2 + STALL_GAP + STALL_D / 2
   const backZ = bayZ - BAY_D / 2 - 0.7
   const frontZ = stallZ + STALL_D / 2 + 1.5
 
@@ -105,6 +124,8 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
     ready,
     bayZ,
     laneZ,
+    laneN: laneZ - LANE_OFF,
+    laneS: laneZ + LANE_OFF,
     stallZ,
     minX,
     maxX,
@@ -117,6 +138,14 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
       ready: [rx1 - (cap.ready - 0.5) * STALL_W, rx1 + STALL_W / 2],
     },
   }
+}
+
+/** Obstáculos fijos por los que no puede pasar un coche: bases de las columnas de los elevadores y pilares del pórtico. */
+export function floorObstacles(L: FloorLayout): Box[] {
+  const out: Box[] = []
+  for (const b of L.bays) for (const side of [-1, 1]) out.push({ x: b.x + side * POST_X, z: b.z, hx: 0.33, hz: 0.37 })
+  for (const side of [-1, 1]) out.push({ x: L.maxX + PORTAL_DX, z: L.laneZ + side * (LANE_W / 2 + 0.25), hx: 0.17, hz: 0.17 })
+  return out
 }
 
 // ───────────────────────── Plazas estables ─────────────────────────
@@ -189,6 +218,13 @@ export function sameSpot(a: Spot | null, b: Spot | null): boolean {
   return a.kind === 'bay' ? a.bay === (b as { bay: number }).bay : a.slot === (b as { slot: number }).slot
 }
 
+/** Inversa de `spotKey` ('bay-2', 'park-0', 'ready-1'); null si la clave no es de una plaza. */
+export function spotFromKey(key: string): Spot | null {
+  const m = /^(bay|park|ready)-(\d+)$/.exec(key)
+  if (!m) return null
+  return m[1] === 'bay' ? { kind: 'bay', bay: Number(m[2]) } : { kind: m[1] as 'park' | 'ready', slot: Number(m[2]) }
+}
+
 export function spotKey(s: Spot): string {
   return s.kind === 'bay' ? `bay-${s.bay}` : `${s.kind}-${s.slot}`
 }
@@ -205,74 +241,63 @@ export function spotPose(L: FloorLayout, spot: Spot, status: WorkOrderStatus): P
   return s ? { x: s.x, z: s.z, heading: 0, y: 0 } : null
 }
 
-export function entrancePose(L: FloorLayout): Pose {
-  return { x: L.entrance.x, z: L.entrance.z, heading: -Math.PI / 2, y: 0 }
+/** Dónde aparece un coche que entra: ya en el carril de su destino (carril N para un elevador, S para espera y entrega). */
+export function entrancePose(L: FloorLayout, to: Spot): Pose {
+  return { x: L.entrance.x, z: to.kind === 'bay' ? L.laneN : L.laneS, heading: -Math.PI / 2, y: 0 }
 }
 
-export type P2 = [number, number]
-
-export interface Route {
-  /** Marcha atrás para salir de la plaza (el morro mira al contrario de la marcha), o null. */
-  reverse: P2[] | null
-  /** Trayecto hacia delante por la calzada hasta el centro de la plaza de destino. */
-  forward: P2[]
+/** Puntos de un cuarto de circunferencia (sin el primero): centro `c`, radio `r`, del vector `from` al `to` (perpendiculares). */
+export function quarter(c: P2, r: number, from: P2, to: P2, n = 6): P2[] {
+  const out: P2[] = []
+  for (let i = 1; i <= n; i++) {
+    const t = (i / n) * (Math.PI / 2)
+    const a = Math.cos(t)
+    const b = Math.sin(t)
+    out.push([c[0] + r * (from[0] * a + to[0] * b), c[1] + r * (from[1] * a + to[1] * b)])
+  }
+  return out
 }
 
-function mouthZ(L: FloorLayout, spot: Spot): number {
-  return spot.kind === 'bay' ? L.bayZ + BAY_D / 2 + 0.1 : L.stallZ - STALL_D / 2 - 0.1
+/** Ruta hacia delante desde `e` (rumbo `d` = ±1 en x) hasta el centro de la plaza `to`, entrando con un arco alineado. */
+function forwardRoute(L: FloorLayout, e: P2, d: -1 | 1, to: Spot, toPose: Pose): P2[] {
+  const laneD = to.kind === 'bay' ? L.laneN : L.laneS
+  const side = to.kind === 'bay' ? -1 : 1
+  const R = to.kind === 'bay' ? R_BAY : R_TURN
+  const pts: P2[] = [e]
+  const a: P2 = [toPose.x - d * R, laneD]
+  const merge: P2 = [e[0] + d * MERGE, laneD]
+  if (Math.abs(e[1] - laneD) > 0.05 && d * (a[0] - merge[0]) > 0.2) pts.push(merge)
+  if (d * (a[0] - pts[pts.length - 1][0]) > 0.2) pts.push(a)
+  // arco: centro a `side` del eje del carril; sale en la dirección d y llega en la dirección de la plaza
+  const o: P2 = [a[0], laneD + side * R]
+  pts.push(...quarter(o, R, [0, -side], [d, 0]))
+  pts.push([toPose.x, toPose.z])
+  return pts
 }
 
 /**
- * Ruta de `from` (pose actual; `fromSpot` = plaza en la que está aparcado, 'entrance' o null si va de camino)
- * a la plaza `to`. Sale marcha atrás girando hacia el lado contrario del destino, recorre la calzada y entra de morro.
+ * Ruta de `from` (pose en reposo) a la plaza `to`. Desde 'entrance' entra por el pórtico y se incorpora a su carril.
+ * Desde una plaza sale marcha atrás con un arco hacia el lado del destino, y puede seguir retrocediendo por la calzada
+ * si hace falta sitio para el giro de entrada.
  */
-export function planRoute(L: FloorLayout, from: Pose, fromSpot: Spot | 'entrance' | null, to: Spot, toPose: Pose): Route {
-  const lane = L.laneZ
-  let reverse: P2[] | null = null
-  let start: P2
-  let d: number
-  const pts: P2[] = []
-
-  if (fromSpot && fromSpot !== 'entrance') {
-    const dx = toPose.x - from.x
-    d = Math.abs(dx) < 0.3 ? (toPose.x > (L.minX + L.maxX) / 2 ? -1 : 1) : Math.sign(dx)
-    const side = Math.sign(from.z - lane) || -1
-    const mz = mouthZ(L, fromSpot)
-    start = [from.x - d * 2.5, lane]
-    reverse = [[from.x, from.z], [from.x, mz], [from.x - d * 0.9, lane + side * 0.55], start]
-    pts.push(start)
-  } else if (fromSpot === 'entrance') {
-    d = -1
-    start = [from.x, from.z]
-    pts.push(start, [L.maxX + 0.4, lane])
-  } else {
-    // a mitad de camino: sigue de frente un poco y continúa
-    const lead: P2 = [from.x + Math.sin(from.heading) * 1.2, from.z + Math.cos(from.heading) * 1.2]
-    d = Math.sign(toPose.x - lead[0]) || 1
-    start = [from.x, from.z]
-    pts.push(start, lead)
+export function planRoute(L: FloorLayout, from: Pose, fromSpot: Spot | 'entrance', to: Spot, toPose: Pose): Route {
+  if (fromSpot === 'entrance') return { reverse: null, forward: forwardRoute(L, [from.x, from.z], -1, to, toPose) }
+  const sgn = fromSpot.kind === 'bay' ? 1 : -1
+  const dx = toPose.x - from.x
+  const d: -1 | 1 = Math.abs(dx) < 0.3 ? (toPose.x > (L.minX + L.maxX) / 2 ? -1 : 1) : dx > 0 ? 1 : -1
+  const zs = L.laneZ - sgn * R_REV
+  const o: P2 = [from.x - d * R_REV, zs]
+  const rev: P2[] = [[from.x, from.z], [from.x, zs]]
+  rev.push(...quarter(o, R_REV, [d, 0], [0, sgn]))
+  let e: P2 = [from.x - d * R_REV, L.laneZ]
+  // sitio para incorporarse al carril y empezar el arco de entrada
+  const a = toPose.x - d * (to.kind === 'bay' ? R_BAY : R_TURN)
+  const extra = Math.max(0, MERGE + 0.2 - d * (a - e[0]))
+  if (extra > 0) {
+    e = [e[0] - d * extra, L.laneZ]
+    rev.push(e)
   }
-
-  const last = () => pts[pts.length - 1]
-  const dside = Math.sign(toPose.z - lane) || 1
-  const approach: P2 = [toPose.x - d * 2.7, lane]
-  if (d * (approach[0] - last()[0]) > 0.6) pts.push(approach)
-  const turn: P2 = [toPose.x - d * 0.75, lane + dside * 0.95]
-  if (d * (turn[0] - last()[0]) > 0.25) pts.push(turn)
-  pts.push([toPose.x, mouthZ(L, to)], [toPose.x, toPose.z])
-  return { reverse, forward: pts }
-}
-
-/** Longitud aproximada de una polilínea (para la duración del trayecto). */
-export function polyLength(pts: P2[]): number {
-  let s = 0
-  for (let i = 1; i < pts.length; i++) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
-  return s
-}
-
-/** Duración de la marcha (s): ~8 m/s de maqueta, entre 1 y 3 s. */
-export function driveDuration(length: number): number {
-  return clamp(length / 8, 1, 3)
+  return { reverse: rev, forward: forwardRoute(L, e, d, to, toPose) }
 }
 
 // ───────────────────────── Color de maqueta ─────────────────────────

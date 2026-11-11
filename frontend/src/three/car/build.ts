@@ -77,7 +77,8 @@ function createCarBuild(type: BodyType, detail: Detail): CarBuild {
   pushParts(buildOpenWindshield(s, detail))
 
   // ── Ruedas
-  const wp = getWheelParts({ radius: s.wheelR, width: spec.tireWidth, rimRatio: spec.rimRatio, style: spec.rim }, detail)
+  const clay = detail === 'clay'
+  const wp = clay ? null : getWheelParts({ radius: s.wheelR, width: spec.tireWidth, rimRatio: spec.rimRatio, style: spec.rim }, detail)
   const wheelGeos: Record<'tire' | 'rimFace' | 'rimBarrel' | 'hub' | 'disc' | 'caliper', THREE.BufferGeometry[]> = {
     tire: [],
     rimFace: [],
@@ -90,6 +91,16 @@ function createCarBuild(type: BodyType, detail: Detail): CarBuild {
   for (const ax of [s.axleFront, s.axleRear]) {
     for (const side of [1, -1]) {
       const m = matrix([ax, s.wheelR, side * s.wheelZ], [0, side > 0 ? 0 : Math.PI, 0])
+      if (!wp) {
+        // Maqueta: neumático y llanta como cilindros (eje en z); sin disco, pinza ni radios
+        const tyre = new THREE.CylinderGeometry(s.wheelR, s.wheelR, spec.tireWidth, 18, 1).rotateX(Math.PI / 2)
+        const rim = new THREE.CylinderGeometry(s.wheelR * spec.rimRatio, s.wheelR * spec.rimRatio, spec.tireWidth * 1.04, 14, 1).rotateX(Math.PI / 2)
+        wheelGeos.tire.push(transformed(tyre, m))
+        wheelGeos.rimFace.push(transformed(rim, m))
+        tyre.dispose()
+        rim.dispose()
+        continue
+      }
       for (const k of ['tire', 'rimFace', 'rimBarrel', 'hub', 'disc'] as const) wheelGeos[k].push(transformed(wp[k], m))
       const local = side > 0 ? caliperWorldAngle : Math.PI - caliperWorldAngle
       const cm = m.clone().multiply(matrix([0, 0, 0], [0, 0, local]))
@@ -104,16 +115,18 @@ function createCarBuild(type: BodyType, detail: Detail): CarBuild {
   for (const list of Object.values(wheelGeos)) for (const g of list) g.dispose()
   push('rubber', tires)
   push('rim', rimFaces)
-  push('rimDark', barrels)
-  push('disc', discs)
-  push('caliper', calipers)
+  if (!clay) {
+    push('rimDark', barrels)
+    push('disc', discs)
+    push('caliper', calipers)
+  }
 
   // ── Retrovisores, tiradores y barras de techo
   const acc = accessories(s, hi)
   for (const a of acc) push(a.mat, a.geometry)
 
   // ── Interior visible e internos
-  const internals = buildInternals(s, detail)
+  const internals = clay ? [] : buildInternals(s, detail)
   const xrayByMat = new Map<MatKey, THREE.BufferGeometry[]>()
   const zoneInternals = new Map<Zone, THREE.BufferGeometry[]>()
   for (const p of internals) {

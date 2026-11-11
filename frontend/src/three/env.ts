@@ -74,21 +74,22 @@ export interface ThemeTokens {
   light: boolean
 }
 
+/** Valores del tema claro del mundo «Diorama» (src/index.css), por si faltan las variables CSS (tests, SSR). */
 const FALLBACK: ThemeTokens = {
-  base: '#e4e4e1',
-  surface: '#f7f7f4',
-  surface2: '#efefeb',
-  surface3: '#e2e2dd',
-  line: '#d3d3cd',
-  lineStrong: '#7d807c',
-  fg: '#17191b',
-  fgMuted: '#4d5155',
-  fgSubtle: '#5c6064',
-  accent: '#1f4fd8',
-  danger: '#b3261e',
-  warning: '#855600',
-  ok: '#17694a',
-  info: '#1f5f99',
+  base: '#e9f0fa',
+  surface: '#ffffff',
+  surface2: '#f1f5fb',
+  surface3: '#e2eaf5',
+  line: '#d3deed',
+  lineStrong: '#7384a1',
+  fg: '#14213a',
+  fgMuted: '#45536f',
+  fgSubtle: '#53627e',
+  accent: '#2559e8',
+  danger: '#b32119',
+  warning: '#7d4e00',
+  ok: '#0f6a49',
+  info: '#1b5fa8',
   light: true,
 }
 
