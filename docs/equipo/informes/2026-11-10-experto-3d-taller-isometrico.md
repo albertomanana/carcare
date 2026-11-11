@@ -147,3 +147,113 @@ Tamaños del build:
 2. Decidir con Alberto si quiere que la cámara siga al coche durante el trayecto.
 3. Valorar ocultar los rótulos de los coches por debajo de cierto zoom y dejar la tabla de la página como alternativa accesible.
 4. Añadir una prueba E2E del clic en un coche cuando exista `frontend/e2e`.
+
+---
+
+## 11/11 · Entrada sin choques, carrocerías reales de arcilla y `GarageScene`
+
+Pedido de Alberto tras ver la maqueta: «me gustaba, más el de antes; me gusta cómo entran los coches pero se acaban juntando; quiero que sea como un juego toda la página, en todos los usuarios». Zona: `frontend/src/three/` (más este informe y el tablero). Sin commits.
+
+### 1. Choques en la entrada: arreglados con un planificador y con tests
+
+**Causa.** Antes cada coche arrancaba con un retardo fijo por índice (0,14 s) y todos iban por el mismo carril: con coches de 4-5 m y trayectos de 20 m se solapaban. Además, las plazas eran demasiado estrechas para girar y la entrada al elevador acababa con el morro ya entre las columnas.
+
+**Qué se hizo.**
+- `scenes/workshop/motion.ts` (puro, sin WebGL): trayectorias, `poseAt`, planificador `planTraffic` y análisis `analyzePlans`.
+  - Cada coche sale en la primera hora en la que su trayecto completo, **simulado con el mismo `poseAt` que se ve en pantalla**, no choca con nada: coches parados o en marcha, columnas de los elevadores y pilares del pórtico. El retardo sale de la simulación, no del índice del coche.
+  - Orden de salida (cola FIFO): primero los que dejan una plaza que otro necesita; después los que ya estaban; por último los que entran. Entre iguales, el de ruta más corta primero («el que llega antes al destino sale antes»).
+  - Reglas que se garantizan en cada instante (muestreo cada 0,05 s): R1 caja contra caja a ≥ 0,30 m; R2 coche contra obstáculo fijo a ≥ 0,12 m; R3 dos coches en marcha en el mismo sentido y carril, a una distancia entre centros ≥ la longitud del mayor (+0,2 m).
+  - Los easings son los de GSAP (`power2.inOut`, `power1.inOut`, `power2.out`) y las curvas, `CatmullRomCurve3` centrípetas con los tramos largos subdivididos. La animación sigue como antes: los coches entran por el pórtico, recorren la calzada orientados a la tangente y giran con un arco hasta su plaza.
+- `workshop/traffic.ts`: controlador con **un único tween de GSAP** (`ease: 'none'`) que avanza un reloj; en cada paso evalúa `poseAt`. Se limpia con `gsap.context`.
+  - Los cambios que llegan con coches en marcha se **encolan** y se planifican desde el reposo al terminar (no se replanifica a medio trayecto).
+  - Con movimiento reducido o antes de compilar los shaders (`compileAsync`): posición final directa.
+  - Corregido un fallo que encontré al medir en el navegador: `ctx.revert()` pinta el tween una vez en t = 0 y devolvía todos los coches a la entrada; ahora se vacían los planes antes de revertir.
+- Geometría (`workshop/layout.ts`): calzada de **dos carriles** (N para los elevadores, S para espera y entrega) y cada coche aparece ya en el carril de su destino. Plazas de 3,3 × 5,8 m. Giro de entrada con arco de radio fijo (3,4 m; 2,6 m para elevadores) que termina alineado. Hueco de 1,5 m entre la boca de los elevadores y la calzada, y de 0,9 m hacia las plazas. Pórtico adelantado a la explanada, fuera de la zona de giro. La nave es algo más grande (≈ 36 × 21 m).
+
+**Tests** (`workshop/layout.test.ts`, 22 tests, y `garage/layout.test.ts`, 10):
+- Cajas de coches parados en cada destino, con 4, 8 y 12 coches (4 elevadores) y con 8 y 12 elevadores llenos, hasta 20 coches: ninguna se solapa (distancia > 0,6 m) ni toca una columna (> 0,2 m). Con el coche más grande en todas las plazas, > 0,4 m.
+- Simulación sin WebGL de la entrada inicial de 4, 8 y 12 coches (carrocerías repartidas entre las 9): distancia mínima entre cajas ≥ 0,24 m en todas las muestras (a 0,02 s) y ≥ 1 longitud entre coches en marcha en el mismo sentido y carril. Todos llegan a su plaza, alineados.
+- Reubicaciones reales: elevador → entrega, espera → elevador (que espera a que se libere) y solo cambio de altura, con el resto parado; y **cada coche a cada plaza libre** con las 9 carrocerías.
+- Medido con el planificador (4 elevadores): 4 coches acaban en 7,5 s; 8, en 8,8 s; 12, en 10,2 s. Con 8 elevadores, 20 coches en 14,3 s; con 12 elevadores, 20 coches en 17,1 s. La planificación tarda entre 4 y 230 ms.
+- Medido **en el navegador** (taller con 12 coches, swiftshader): distancia mínima real entre cajas durante toda la entrada, 0,445 m. Es orientativo: con la máquina cargada se muestrea poco; la garantía es la simulación.
+
+**Limitación.** Entrar 12 coches en cola dura unos 10 s (~0,8 s de separación). Es el precio de que no se toquen. Si se quiere más rápido: subir la velocidad media (`driveDuration`) o repartir las entradas.
+
+### 2. «El de antes»: carrocerías reales con acabado mate de arcilla
+
+- Interpretación: Alberto prefería los coches del taller anterior, las carrocerías reales de `getCarBuild` (ventanas, ruedas, faros), frente a los bloques de arcilla. Los coches de la maqueta usan ahora `resolveBody` + el color real (`clayColor`: algo menos saturado y sin negros ni blancos puros; sin color, azul, amarillo, blanco o rojo fijo por id).
+- Coste: el nivel `'low'` de `getCarBuild` ya tenía unos 50 000 triángulos por coche. Añadí un nivel **`'clay'`** (`car/geometry.ts`, `car/build.ts`): malla gruesa, una de cada tres muestras del perfil, ruedas cilíndricas, sin interior ni bajos, sin discos ni pinzas. Quedan **9-10 mil triángulos por coche** con la misma silueta. Los otros niveles no cambian.
+- `workshop/clayReal.ts`: cada carrocería se fusiona en **2 mallas** compartidas por todos los coches iguales: pintura (material `clayPaint(color)`, uno por color, roughness 0,7, metalness 0,1, sin reflejos) y resto (lunas, neumáticos, llantas, parachoques, faros y pilotos, con el color en los vértices, mismo acabado mate). Geometría centrada, morro a +z, ruedas en y = 0.
+- Medido con `renderer.info` (taller de la demo, 12 coches, 1280 px): **48 draw calls** en un fotograma normal y 77 en el que recalcula sombras, con ambos estilos. Triángulos: **126,7 k** (reales) frente a **59,7 k** (bloques) en un fotograma normal; **252 k** frente a 118 k con la pasada de sombras. Los draw calls bajan respecto a la maqueta del 10/11 (60) porque ahora son 2 mallas por coche, no 3.
+- Criterio visual: con las carrocerías reales el coche se lee mejor (parabrisas, ruedas con llanta, retrovisores, pickup con caja abierta), es más «el de antes» y la maqueta no parece de juguete. Los bloques son más limpios de lejos, pero todos parecen el mismo coche. Mi criterio es quedarse con las reales. Para comparar, en desarrollo se puede añadir `?coches=bloques` a la URL del taller (no existe en producción): capturas `desktop-1-general` y `desktop-2-coche` (reales) frente a `desktop-b-1-general` y `desktop-b-2-coche` (bloques), en la carpeta de capturas.
+
+### 3. `GarageScene` (garaje isométrico para particulares)
+
+Chunk diferido `scenes/GarageDioramaCanvas.tsx` (12,5 kB; gsap y la cámara y luz comunes están en `IsoParts`, 92 kB, que comparten el taller y el garaje; ninguno de los dos entra en el arranque: `index.html` no los precarga). Exportado desde `@/three` como `GarageScene`, con el mismo patrón que `WorkshopScene`: se monta al hacerse visible, un solo `<Canvas>`, `ThreeBoundary` y respaldo 2D (`Garage2D` en `fallbacks.tsx`: una tarjeta con silueta por vehículo y los mismos botones) si no hay WebGL, falla o mientras carga.
+
+**Contrato final** (`three/types.ts`):
+
+```ts
+export interface GarageVehicle {
+  id: number
+  name: string              // display_name del vehículo
+  plate?: string | null     // plate
+  color?: string | null     // color_hex  (sin color: azul, amarillo, blanco o rojo de maqueta, fijo por id)
+  body?: BodyType | null    // body_type  (sin carrocería: 'hatchback')
+}
+export interface GarageSceneProps {
+  vehicles: GarageVehicle[]                     // una plaza por vehículo; máx. 6 visibles (leyenda «Se ven 6 de N»)
+  selectedId?: number | null                    // enfoca su coche y lo sube a la plataforma giratoria
+  onSelect?: (id: number | null) => void        // clic en coche o rótulo; null = deseleccionar
+  focusInset?: { right?: number; top?: number; bottom?: number }   // px tapados por paneles
+  compact?: boolean                             // cabecera ~260 px
+  className?: string
+}
+```
+
+Mapeo directo desde `Vehicle`: `{ id, name: display_name, plate, color: color_hex, body: body_type }`.
+
+- Diorama: nave con suelo claro, muro del fondo con ventanas, calzada y pórtico de entrada a la derecha, una plaza numerada por vehículo (el coche de morro hacia el espectador) y atrezo. Mismo encuadre isométrico, luz de estudio, materiales de arcilla y paleta (claro y oscuro) que el taller; fondo = `--base`.
+- Plazas estables por id (ancladas a la izquierda: añadir un vehículo añade una plaza a la derecha sin mover a los demás). Entrada animada con el **mismo sistema sin choques**, con GSAP.
+- Selección: GSAP mueve la cámara (0,8 s) y el coche sube 0,14 m sobre una **plataforma giratoria** (0,35 rad/s). Al soltar, vuelve al giro más cercano a 0 y baja. Con movimiento reducido: sube y baja sin girar, y sin vuelos. Escape, clic en el vacío o «Ver todo el garaje» deseleccionan.
+- Accesibilidad: un botón HTML por vehículo (`aria-label` «Plaza N: nombre (matrícula)», `aria-pressed`), `useCanvasLabel` con el resumen y el seleccionado, foco visible.
+- `compact`: se ve la fila de plazas y la calzada, sin paneo, zoom ni vuelos (el lienzo deja pasar el desplazamiento vertical), rótulos cortos y sin leyenda.
+- Rendimiento (swiftshader, fotograma normal): 1 vehículo, 12 draw calls y 28 k triángulos; 4 vehículos, 16 y 42 k; 6 vehículos, 37 y 121 k.
+- En reposo no pinta fotogramas; mientras gira la plataforma, un fotograma por vez.
+- Tests (`garage/layout.test.ts`): una plaza por vehículo, plazas estables, que un coche girando sobre su plataforma no toque a los vecinos (en las 6 plazas), y la misma simulación sin choques de entrada para 1 a 6 coches con las 9 carrocerías.
+
+### 4. Petición 29: tokens del mundo «Diorama»
+
+`three/env.ts`: el `FALLBACK` de `ThemeTokens` pasa a los valores del tema claro de «Diorama» (`--base #e9f0fa`, `--surface #fff`, `--accent #2559e8`…). El fondo de las dos maquetas es **`--base` tal cual** (antes lo mezclaba con un azul), así que la escena se funde con la página en claro y oscuro.
+
+### Archivos (11/11)
+
+Nuevos: `scenes/workshop/{motion,traffic,iso,IsoParts,clayReal}.ts(x)`, `scenes/GarageDioramaCanvas.tsx`, `scenes/garage/{layout,diorama,labels}.ts(x)`, `scenes/garage/layout.test.ts`.
+Modificados: `scenes/WorkshopCanvas.tsx` (rehecho sobre las piezas comunes), `scenes/workshop/{layout,layout.test,diorama,clayCar}.ts`, `car/{geometry,build}.ts` (nivel `'clay'`), `fallbacks.tsx` (`Garage2D`), `index.tsx` (`GarageScene`), `types.ts`, `env.ts`.
+Capturas: [2026-11-11-taller-garaje-capturas/](2026-11-11-taller-garaje-capturas/) (12 PNG). Para probar el garaje usé una página suelta (`garage-lab.html` y `src/three/lab-tmp/`), ya **borrada**: no está versionada ni registrada en el router.
+No he tocado nada fuera de `frontend/src/three/`, salvo este informe y el tablero.
+
+### Evidencias (desde `frontend/`, 11/11)
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | exit 0 |
+| `npm run lint` | exit 0, 0 errores y 75 avisos; 1 nuevo mío (`GarageDioramaCanvas.tsx:109`, `preserve-manual-memoization`: el compilador de React no optimiza ese componente; no afecta al funcionamiento) |
+| `npm run test` | 22 archivos y **188 tests OK** (32 de maquetas y tráfico; el guardián de importaciones ligeras de `@/three` sigue pasando con `GarageScene`) |
+| `npm run build` | exit 0. `three` 1.005 kB (271 kB gzip, sin cambios); `IsoParts` (gsap, cámara y luz) 92,6 kB; `WorkshopCanvas` 15,0 kB; `GarageDioramaCanvas` 12,5 kB. Ninguno se precarga en `index.html` |
+
+Pruebas en navegador (Chromium con swiftshader; API :8040 y web :5195, cuenta `taller@carcare.test`): taller a 1280 px (vista general, entrada en marcha, foco en un coche, foco en un elevador) y garaje con 1, 4 y 6 vehículos, tema oscuro, 360 px, movimiento reducido, cabecera compacta, clic en un rótulo (selecciona), Escape (deselecciona) y consola sin errores. Los servidores de prueba están apagados; MariaDB sigue encendida. No probé el garaje dentro de una pantalla real de la app (aún no está montado), solo en la página suelta.
+
+### Limitaciones (11/11)
+
+- Los FPS reales no se han medido (sin GPU): con swiftshader y la máquina cargada, el fotograma con sombras tarda cientos de ms. El coste es mayor que el de los bloques (el doble de triángulos); en una GPU normal no debería notarse, pero queda por medir en el equipo de Alberto.
+- Una fila de 5-6 plazas en un alto de 260 px (`compact`) queda con coches de unos 60 px de largo, porque en isométrico una fila larga ocupa mucha altura: va mejor con pocos vehículos o con ~320 px.
+- Con coches en marcha, un cambio de estado se encola hasta que terminen (hasta ~10 s tras la carga inicial).
+- El estilo de bloques (`?coches=bloques`) y `clayCar.ts` quedan solo para comparar en desarrollo.
+- Sin capturas con más de 8 elevadores ni con las 6 plazas del garaje ocupadas por coches grandes (sí hay tests).
+
+### Siguiente paso
+
+1. `frontend-react` (Inicio del particular): usar `GarageScene` según el contrato de arriba.
+2. Medir FPS en GPU real; si es poco, bajar el mapa de sombras a 1024 o simplificar aún más el nivel `'clay'`.
+3. Decidir con Alberto si hace falta más movimiento en el garaje (ahora solo gira la plataforma del coche seleccionado).

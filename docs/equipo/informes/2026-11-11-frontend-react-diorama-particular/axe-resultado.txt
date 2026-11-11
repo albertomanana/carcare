@@ -1,0 +1,16 @@
+
+=== tema light ===
+entrar: 0 violaciones
+inicio: 0 violaciones
+garaje: 0 violaciones
+ficha (resumen): 0 violaciones
+ficha (recordatorios): 0 violaciones
+agenda: 0 violaciones
+
+=== tema dark ===
+entrar: 0 violaciones
+inicio: 0 violaciones
+garaje: 0 violaciones
+ficha (resumen): 0 violaciones
+ficha (recordatorios): 0 violaciones
+agenda: 0 violaciones

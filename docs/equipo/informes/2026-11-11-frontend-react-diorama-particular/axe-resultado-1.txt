@@ -1,0 +1,58 @@
+
+=== tema light ===
+entrar: 0 violaciones
+inicio: 2 violaciones
+  - [serious] label-content-name-mismatch x4: Elements must have their visible text as part of their accessible name
+      .min-h-12.p-1\.5[href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+  - [serious] link-in-text-block x2: Links must be distinguishable without relying on color
+      #recordatorio-3 > .flex-1.min-w-0 > .mt-0\.5.tabular > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 2.07:1 with the surrounding text. (Minimum contrast is 3:1, link text: #14213a, surrounding text: #45536f) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+      #recordatorio-10 > .flex-1.min-w-0 > .mt-0\.5.tabular > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 2.07:1 with the surrounding text. (Minimum contrast is 3:1, link text: #14213a, surrounding text: #45536f) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+garaje: 1 violaciones
+  - [serious] label-content-name-mismatch x4: Elements must have their visible text as part of their accessible name
+      .min-h-12.p-1\.5[href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+ficha (resumen): 1 violaciones
+  - [serious] label-content-name-mismatch x15: Elements must have their visible text as part of their accessible name
+      .min-h-12.transition-\[background-color\,scale\][href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+ficha (recordatorios): 1 violaciones
+  - [serious] label-content-name-mismatch x5: Elements must have their visible text as part of their accessible name
+      li:nth-child(1) > .min-h-12.transition-\[background-color\,scale\].p-1\.5 ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+agenda: 2 violaciones
+  - [serious] label-content-name-mismatch x7: Elements must have their visible text as part of their accessible name
+      a[href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+  - [serious] link-in-text-block x2: Links must be distinguishable without relying on color
+      #recordatorio-3 > .min-w-0.flex-1 > .tabular.mt-0\.5 > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 2.07:1 with the surrounding text. (Minimum contrast is 3:1, link text: #14213a, surrounding text: #45536f) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+      #recordatorio-10 > .min-w-0.flex-1 > .tabular.mt-0\.5 > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 2.07:1 with the surrounding text. (Minimum contrast is 3:1, link text: #14213a, surrounding text: #45536f) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+
+=== tema dark ===
+entrar: 0 violaciones
+inicio: 2 violaciones
+  - [serious] label-content-name-mismatch x4: Elements must have their visible text as part of their accessible name
+      .min-h-12.p-1\.5[href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+  - [serious] link-in-text-block x2: Links must be distinguishable without relying on color
+      #recordatorio-3 > .flex-1.min-w-0 > .mt-0\.5.tabular > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 1.58:1 with the surrounding text. (Minimum contrast is 3:1, link text: #e9effc, surrounding text: #b3c0da) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+      #recordatorio-10 > .flex-1.min-w-0 > .mt-0\.5.tabular > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 1.58:1 with the surrounding text. (Minimum contrast is 3:1, link text: #e9effc, surrounding text: #b3c0da) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+garaje: 1 violaciones
+  - [serious] label-content-name-mismatch x4: Elements must have their visible text as part of their accessible name
+      .min-h-12.p-1\.5[href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+ficha (resumen): 1 violaciones
+  - [serious] label-content-name-mismatch x15: Elements must have their visible text as part of their accessible name
+      .min-h-12.transition-\[background-color\,scale\][href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+ficha (recordatorios): 1 violaciones
+  - [serious] label-content-name-mismatch x5: Elements must have their visible text as part of their accessible name
+      li:nth-child(1) > .min-h-12.transition-\[background-color\,scale\].p-1\.5 ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+agenda: 2 violaciones
+  - [serious] label-content-name-mismatch x7: Elements must have their visible text as part of their accessible name
+      a[href$="vehiculos/2"] ::   Text inside the element is not included in the accessible name
+      a[aria-label="El rojo, 4821 KTB: 1 vencido"] ::   Text inside the element is not included in the accessible name
+  - [serious] link-in-text-block x2: Links must be distinguishable without relying on color
+      #recordatorio-3 > .min-w-0.flex-1 > .tabular.mt-0\.5 > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 1.58:1 with the surrounding text. (Minimum contrast is 3:1, link text: #e9effc, surrounding text: #b3c0da) |   The link has no styling (such as underline) to distinguish it from the surrounding text
+      #recordatorio-10 > .min-w-0.flex-1 > .tabular.mt-0\.5 > .underline-offset-4.hover\:underline.text-fg ::   The link has insufficient color contrast of 1.58:1 with the surrounding text. (Minimum contrast is 3:1, link text: #e9effc, surrounding text: #b3c0da) |   The link has no styling (such as underline) to distinguish it from the surrounding text

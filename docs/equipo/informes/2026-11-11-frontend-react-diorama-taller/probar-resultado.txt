@@ -1,0 +1,17 @@
+axe portada: sin violaciones
+light URL tras elegir fila: /app/3?orden=27
+axe portada con ficha: sin violaciones
+importe visible (propietario): 1
+light URL tras Escape: /app/3
+URL tras pulsar misión: /app/3?orden=26
+/taller?orden=27 → /app/3?orden=27
+axe ordenes: sin violaciones
+axe lista: sin violaciones
+axe clientes: sin violaciones
+axe equipo: sin violaciones
+sigue cargando
+axe nueva: sin violaciones
+axe solicitudes: sin violaciones
+dark URL tras elegir fila: /app/3?orden=27
+dark URL tras Escape: /app/3
+mecánico: importe visible: 0 · misiones: 0
