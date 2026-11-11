@@ -61,7 +61,7 @@ function garageFocus(layout: GarageLayout, selSlot: number | null, compact: bool
   if (!s) return overview
   const pts = boxPoints(s.x - SLOT_PITCH / 2 - 1.8, s.x + SLOT_PITCH / 2 + 1.8, 0, 2.2, s.z - SLOT_D / 2 - 2.6, s.z + SLOT_D / 2 + 1.4)
   const f = focusFrom(pts, w, h, { right: insetR, top: insetT + 70, bottom: insetB + 30 }, 30)
-  return { ...f, zoom: Math.min(f.zoom, overview.zoom * 3) }
+  return { ...f, zoom: Math.min(Math.max(f.zoom, overview.zoom * 1.3), overview.zoom * 3) }
 }
 
 // ───────────────────────── Componente público ─────────────────────────

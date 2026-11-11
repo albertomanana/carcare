@@ -105,12 +105,14 @@ export default function WorkshopCanvas({
   const insetB = focusInset?.bottom ?? 0
   const overview = useMemo<CamFocus | null>(() => {
     if (size.w < 40 || size.h < 40) return null
-    const pts = boxPoints(layout.minX - WALL_T, layout.apronX, -SLAB_H, WALL_H, layout.backZ - WALL_T, layout.frontZ)
-    return focusFrom(pts, size.w, size.h, { right: insetR, top: insetT + 26, bottom: insetB + 24 }, size.w < 520 ? 8 : 14)
+    // La nave entera (el borde de la losa y el extremo de la explanada incluidos) en el hueco que dejan los paneles; solo
+    // se reserva arriba lo que sobresalen los rótulos de los elevadores y abajo un respiro.
+    const pts = boxPoints(layout.minX - WALL_T, layout.apronX - 0.4, -0.3, WALL_H, layout.backZ - WALL_T, layout.frontZ)
+    return focusFrom(pts, size.w, size.h, { left: 6, right: insetR + 6, top: insetT + 10, bottom: insetB + 4 }, size.w < 520 ? 4 : 6)
   }, [layout, size.w, size.h, insetR, insetT, insetB])
   const focus = useMemo<CamFocus | null>(() => {
     if (!overview) return null
-    const inset = { right: insetR, top: insetT + 70, bottom: insetB + 30 }
+    const inset = { right: insetR, top: insetT + 36, bottom: insetB + 16 }
     let pts: THREE.Vector3[] | null = null
     if (focusBay != null) {
       const b = layout.bays.find((x) => x.number === focusBay)
@@ -121,7 +123,8 @@ export default function WorkshopCanvas({
     }
     if (!pts) return overview
     const f = focusFrom(pts, size.w, size.h, inset, 30)
-    return { ...f, zoom: Math.min(f.zoom, overview.zoom * 3.2) }
+    // siempre más cerca que la vista general (aunque el hueco libre sea pequeño, como con la hoja de detalle a 768 px)
+    return { ...f, zoom: Math.min(Math.max(f.zoom, overview.zoom * 1.3), overview.zoom * 2.6) }
   }, [overview, layout, focusBay, focusStall, size.w, size.h, insetR, insetT, insetB])
   const selKey = `${selCar ? `o${selCar.order.id}` : ''}|${selectedBay ?? ''}|${recenter}`
 
@@ -149,8 +152,11 @@ export default function WorkshopCanvas({
   const canReset = hasSelection || userMoved
   useEscape(canReset, deselect)
 
-  // Rótulos compactos si los elevadores quedan a menos de ~175 px en pantalla
-  const compact = !!focus && focus.zoom * BAY_W * Math.SQRT1_2 < 175
+  // Rótulos compactos si los elevadores quedan a menos de ~175 px en pantalla, y los coches en espera, solo un punto
+  // (con el número al pasar el puntero) cuando no hay sitio para tantos rótulos: la vista general
+  const bayPx = focus ? focus.zoom * BAY_W * Math.SQRT1_2 : 0
+  const compact = bayPx < 175
+  const dots = bayPx < 105
 
   const occupied = sorted.filter((b) => b.work_order).length
   const nPark = cars.filter((c) => c.spot.kind === 'park').length + assignment.overflow.park
@@ -223,33 +229,75 @@ export default function WorkshopCanvas({
         ))}
         {parked.map((c) => (
           <OverlayItem key={c.order.id} store={overlay} id={`car-${c.order.id}`}>
-            <CarLabel order={c.order} zone={c.spot.kind === 'ready' ? 'ready' : 'park'} selected={selCar?.order.id === c.order.id} compact={compact} onSelect={selectOrder} />
+            <CarLabel order={c.order} zone={c.spot.kind === 'ready' ? 'ready' : 'park'} selected={selCar?.order.id === c.order.id} compact={compact} dot={dots} onSelect={selectOrder} />
           </OverlayItem>
         ))}
       </OverlayLayer>
 
-      <div className="pointer-events-none absolute left-3 flex items-end gap-2" style={{ bottom: insetB + 8, right: insetR + 12 }}>
-        <p className="mr-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-surface/80 px-2 py-1 text-[11px] text-fg-muted backdrop-blur-sm">
-          {statuses.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1">
-              <span className={cx('size-2 rounded-full', TONE_CLASSES[WORK_ORDER_STATUS[s].tone].dot)} aria-hidden />
-              {WORK_ORDER_STATUS[s].label}
-            </span>
-          ))}
-          {assignment.overflow.park > 0 && <span className="text-fg-subtle">· Espera: se ven {cap.park} de {cap.park + assignment.overflow.park}</span>}
-          {assignment.overflow.ready > 0 && <span className="text-fg-subtle">· Entrega: se ven {cap.ready} de {cap.ready + assignment.overflow.ready}</span>}
-          <span className="hidden text-fg-subtle sm:inline">· Arrastra para desplazarte; rueda o pellizco para acercar</span>
-        </p>
-        {canReset && (
-          <button
-            type="button"
-            onClick={deselect}
-            className="pointer-events-auto shrink-0 rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            Ver toda la nave
-          </button>
-        )}
-      </div>
+      <FloorLegend statuses={statuses} overflowPark={assignment.overflow.park} overflowReady={assignment.overflow.ready} cap={cap} insetB={insetB} />
+      {canReset && (
+        <button
+          type="button"
+          onClick={deselect}
+          style={{ bottom: insetB + 8, right: insetR + 12 }}
+          className="absolute rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          Ver toda la nave
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Leyenda plegable en la esquina inferior izquierda (la esquina vacía de la maqueta isométrica): un chip «Leyenda» que
+ * despliega los estados que hay en la nave, las plazas que no caben y cómo moverse. Cerrada, apenas tapa nada.
+ */
+function FloorLegend({
+  statuses,
+  overflowPark,
+  overflowReady,
+  cap,
+  insetB,
+}: {
+  statuses: WorkOrderStatus[]
+  overflowPark: number
+  overflowReady: number
+  cap: { park: number; ready: number }
+  insetB: number
+}) {
+  const [open, setOpen] = useState(false)
+  const note = overflowPark > 0 || overflowReady > 0
+  return (
+    <div className="absolute left-3 flex flex-col items-start gap-1" style={{ bottom: insetB + 8 }}>
+      {open && (
+        <div id="leyenda-taller" className="max-w-64 rounded-card border border-line bg-surface/95 p-2.5 text-[11px] text-fg-muted shadow-lg backdrop-blur-sm">
+          <ul className="grid gap-1">
+            {statuses.map((s) => (
+              <li key={s} className="inline-flex items-center gap-1.5">
+                <span className={cx('size-2 rounded-full', TONE_CLASSES[WORK_ORDER_STATUS[s].tone].dot)} aria-hidden />
+                {WORK_ORDER_STATUS[s].label}
+              </li>
+            ))}
+          </ul>
+          {note && (
+            <p className="mt-1.5 text-fg-subtle">
+              {overflowPark > 0 && <>Espera: se ven {cap.park} de {cap.park + overflowPark}. </>}
+              {overflowReady > 0 && <>Entrega: se ven {cap.ready} de {cap.ready + overflowReady}.</>}
+            </p>
+          )}
+          <p className="mt-1.5 text-fg-subtle">Arrastra para desplazarte; rueda o pellizco para acercar. Escape vuelve a la vista general.</p>
+        </div>
+      )}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="leyenda-taller"
+        onClick={() => setOpen((o) => !o)}
+        className="rounded-control border border-line bg-surface/90 px-2.5 py-1 text-xs font-medium text-fg-muted shadow-md backdrop-blur-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        Leyenda{note && !open ? ' · hay plazas ocultas' : ''}
+      </button>
     </div>
   )
 }

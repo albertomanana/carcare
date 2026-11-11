@@ -24,10 +24,10 @@ export const BAY_D = 6.6
 export const LANE_W = 4.8
 /** Separación del eje de cada carril respecto al eje de la calzada. */
 export const LANE_OFF = 1.2
-export const STALL_W = 3.3
+export const STALL_W = 3.1
 export const STALL_D = 5.8
 /** Explanada de la entrada, a la derecha de la nave. */
-export const APRON = 5.4
+export const APRON = 4.6
 export const MARGIN = 0.7
 export const ZONE_GAP = 1.3
 export const WALL_H = 2.2
@@ -109,7 +109,7 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
   const laneZ = bayZ + BAY_D / 2 + LANE_GAP + LANE_W / 2
   const stallZ = laneZ + LANE_W / 2 + STALL_GAP + STALL_D / 2
   const backZ = bayZ - BAY_D / 2 - 0.7
-  const frontZ = stallZ + STALL_D / 2 + 1.5
+  const frontZ = stallZ + STALL_D / 2 + 1.0
 
   const bx0 = minX + MARGIN + (inner - 2 * MARGIN - bayRow) / 2 + BAY_W / 2
   const bays = bayNumbers.map((number, i) => ({ number, x: bx0 + i * BAY_W, z: bayZ }))

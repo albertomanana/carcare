@@ -73,18 +73,24 @@ export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selec
   )
 }
 
-/** Coche aparcado en la zona de espera o de entrega. */
+/**
+ * Coche aparcado en la zona de espera o de entrega. Con `dot` (vista general, cuando no hay sitio para tantos rótulos)
+ * es solo un punto con el color del estado y un anillo; el número aparece al pasar el puntero, con el teclado y al
+ * seleccionarlo. El texto accesible es siempre el completo.
+ */
 export function CarLabel({
   order,
   zone,
   selected,
   compact,
+  dot = false,
   onSelect,
 }: {
   order: WorkOrder
   zone: 'park' | 'ready'
   selected: boolean
   compact: boolean
+  dot?: boolean
   onSelect: (id: number | null) => void
 }) {
   const st = WORK_ORDER_STATUS[order.status]
@@ -92,6 +98,36 @@ export function CarLabel({
   const short = order.number.split('-').pop() ?? order.number
   const where = zone === 'ready' ? 'Zona de entrega' : 'En espera'
   const aria = `${where}: orden ${order.number}, ${vehicleText(order)}, ${st.label}${order.is_late ? ', fuera de plazo' : ''}`
+  const click = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onSelect(selected ? null : order.id)
+  }
+  if (dot && !selected) {
+    return (
+      <div className="group/dot relative flex flex-col items-center">
+        <button
+          type="button"
+          aria-pressed={false}
+          aria-label={aria}
+          title={aria}
+          onClick={click}
+          className={cx(
+            'grid size-6 cursor-pointer place-items-center rounded-full border bg-surface/90 shadow-md backdrop-blur-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+            order.is_late ? 'border-danger' : 'border-line/80',
+          )}
+        >
+          <span className={cx('size-2.5 rounded-full', tone.dot)} aria-hidden />
+        </button>
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bottom-full mb-1 hidden whitespace-nowrap rounded-full border border-line/70 bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums text-fg shadow-md group-focus-within/dot:block group-hover/dot:block"
+        >
+          {short}
+          {order.is_late && <LATE.icon className="ml-1 inline size-3 text-danger" aria-hidden />}
+        </span>
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col items-center">
       <button
@@ -99,10 +135,7 @@ export function CarLabel({
         aria-pressed={selected}
         aria-label={aria}
         title={aria}
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect(selected ? null : order.id)
-        }}
+        onClick={click}
         className={cx(
           'inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium text-fg shadow-md backdrop-blur-md',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
