@@ -1,0 +1,66 @@
+/*
+ * Taller 3D: paneles flotantes sobre la maqueta. Cristal sutil (cartulina al 95 % con desenfoque) que deja intuir la
+ * escena sin restar contraste; opaco si el navegador no tiene backdrop-filter o el usuario pide menos transparencia.
+ * Solo se aplica en la disposición flotante (desde 768 px y con WebGL); apilado, los paneles son cartulina normal.
+ */
+.floor-glass {
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 1px 0 0 var(--sheen) inset,
+    0 10px 28px -12px hsl(var(--shadow-color) / 0.55),
+    0 2px 6px hsl(var(--shadow-color) / 0.2);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .floor-glass {
+    background: var(--surface);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .floor-glass {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Panel de detalle: entra deslizándose desde la derecha (escritorio) o desde abajo (hoja de tableta). */
+@keyframes floor-in-right {
+  from {
+    transform: translateX(calc(100% + 1rem));
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes floor-in-up {
+  from {
+    transform: translateY(calc(100% + 1rem));
+  }
+  to {
+    transform: none;
+  }
+}
+
+.floor-drawer-right {
+  animation: floor-in-right 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.floor-drawer-up {
+  animation: floor-in-up 280ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floor-drawer-right,
+  .floor-drawer-up {
+    animation: none;
+  }
+}

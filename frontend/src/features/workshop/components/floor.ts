@@ -68,6 +68,17 @@ export function resolveSelection(sel: FloorSelectionState, bays: Bay[], orders: 
   return { bay: null, order: null, freeBay: false }
 }
 
+/** id del título de la ficha del Taller 3D (recibe el foco si el elemento pulsado desaparece). */
+export const FLOOR_DETAIL_TITLE_ID = 'floor-panel-title'
+
+/** Frase para el `aria-live` de la página al cambiar lo elegido. */
+export function selectionAnnouncement(resolved: ResolvedSelection): string {
+  const o = resolved.order
+  if (o) return `Seleccionada ${o.number}, ${o.vehicle.display_name}${o.bay ? `, elevador ${o.bay}` : ', sin elevador'}. Ficha abierta.`
+  if (resolved.freeBay && resolved.bay) return `Elevador ${resolved.bay} libre. Ficha abierta.`
+  return ''
+}
+
 /** `tel:` limpio a partir de un teléfono escrito a mano ('600 000 002' → 'tel:600000002'). */
 export function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`
