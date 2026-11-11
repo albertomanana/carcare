@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { Splash } from '@/components/layout/Logo'
 import { ErrorState } from '@/components/ui/States'
-import { safeRedirect } from '@/lib/navigation'
+import { redirectAfterLogin } from '@/lib/navigation'
 import { readStorage, STORAGE_KEYS } from '@/lib/storage'
 import { useAuth } from './auth-context'
 
@@ -26,12 +26,12 @@ export function RequireAuth() {
 
 /** Login/registro: con sesión ⇒ a la app. */
 export function GuestOnly({ children }: { children: ReactNode }) {
-  const { status } = useAuth()
+  const { status, workspaces } = useAuth()
   const location = useLocation()
   if (status === 'loading') return <Splash />
   if (status === 'authenticated') {
     const back = new URLSearchParams(location.search).get('volver')
-    return <Navigate to={safeRedirect(back) ?? '/app'} replace />
+    return <Navigate to={redirectAfterLogin(back, workspaces)} replace />
   }
   return <>{children}</>
 }

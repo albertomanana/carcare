@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/inputs'
-import { safeRedirect } from '@/lib/navigation'
+import { redirectAfterLogin, safeRedirect } from '@/lib/navigation'
 import { AuthLayout, FormAlert, PasswordToggle } from './AuthLayout'
 import { useLockout } from './useLockout'
 
@@ -55,7 +55,7 @@ export default function LoginPage() {
   const submit = (input: LoginInput) => {
     setFormError(null)
     login.mutate(input, {
-      onSuccess: () => navigate(back ?? '/app', { replace: true }),
+      onSuccess: (me) => navigate(redirectAfterLogin(back, me.workspaces), { replace: true }),
       onError: (err) => {
         if (isApiError(err) && err.status === 429) {
           setLockedFor(err.retryAfter ?? 60)
