@@ -63,3 +63,55 @@ export function fitView(
   }
   return { target: [target.x, target.y, target.z], distance: dist }
 }
+
+export interface FitInset {
+  left?: number
+  right?: number
+  top?: number
+  bottom?: number
+}
+
+/**
+ * Encuadre para una cámara ortográfica de dirección fija: `zoom` (px por metro, como en R3F) para que los puntos quepan
+ * en la parte del lienzo que dejan libre los márgenes (`inset`, en px, p. ej. un panel encima) y `target` en el suelo
+ * (y = 0) para que el conjunto quede centrado en esa parte libre. `dir` va del objetivo a la cámara.
+ */
+export function fitOrtho(
+  points: THREE.Vector3[],
+  dir: THREE.Vector3,
+  width: number,
+  height: number,
+  inset: FitInset = {},
+  pad = 24,
+): { target: [number, number, number]; zoom: number } {
+  const f = dir.clone().normalize().negate()
+  const r = new THREE.Vector3().crossVectors(f, new THREE.Vector3(0, 1, 0)).normalize()
+  const u = new THREE.Vector3().crossVectors(r, f).normalize()
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const p of points) {
+    const x = p.dot(r)
+    const y = p.dot(u)
+    minX = Math.min(minX, x)
+    maxX = Math.max(maxX, x)
+    minY = Math.min(minY, y)
+    maxY = Math.max(maxY, y)
+  }
+  const l = inset.left ?? 0
+  const rr = inset.right ?? 0
+  const t = inset.top ?? 0
+  const b = inset.bottom ?? 0
+  const availW = Math.max(60, width - l - rr - 2 * pad)
+  const availH = Math.max(60, height - t - b - 2 * pad)
+  const zoom = Math.min(availW / Math.max(0.01, maxX - minX), availH / Math.max(0.01, maxY - minY))
+  // el centro del conjunto debe caer en el centro de la zona libre (desplazado respecto al del lienzo)
+  const dx = (l - rr) / 2
+  const dy = (b - t) / 2
+  const tx = (minX + maxX) / 2 - dx / zoom
+  const ty = (minY + maxY) / 2 - dy / zoom
+  const s = -(ty * u.y) / f.y
+  const target = r.multiplyScalar(tx).addScaledVector(u, ty).addScaledVector(f, s)
+  return { target: [target.x, 0, target.z], zoom }
+}

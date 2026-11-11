@@ -29,6 +29,19 @@ export interface OverlayAnchor {
   fixed?: boolean
   /** Opacidad cuando no está "activo" (para atenuar el resto al seleccionar uno). */
   dim?: boolean
+  /**
+   * Objeto que se mueve (p. ej. un coche que recorre la calzada): el anclaje es su posición en cada fotograma más
+   * `position` como desplazamiento. Si el objeto no existe o está oculto, el rótulo se oculta.
+   */
+  track?: () => THREE.Object3D | null | undefined
+}
+
+/** Márgenes (px) del lienzo tapados por paneles: los rótulos se quedan en la parte libre. */
+export interface OverlayInset {
+  left?: number
+  right?: number
+  top?: number
+  bottom?: number
 }
 
 /** Capa HTML (fuera del <Canvas>, mismo tamaño) con las líneas guía y los rótulos. */
@@ -95,10 +108,11 @@ const DIRS = Array.from({ length: 12 }, (_, i) => {
   return [Math.cos(a), Math.sin(a)] as [number, number]
 })
 const GAP = 4
+const _off = new THREE.Vector3()
 
-/** Recorta a [4, max - 4] (margen de 4 px dentro del lienzo). */
-function clampTo(v: number, max: number) {
-  return Math.min(Math.max(v, 4), Math.max(4, max - 4))
+/** Recorta a [lo + 4, hi - 4] (margen de 4 px dentro de la zona libre del lienzo). */
+function clampTo(v: number, hi: number, lo = 0) {
+  return Math.min(Math.max(v, lo + 4), Math.max(lo + 4, hi - 4))
 }
 
 function overlaps(x: number, y: number, w: number, h: number, placed: number[][]) {
@@ -112,7 +126,17 @@ function overlaps(x: number, y: number, w: number, h: number, placed: number[][]
  * Dentro del <Canvas>: proyecta y desapila. Se ejecuta en cada fotograma pintado (con frameloop="demand",
  * solo cuando la cámara o la escena cambian).
  */
-export function OverlayProjector({ store, anchors, declutter = true }: { store: OverlayStore; anchors: OverlayAnchor[]; declutter?: boolean }) {
+export function OverlayProjector({
+  store,
+  anchors,
+  declutter = true,
+  inset,
+}: {
+  store: OverlayStore
+  anchors: OverlayAnchor[]
+  declutter?: boolean
+  inset?: OverlayInset
+}) {
   const invalidate = useThree((s) => s.invalidate)
   const v = useMemo(() => new THREE.Vector3(), [])
   const cam = useMemo(() => new THREE.Vector3(), [])
@@ -129,17 +153,25 @@ export function OverlayProjector({ store, anchors, declutter = true }: { store: 
   useFrame(({ camera, size }) => {
     camera.updateMatrixWorld()
     cam.setFromMatrixPosition(camera.matrixWorld)
-    const W = size.width
-    const H = size.height
+    const X0 = inset?.left ?? 0
+    const Y0 = inset?.top ?? 0
+    const W = size.width - (inset?.right ?? 0)
+    const H = size.height - (inset?.bottom ?? 0)
     const slots: Slot[] = []
     // 1) Lecturas (tamaños) y proyección
     for (const a of anchors) {
       const el = store.els.get(a.id)
       if (!el) continue
-      v.set(a.position[0], a.position[1], a.position[2]).project(camera)
-      const ax = (v.x * 0.5 + 0.5) * W
-      const ay = (-v.y * 0.5 + 0.5) * H
-      const visible = v.z < 1 && ax > -12 && ax < W + 12 && ay > -12 && ay < H + 12
+      let tracked = true
+      if (a.track) {
+        const obj = a.track()
+        if (obj && obj.visible) obj.getWorldPosition(v).add(_off.set(a.position[0], a.position[1], a.position[2]))
+        else tracked = false
+      } else v.set(a.position[0], a.position[1], a.position[2])
+      v.project(camera)
+      const ax = (v.x * 0.5 + 0.5) * size.width
+      const ay = (-v.y * 0.5 + 0.5) * size.height
+      const visible = tracked && v.z < 1 && ax > X0 - 12 && ax < W + 12 && ay > Y0 - 12 && ay < H + 12
       const w = el.offsetWidth
       const h = el.offsetHeight
       const pivot = a.pivot ?? 'center'
@@ -175,8 +207,8 @@ export function OverlayProjector({ store, anchors, declutter = true }: { store: 
         // posiciones siempre dentro del lienzo: se comprueban ya recortadas (si no, el recorte final reintroduce solapes)
         const x0 = s.ax - s.px
         const y0 = s.ay - s.py
-        const cxp = (x: number) => clampTo(x, W - s.w)
-        const cyp = (y: number) => clampTo(y, H - s.h)
+        const cxp = (x: number) => clampTo(x, W - s.w, X0)
+        const cyp = (y: number) => clampTo(y, H - s.h, Y0)
         const free = (dx: number, dy: number) => !overlaps(cxp(x0 + dx), cyp(y0 + dy), s.w, s.h, placed)
         let best: [number, number] | null = null
         if (s.a.fixed || free(0, 0)) best = [0, 0]
@@ -225,8 +257,8 @@ export function OverlayProjector({ store, anchors, declutter = true }: { store: 
       let x = s.ax - s.px + s.ox
       let y = s.ay - s.py + s.oy
       // siempre dentro del lienzo (para poder pulsarlo)
-      x = clampTo(x, W - s.w)
-      y = clampTo(y, H - s.h)
+      x = clampTo(x, W - s.w, X0)
+      y = clampTo(y, H - s.h, Y0)
       s.el.style.visibility = 'visible'
       s.el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
       s.el.style.opacity = s.behind && !s.a.fixed ? '0.45' : s.a.dim ? '0.6' : '1'

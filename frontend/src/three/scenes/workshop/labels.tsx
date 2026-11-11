@@ -1,0 +1,120 @@
+/**
+ * Rótulos HTML del taller (botones accesibles proyectados sobre la maqueta): uno por elevador y uno por coche en la
+ * zona de espera o de entrega. El texto accesible describe siempre el elevador o la orden completos.
+ */
+import type { Bay, WorkOrder } from '@/api/types'
+import { LATE, TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
+
+const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
+
+function vehicleText(o: WorkOrder) {
+  return o.vehicle.plate ? `${o.vehicle.display_name} (${o.vehicle.plate})` : o.vehicle.display_name
+}
+
+export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selected: boolean; compact: boolean; onSelect: (n: number | null) => void }) {
+  const o = bay.work_order
+  const st = o ? WORK_ORDER_STATUS[o.status] : null
+  const tone = st ? TONE_CLASSES[st.tone] : null
+  const Icon = st?.icon
+  const aria = o
+    ? `Elevador ${bay.number}: orden ${o.number}, ${vehicleText(o)}, ${st!.label}${o.is_late ? ', fuera de plazo' : ''}`
+    : `Elevador ${bay.number}: libre`
+  const full = !compact || selected
+  return (
+    <div className="flex flex-col items-center">
+      <button
+        type="button"
+        aria-pressed={selected}
+        aria-label={aria}
+        title={aria}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect(selected ? null : bay.number)
+        }}
+        className={cx(
+          'flex cursor-pointer flex-col items-start gap-0.5 rounded-card border px-2.5 py-1.5 text-left text-xs shadow-lg backdrop-blur-md',
+          'transition-[background-color,box-shadow,border-color] duration-200 motion-reduce:transition-none',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          selected ? 'border-accent bg-surface text-fg ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 text-fg hover:bg-surface',
+        )}
+      >
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
+          <span className="font-display text-xs font-semibold text-fg-subtle">{compact && !selected ? `E${bay.number}` : `Elevador ${bay.number}`}</span>
+          {o ? (
+            <>
+              {tone && <span className={cx('size-2 rounded-full', tone.dot)} aria-hidden />}
+              {full && <span className="font-medium tabular-nums">{o.number}</span>}
+            </>
+          ) : (
+            <span className="text-fg-muted">Libre</span>
+          )}
+        </span>
+        {o && full && (
+          <span className="flex items-center gap-1.5 whitespace-nowrap text-fg-muted">
+            {st && tone && Icon && (
+              <span className={cx('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-px text-[11px] font-medium', tone.soft)}>
+                <Icon className="size-3" aria-hidden strokeWidth={2.4} />
+                {st.label}
+              </span>
+            )}
+            {o.is_late && (
+              <span className={cx('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-px text-[11px] font-medium', TONE_CLASSES[LATE.tone].soft)}>
+                <LATE.icon className="size-3" aria-hidden strokeWidth={2.4} />
+                {LATE.label}
+              </span>
+            )}
+            <span className="max-w-40 truncate">{o.vehicle.plate ?? o.vehicle.display_name}</span>
+          </span>
+        )}
+        {o && selected && o.vehicle.plate && <span className="max-w-56 truncate text-fg-muted">{o.vehicle.display_name}</span>}
+      </button>
+      <span className="h-3 w-px bg-fg-subtle/70" aria-hidden />
+    </div>
+  )
+}
+
+/** Coche aparcado en la zona de espera o de entrega. */
+export function CarLabel({
+  order,
+  zone,
+  selected,
+  compact,
+  onSelect,
+}: {
+  order: WorkOrder
+  zone: 'park' | 'ready'
+  selected: boolean
+  compact: boolean
+  onSelect: (id: number | null) => void
+}) {
+  const st = WORK_ORDER_STATUS[order.status]
+  const tone = TONE_CLASSES[st.tone]
+  const short = order.number.split('-').pop() ?? order.number
+  const where = zone === 'ready' ? 'Zona de entrega' : 'En espera'
+  const aria = `${where}: orden ${order.number}, ${vehicleText(order)}, ${st.label}${order.is_late ? ', fuera de plazo' : ''}`
+  return (
+    <div className="flex flex-col items-center">
+      <button
+        type="button"
+        aria-pressed={selected}
+        aria-label={aria}
+        title={aria}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect(selected ? null : order.id)
+        }}
+        className={cx(
+          'inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium text-fg shadow-md backdrop-blur-md',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          selected ? 'border-accent bg-surface ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 hover:bg-surface',
+        )}
+      >
+        <span className={cx('size-1.5 rounded-full', tone.dot)} aria-hidden />
+        <span className="tabular-nums">{compact && !selected ? short : order.number}</span>
+        {selected && <span className="max-w-32 truncate text-fg-muted">{order.vehicle.plate ?? order.vehicle.display_name}</span>}
+        {order.is_late && <LATE.icon className="size-3 text-danger" aria-hidden />}
+      </button>
+      <span className="h-2 w-px bg-fg-subtle/60" aria-hidden />
+    </div>
+  )
+}

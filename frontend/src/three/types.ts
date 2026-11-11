@@ -62,12 +62,24 @@ export interface CarSilhouetteProps {
 
 export interface WorkshopSceneProps {
   bays: Bay[]
-  /** Órdenes abiertas sin elevador: se aparcan en la zona de espera (máx. 8 visibles). */
+  /**
+   * Órdenes abiertas sin elevador. Las «Listo» van a la zona de entrega y el resto a la de espera (las plazas dependen
+   * del número de elevadores; las que no caben se cuentan en la leyenda).
+   */
   waiting?: WorkOrder[]
   selectedBay?: number | null
+  /** Orden elegida (de un elevador, de la espera o de la entrega): la cámara enfoca su coche. Tiene prioridad sobre `selectedBay`. */
+  selectedOrderId?: number | null
+  /** Elegir un elevador; `null` = deseleccionar (clic en el vacío, Escape o «Ver toda la nave»). */
   onSelectBay?: (bay: number | null) => void
+  /** Elegir el coche de una orden (clic en el coche o en su rótulo). */
   onSelectOrder?: (workOrderId: number) => void
   className?: string
+  /**
+   * Márgenes en px tapados por paneles HTML encima del lienzo: los encuadres y los rótulos se ajustan a la parte libre
+   * (el coche enfocado no queda debajo del panel derecho). El lienzo va a sangre, sin borde propio.
+   */
+  focusInset?: { right?: number; top?: number; bottom?: number }
 }
 
 /**

@@ -3,7 +3,7 @@
  * Mantienen la misma información accesible que el 3D (p. ej. los marcadores de zona).
  */
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { Bay, Zone, ZoneStatus } from '@/api/types'
+import type { Bay, WorkOrder, Zone, ZoneStatus } from '@/api/types'
 import { WORK_ORDER_STATUS } from '@/lib/status'
 import type { CarAppearance, CarViewerProps, WorkshopSceneProps } from './types'
 import { getCarLayout } from './car/anchors'
@@ -101,15 +101,43 @@ export function ZoneMap2D({
   )
 }
 
-/** Taller sin WebGL: rejilla de elevadores como botones. */
-export function Workshop2D({ bays, waiting = [], selectedBay = null, onSelectBay, onSelectOrder, className }: WorkshopSceneProps) {
+/** Taller sin WebGL: rejilla de elevadores como botones, y debajo la espera y la entrega (misma información que la maqueta). */
+export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrderId = null, onSelectBay, onSelectOrder, className }: WorkshopSceneProps) {
+  const parked = waiting.filter((o) => o.status !== 'ready')
+  const ready = waiting.filter((o) => o.status === 'ready')
+  const group = (title: string, list: WorkOrder[]) =>
+    list.length > 0 && (
+      <div>
+        <p className="mb-1 text-xs font-medium text-fg-muted">{title}</p>
+        <ul className="flex flex-wrap gap-2">
+          {list.map((o) => {
+            const sel = selectedOrderId === o.id
+            return (
+              <li key={o.id}>
+                <button
+                  type="button"
+                  aria-pressed={sel}
+                  onClick={() => (sel ? onSelectBay?.(null) : onSelectOrder?.(o.id))}
+                  className={cx(
+                    'rounded-control border bg-surface px-2 py-1 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                    sel ? 'border-accent' : 'border-line',
+                  )}
+                >
+                  {o.number} · {o.vehicle.display_name} · {WORK_ORDER_STATUS[o.status].label}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    )
   return (
     <div className={cx('grid content-start gap-3 overflow-auto p-3', className)} role="group" aria-label="Taller (vista 2D)">
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">
         {bays.map((b: Bay) => {
           const o = b.work_order
           const st = o ? WORK_ORDER_STATUS[o.status] : null
-          const sel = selectedBay === b.number
+          const sel = selectedBay === b.number || (o != null && selectedOrderId === o.id)
           return (
             <li key={b.number}>
               <button
@@ -136,24 +164,8 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, onSelectBay
           )
         })}
       </ul>
-      {waiting.length > 0 && (
-        <div>
-          <p className="mb-1 text-xs font-medium text-fg-muted">En espera</p>
-          <ul className="flex flex-wrap gap-2">
-            {waiting.slice(0, 8).map((o) => (
-              <li key={o.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelectOrder?.(o.id)}
-                  className="rounded-control border border-line bg-surface px-2 py-1 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  {o.number} · {o.vehicle.display_name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {group('En espera', parked)}
+      {group('Listas para entregar', ready)}
     </div>
   )
 }

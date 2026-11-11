@@ -1,916 +1,1047 @@
 /**
- * Taller 3D (chunk diferido). Maqueta de la nave con:
- *  - un elevador de dos columnas por cada `bays[i]` (numerados), con el coche de la orden (carrocería y color reales
- *    del vehículo) elevado según el estado de la orden, tira LED y baliza con el color del estado;
- *  - zona de espera con las órdenes sin elevador (máx. 8 visibles);
- *  - rótulos HTML accesibles (un botón por elevador y por orden en espera) proyectados sobre la escena.
- * Seleccionar un elevador acerca la cámara (instantáneo con movimiento reducido). Un único <Canvas>.
+ * Taller 3D (chunk diferido): maqueta isométrica «de arcilla», como un juego de estrategia.
+ *  - Cámara ortográfica de ángulo fijo (azimut 45°, elevación 35°): se desplaza arrastrando y se acerca con la rueda o
+ *    pellizcando, pero no gira; al elegir un coche o un elevador la cámara se acerca con GSAP (0,8 s, `power3.out`).
+ *  - Nave: entrada a la derecha → calzada → espera (órdenes sin elevador que no están «Listo») → elevadores numerados
+ *    (uno por `bays[i]`) → entrega (órdenes «Listo» sin elevador).
+ *  - Coches de bloques redondeados con el color real del vehículo en tono mate. Un coche solo se mueve cuando cambia
+ *    el estado real de su orden (o al entrar en escena): recorre la calzada con GSAP por una CatmullRomCurve3.
+ *  - Con `prefers-reduced-motion`: sin trayectos, sin entrada y sin vuelos de cámara (posición final directa).
+ *  - Rótulos HTML accesibles (un botón por elevador y por coche aparcado) proyectados sobre la escena.
+ * Un único <Canvas>, `frameloop="demand"` (no pinta nada en reposo) y sombras que solo se recalculan cuando algo se mueve.
  */
-import { useCursor } from '@react-three/drei'
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { OrbitControls, useCursor } from '@react-three/drei'
+import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
+import gsap from 'gsap'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { Bay, WorkOrder, WorkOrderStatus } from '@/api/types'
-import { LATE, TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
+import { TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
 import type { WorkshopSceneProps } from '../types'
-import { getCarBuild } from '../car/build'
-import { CarModel } from '../car/CarModel'
-import { BODY_SPECS, resolveBody, resolveColor } from '../car/specs'
-import { mixHex } from '../color'
+import { resolveBody } from '../car/specs'
 import { useInView, usePrefersReducedMotion, useThemeTokens, type ThemeTokens } from '../env'
 import { toneColor } from '../markers/ZoneMarkerButton'
-import { CameraRig, type Focus } from './CameraRig'
-import { boxCorners, fitView } from './fit'
+import { ReleaseOnUnmount, ResumeOnVisible } from './common'
+import { canvasDpr } from './dpr'
+import { fitOrtho, type FitInset } from './fit'
 import { OverlayItem, OverlayLayer, OverlayProjector, type OverlayAnchor } from './overlay'
 import { useOverlayStore, type OverlayStore } from './overlayStore'
-import { StudioEnvironment } from './Stage'
 import { useCanvasLabel } from './useCanvasLabel'
+import { clayGlass, clayPaint, clayTrim, getClayCar } from './workshop/clayCar'
+import { buildDecals, buildMarkings, buildStatic, dioramaPalette, liftCarriage, POST_X, selectionOutline, type DioramaPalette } from './workshop/diorama'
+import { BayLabel, CarLabel } from './workshop/labels'
+import {
+  assignSpots,
+  BAY_D,
+  BAY_W,
+  clayColor,
+  computeFloorLayout,
+  driveDuration,
+  entrancePose,
+  planRoute,
+  polyLength,
+  POST_H,
+  sameSpot,
+  SLAB_H,
+  slotCapacity,
+  spotKey,
+  spotPose,
+  STALL_D,
+  STALL_W,
+  WALL_H,
+  WALL_T,
+  type FloorLayout,
+  type P2,
+  type Pose,
+  type Spot,
+} from './workshop/layout'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
-// ───────────────────────── Distribución de la nave ─────────────────────────
+// ───────────────────────── Cámara isométrica ─────────────────────────
 
-const BAY_W = 4.7
-const BAY_D = 7
-const ROW_GAP = 1.6
-const STALL_W = 2.95
-const MAX_WAITING = 8
-const POST_X = 1.68
-const LIFT_TOP = 3.45
-const WALL_H = 4.6
+const AZIMUTH = THREE.MathUtils.degToRad(45)
+const ELEVATION = THREE.MathUtils.degToRad(35)
+/** Del objetivo a la cámara. */
+const ISO_DIR = new THREE.Vector3(Math.cos(ELEVATION) * Math.sin(AZIMUTH), Math.sin(ELEVATION), Math.cos(ELEVATION) * Math.cos(AZIMUTH))
+const CAM_DIST = 70
+/** Sol: de la nave hacia la luz (arriba, a la izquierda y al frente): las sombras caen hacia el fondo a la derecha. */
+const SUN_DIR = new THREE.Vector3(-0.5, 1, 0.42).normalize()
 
-/** Altura del coche (m) según el estado: en reparación o esperando piezas, arriba; en diagnóstico, a media altura. */
-const LIFT_HEIGHT: Record<WorkOrderStatus, number> = {
-  received: 0,
-  diagnosing: 0.62,
-  waiting_parts: 1.4,
-  in_progress: 1.4,
-  ready: 0,
-  delivered: 0,
-  cancelled: 0,
+interface CamFocus {
+  x: number
+  z: number
+  zoom: number
 }
 
-interface Layout {
-  bays: { number: number; x: number; z: number }[]
-  stalls: { x: number; z: number; rot: number }[]
-  width: number
-  backZ: number
-  frontZ: number
-  waitingZ: number
-  center: [number, number, number]
+function boxPoints(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number): THREE.Vector3[] {
+  const out: THREE.Vector3[] = []
+  for (const x of [x0, x1]) for (const y of [y0, y1]) for (const z of [z0, z1]) out.push(new THREE.Vector3(x, y, z))
+  return out
 }
 
-function computeLayout(bayNumbers: number[], nWaiting: number): Layout {
-  const n = bayNumbers.length
-  const cols = n <= 6 ? Math.max(1, n) : Math.ceil(n / 2)
-  const rows = n <= 6 ? 1 : 2
-  const bays = bayNumbers.map((number, i) => {
-    const r = Math.floor(i / cols)
-    const c = i % cols
-    return { number, x: (c - (cols - 1) / 2) * BAY_W, z: -r * (BAY_D + ROW_GAP) }
-  })
-  const nVis = Math.min(MAX_WAITING, nWaiting)
-  const waitingZ = BAY_D / 2 + 4.5
-  const stalls = Array.from({ length: nVis }, (_, k) => ({ x: (k - (nVis - 1) / 2) * STALL_W, z: waitingZ, rot: -Math.PI / 2 + 0.3 }))
-  const width = Math.max(cols * BAY_W, nVis * STALL_W, 2 * BAY_W) + 2.6
-  const backZ = -(rows - 1) * (BAY_D + ROW_GAP) - BAY_D / 2 - 1.1
-  const frontZ = nVis ? waitingZ + 3.4 : BAY_D / 2 + 2.4
-  return { bays, stalls, width, backZ, frontZ, waitingZ, center: [0, 0.9, (backZ + frontZ) / 2] }
+function focusFrom(points: THREE.Vector3[], w: number, h: number, inset: FitInset, pad: number): CamFocus {
+  const f = fitOrtho(points, ISO_DIR, w, h, inset, pad)
+  return { x: f.target[0], z: f.target[2], zoom: f.zoom }
 }
 
 // ───────────────────────── Componente público ─────────────────────────
 
-export default function WorkshopCanvas({ bays, waiting = [], selectedBay = null, onSelectBay, onSelectOrder, className }: WorkshopSceneProps) {
+export default function WorkshopCanvas({
+  bays,
+  waiting = [],
+  selectedBay = null,
+  selectedOrderId = null,
+  onSelectBay,
+  onSelectOrder,
+  className,
+  focusInset,
+}: WorkshopSceneProps) {
   const tokens = useThemeTokens()
   const reduced = usePrefersReducedMotion()
   const wrap = useRef<HTMLDivElement>(null)
   const inView = useInView(wrap)
   const overlay = useOverlayStore()
-  const width = useWidth(wrap)
+  const size = useSize(wrap)
 
   const sorted = useMemo(() => [...bays].sort((a, b) => a.number - b.number), [bays])
-  const shown = useMemo(() => waiting.slice(0, MAX_WAITING), [waiting])
-  const layout = useMemo(
-    () =>
-      computeLayout(
-        sorted.map((b) => b.number),
-        shown.length,
-      ),
-    [sorted, shown.length],
+  const bayKey = sorted.map((b) => b.number).join(',')
+  const layout = useMemo(() => computeFloorLayout(bayKey ? bayKey.split(',').map(Number) : []), [bayKey])
+  const cap = useMemo(() => slotCapacity(sorted.length), [sorted.length])
+
+  // Plazas estables: se conservan entre actualizaciones (la asignación es pura y se guarda tras pintar; al guardarla
+  // se vuelve a calcular y da lo mismo, así que no hay bucle)
+  const [prevSlots, setPrevSlots] = useState(() => new Map<number, Spot>())
+  const assignment = useMemo(() => assignSpots(sorted, waiting, cap, prevSlots), [sorted, waiting, cap, prevSlots])
+  if (!sameSlots(prevSlots, assignment.slots)) setPrevSlots(assignment.slots)
+  const cars = assignment.cars
+
+  // Coches que aparecen en esta actualización: entran por la entrada escalonados. Los retardos se guardan con el
+  // conjunto de coches conocidos (estado ajustado durante el render) y cada coche solo los lee al montarse.
+  const [entry, setEntry] = useState(() => ({ known: new Set<number>(), delays: new Map<number, number>() }))
+  const fresh = cars.filter((c) => !entry.known.has(c.order.id))
+  if (fresh.length > 0 || entry.known.size !== cars.length) {
+    const delays = new Map<number, number>()
+    fresh.forEach((c, k) => delays.set(c.order.id, Math.min(1.6, k * 0.14)))
+    setEntry({ known: new Set(cars.map((c) => c.order.id)), delays: fresh.length > 0 ? delays : entry.delays })
+  }
+  const enterDelay = entry.delays
+
+  // Selección: un coche (de cualquier zona) o un elevador
+  const selCar = selectedOrderId != null ? (cars.find((c) => c.order.id === selectedOrderId) ?? null) : null
+  const focusBay = selCar ? (selCar.spot.kind === 'bay' ? selCar.spot.bay : null) : selectedBay
+  const focusStall = selCar && selCar.spot.kind !== 'bay' ? selCar.spot : null
+  const hasSelection = selCar != null || selectedBay != null
+
+  // Encuadres (px del lienzo): general y del elemento elegido, dejando libre lo que tapen los paneles de la página
+  const [recenter, setRecenter] = useState(0)
+  const [userMoved, setUserMoved] = useState(false)
+  const insetR = focusInset?.right ?? 0
+  const insetT = focusInset?.top ?? 0
+  const insetB = focusInset?.bottom ?? 0
+  const overview = useMemo<CamFocus | null>(() => {
+    if (size.w < 40 || size.h < 40) return null
+    const pts = boxPoints(layout.minX - WALL_T, layout.apronX, -SLAB_H, WALL_H, layout.backZ - WALL_T, layout.frontZ)
+    return focusFrom(pts, size.w, size.h, { right: insetR, top: insetT + 40, bottom: insetB + 30 }, size.w < 520 ? 10 : 20)
+  }, [layout, size.w, size.h, insetR, insetT, insetB])
+  const focus = useMemo<CamFocus | null>(() => {
+    if (!overview) return null
+    const inset = { right: insetR, top: insetT + 70, bottom: insetB + 30 }
+    let pts: THREE.Vector3[] | null = null
+    if (focusBay != null) {
+      const b = layout.bays.find((x) => x.number === focusBay)
+      if (b) pts = boxPoints(b.x - BAY_W / 2 - 2, b.x + BAY_W / 2 + 2, 0, POST_H + 0.5, b.z - BAY_D / 2 - 0.5, b.z + BAY_D / 2 + 2.2)
+    } else if (focusStall) {
+      const s = spotPose(layout, focusStall, 'received')
+      if (s) pts = boxPoints(s.x - STALL_W / 2 - 3, s.x + STALL_W / 2 + 3, 0, 2.2, s.z - STALL_D / 2 - 2.4, s.z + STALL_D / 2 + 1.2)
+    }
+    if (!pts) return overview
+    const f = focusFrom(pts, size.w, size.h, inset, 30)
+    return { ...f, zoom: Math.min(f.zoom, overview.zoom * 3.2) }
+  }, [overview, layout, focusBay, focusStall, size.w, size.h, insetR, insetT, insetB])
+  const selKey = `${selCar ? `o${selCar.order.id}` : ''}|${selectedBay ?? ''}|${recenter}`
+
+  const deselect = useCallback(() => {
+    onSelectBay?.(null)
+    setUserMoved(false)
+    setRecenter((r) => r + 1)
+  }, [onSelectBay])
+  const selectOrder = useCallback(
+    (id: number | null) => {
+      if (id == null) deselect()
+      else onSelectOrder?.(id)
+    },
+    [deselect, onSelectOrder],
   )
-  // Rótulos compactos si no caben ~200 px por elevador (la información completa sigue en aria-label y al seleccionar)
-  const cols = sorted.length <= 6 ? Math.max(1, sorted.length) : Math.ceil(sorted.length / 2)
-  const compact = width > 0 && width < Math.max(720, cols * 205)
-  const spinning = !reduced && inView && sorted.some((b) => b.work_order?.status === 'in_progress')
+  const selectBay = useCallback(
+    (n: number | null) => {
+      if (n == null) deselect()
+      else onSelectBay?.(n)
+    },
+    [deselect, onSelectBay],
+  )
+
+  // Escape: vuelve al encuadre general (salvo que lo use un diálogo, un menú o un campo)
+  const canReset = hasSelection || userMoved
+  useEffect(() => {
+    if (!canReset) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
+      if (document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return
+      deselect()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [canReset, deselect])
+
+  // Rótulos compactos si los elevadores quedan a menos de ~175 px en pantalla
+  const compact = !!focus && focus.zoom * BAY_W * Math.SQRT1_2 < 175
 
   const occupied = sorted.filter((b) => b.work_order).length
+  const nPark = cars.filter((c) => c.spot.kind === 'park').length + assignment.overflow.park
+  const nReady = cars.filter((c) => c.spot.kind === 'ready').length + assignment.overflow.ready
   const label =
-    `Taller 3D: ${sorted.length} ${sorted.length === 1 ? 'elevador' : 'elevadores'} (${occupied} ${occupied === 1 ? 'ocupado' : 'ocupados'}, ` +
+    `Taller 3D, maqueta isométrica: ${sorted.length} ${sorted.length === 1 ? 'elevador' : 'elevadores'} (${occupied} ${occupied === 1 ? 'ocupado' : 'ocupados'}, ` +
     `${sorted.length - occupied} ${sorted.length - occupied === 1 ? 'libre' : 'libres'})` +
-    (waiting.length ? ` y ${waiting.length} ${waiting.length === 1 ? 'orden' : 'órdenes'} en espera` : '')
+    (nPark ? `, ${nPark} ${nPark === 1 ? 'orden' : 'órdenes'} en espera` : '') +
+    (nReady ? `, ${nReady} ${nReady === 1 ? 'lista' : 'listas'} para entregar` : '')
 
-  const selectBay = (n: number | null) => onSelectBay?.(n)
   const statuses = useMemo(() => {
     const set = new Set<WorkOrderStatus>()
-    for (const b of sorted) if (b.work_order) set.add(b.work_order.status)
-    for (const o of shown) set.add(o.status)
+    for (const c of cars) set.add(c.order.status)
     return (Object.keys(WORK_ORDER_STATUS) as WorkOrderStatus[]).filter((s) => set.has(s))
-  }, [sorted, shown])
+  }, [cars])
 
-  const ids = useMemo(() => [...sorted.map((b) => `bay-${b.number}`), ...shown.map((o) => `wait-${o.id}`)], [sorted, shown])
+  const parked = cars.filter((c) => c.spot.kind !== 'bay')
+  const ids = useMemo(() => [...sorted.map((b) => `bay-${b.number}`), ...parked.map((c) => `car-${c.order.id}`)], [sorted, parked])
+  const inset = useMemo(() => ({ right: insetR, top: insetT, bottom: insetB }), [insetR, insetT, insetB])
 
   return (
     <div ref={wrap} className={cx('relative isolate overflow-hidden', className)}>
       <Canvas
-        frameloop={spinning ? 'always' : 'demand'}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        camera={{ fov: 30, near: 0.5, far: 260, position: [10, 14, 26] }}
+        orthographic
+        shadows="percentage"
+        frameloop={inView ? 'demand' : 'never'}
+        dpr={canvasDpr()}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        camera={{ position: [CAM_DIST * ISO_DIR.x, CAM_DIST * ISO_DIR.y, CAM_DIST * ISO_DIR.z], zoom: 20, near: 0.1, far: 400 }}
         onCreated={({ gl }) => {
-          gl.toneMappingExposure = 1.05
+          gl.toneMapping = THREE.NeutralToneMapping
+          gl.toneMappingExposure = 1
+          gl.shadowMap.autoUpdate = false
+          gl.shadowMap.needsUpdate = true
         }}
-        onPointerMissed={() => {
-          if (selectedBay != null) selectBay(null)
+        onPointerMissed={(e) => {
+          if (e.type === 'click' && (hasSelection || userMoved)) deselect()
         }}
-        style={{ touchAction: 'none' }}
+        style={{ touchAction: 'none', cursor: 'grab' }}
       >
-        <WorkshopWorld
-          bays={sorted}
-          waiting={shown}
-          layout={layout}
-          tokens={tokens}
-          reduced={reduced}
-          spinning={spinning}
-          selectedBay={selectedBay}
-          onSelectBay={selectBay}
-          onSelectOrder={(id) => onSelectOrder?.(id)}
-          label={label}
-          overlay={overlay}
-        />
+        <ResumeOnVisible visible={inView} />
+        {focus && overview && (
+          <WorkshopWorld
+            bays={sorted}
+            cars={cars}
+            layout={layout}
+            tokens={tokens}
+            reduced={reduced}
+            enterDelay={enterDelay}
+            focusBay={focusBay}
+            focusStall={focusStall}
+            selectedOrderId={selCar?.order.id ?? null}
+            onSelectBay={selectBay}
+            onSelectOrder={selectOrder}
+            label={label}
+            overlay={overlay}
+            focus={focus}
+            overview={overview}
+            selKey={selKey}
+            onUserMove={() => setUserMoved(true)}
+            inset={inset}
+          />
+        )}
       </Canvas>
 
-      <OverlayLayer store={overlay} ids={ids} label="Elevadores y órdenes en espera">
+      <OverlayLayer store={overlay} ids={ids} label="Elevadores y coches del taller">
         {sorted.map((b) => (
           <OverlayItem key={b.number} store={overlay} id={`bay-${b.number}`}>
-            <BayLabel bay={b} selected={selectedBay === b.number} compact={compact} onSelect={selectBay} onOpen={(id) => onSelectOrder?.(id)} />
+            <BayLabel bay={b} selected={focusBay === b.number} compact={compact} onSelect={selectBay} />
           </OverlayItem>
         ))}
-        {shown.map((o) => (
-          <OverlayItem key={o.id} store={overlay} id={`wait-${o.id}`}>
-            <WaitingLabel order={o} compact={compact} onOpen={(id) => onSelectOrder?.(id)} />
+        {parked.map((c) => (
+          <OverlayItem key={c.order.id} store={overlay} id={`car-${c.order.id}`}>
+            <CarLabel order={c.order} zone={c.spot.kind === 'ready' ? 'ready' : 'park'} selected={selCar?.order.id === c.order.id} compact={compact} onSelect={selectOrder} />
           </OverlayItem>
         ))}
       </OverlayLayer>
 
-      <div className="pointer-events-none absolute bottom-2 left-3 right-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-fg-muted">
-        {statuses.map((s) => (
-          <span key={s} className="inline-flex items-center gap-1">
-            <span className={cx('size-2 rounded-full', TONE_CLASSES[WORK_ORDER_STATUS[s].tone].dot)} aria-hidden />
-            {WORK_ORDER_STATUS[s].label}
-          </span>
-        ))}
-        {waiting.length > MAX_WAITING && <span className="text-fg-subtle">· En espera: se muestran {MAX_WAITING} de {waiting.length}</span>}
+      <div className="pointer-events-none absolute left-3 flex items-end gap-2" style={{ bottom: insetB + 8, right: insetR + 12 }}>
+        <p className="mr-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-surface/80 px-2 py-1 text-[11px] text-fg-muted backdrop-blur-sm">
+          {statuses.map((s) => (
+            <span key={s} className="inline-flex items-center gap-1">
+              <span className={cx('size-2 rounded-full', TONE_CLASSES[WORK_ORDER_STATUS[s].tone].dot)} aria-hidden />
+              {WORK_ORDER_STATUS[s].label}
+            </span>
+          ))}
+          {assignment.overflow.park > 0 && <span className="text-fg-subtle">· Espera: se ven {cap.park} de {cap.park + assignment.overflow.park}</span>}
+          {assignment.overflow.ready > 0 && <span className="text-fg-subtle">· Entrega: se ven {cap.ready} de {cap.ready + assignment.overflow.ready}</span>}
+          <span className="hidden text-fg-subtle sm:inline">· Arrastra para desplazarte; rueda o pellizco para acercar</span>
+        </p>
+        {canReset && (
+          <button
+            type="button"
+            onClick={deselect}
+            className="pointer-events-auto shrink-0 rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Ver toda la nave
+          </button>
+        )}
       </div>
     </div>
   )
 }
 
-function useWidth(ref: React.RefObject<HTMLElement | null>) {
-  const [w, setW] = useState(0)
-  useEffect(() => {
+function sameSlots(a: Map<number, Spot>, b: Map<number, Spot>) {
+  if (a.size !== b.size) return false
+  for (const [k, v] of a) if (!sameSpot(v, b.get(k) ?? null)) return false
+  return true
+}
+
+function useSize(ref: React.RefObject<HTMLElement | null>) {
+  const [s, setS] = useState({ w: 0, h: 0 })
+  useLayoutEffect(() => {
     const el = ref.current
-    if (!el || typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)))
+    if (!el) return
+    setS({ w: Math.round(el.clientWidth), h: Math.round(el.clientHeight) })
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(([e]) => setS({ w: Math.round(e.contentRect.width), h: Math.round(e.contentRect.height) }))
     ro.observe(el)
     return () => ro.disconnect()
   }, [ref])
-  return w
-}
-
-// ───────────────────────── Rótulos HTML ─────────────────────────
-
-function vehicleText(o: WorkOrder) {
-  return o.vehicle.plate ? `${o.vehicle.display_name} (${o.vehicle.plate})` : o.vehicle.display_name
-}
-
-function BayLabel({
-  bay,
-  selected,
-  compact,
-  onSelect,
-  onOpen,
-}: {
-  bay: Bay
-  selected: boolean
-  compact: boolean
-  onSelect: (n: number | null) => void
-  onOpen: (id: number) => void
-}) {
-  const o = bay.work_order
-  const st = o ? WORK_ORDER_STATUS[o.status] : null
-  const tone = st ? TONE_CLASSES[st.tone] : null
-  const Icon = st?.icon
-  const aria = o
-    ? `Elevador ${bay.number}: orden ${o.number}, ${vehicleText(o)}, ${st!.label}${o.is_late ? ', fuera de plazo' : ''}`
-    : `Elevador ${bay.number}: libre`
-  const full = !compact || selected
-  return (
-    <div className="flex flex-col items-center">
-      <button
-        type="button"
-        aria-pressed={selected}
-        aria-label={aria}
-        title={aria}
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect(selected ? null : bay.number)
-        }}
-        className={cx(
-          'flex flex-col items-start gap-0.5 rounded-card border px-2.5 py-1.5 text-left text-xs shadow-lg backdrop-blur-md',
-          'transition-[background-color,box-shadow,border-color] duration-200 motion-reduce:transition-none',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-          selected ? 'border-accent bg-surface text-fg ring-2 ring-accent/35' : 'border-line/70 bg-surface/85 text-fg hover:bg-surface',
-        )}
-      >
-        <span className="flex items-center gap-1.5 whitespace-nowrap">
-          <span className="font-display text-xs font-semibold text-fg-subtle">{compact && !selected ? `E${bay.number}` : `Elevador ${bay.number}`}</span>
-          {o ? (
-            <>
-              {tone && <span className={cx('size-2 rounded-full', tone.dot)} aria-hidden />}
-              {full && <span className="font-medium tabular-nums">{o.number}</span>}
-            </>
-          ) : (
-            <span className="text-fg-muted">Libre</span>
-          )}
-        </span>
-        {o && full && (
-          <span className="flex items-center gap-1.5 whitespace-nowrap text-fg-muted">
-            {st && tone && Icon && (
-              <span className={cx('inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-medium', tone.soft)}>
-                <Icon className="size-3" aria-hidden strokeWidth={2.4} />
-                {st.label}
-              </span>
-            )}
-            {o.is_late && (
-              <span className={cx('inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-medium', TONE_CLASSES[LATE.tone].soft)}>
-                <LATE.icon className="size-3" aria-hidden strokeWidth={2.4} />
-                {LATE.label}
-              </span>
-            )}
-            <span className="max-w-40 truncate">{o.vehicle.plate ?? o.vehicle.display_name}</span>
-          </span>
-        )}
-        {o && selected && o.vehicle.plate && <span className="max-w-56 truncate text-fg-muted">{o.vehicle.display_name}</span>}
-      </button>
-      {o && selected && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onOpen(o.id)
-          }}
-          className="mt-1 rounded-control bg-accent px-2.5 py-1 text-xs font-medium text-on-accent shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          Abrir orden {o.number}
-        </button>
-      )}
-      <span className="h-3 w-px bg-fg-subtle/70" aria-hidden />
-    </div>
-  )
-}
-
-function WaitingLabel({ order, compact, onOpen }: { order: WorkOrder; compact: boolean; onOpen: (id: number) => void }) {
-  const st = WORK_ORDER_STATUS[order.status]
-  const tone = TONE_CLASSES[st.tone]
-  const short = order.number.split('-').pop() ?? order.number
-  const aria = `En espera: orden ${order.number}, ${vehicleText(order)}, ${st.label}${order.is_late ? ', fuera de plazo' : ''}. Abrir orden`
-  return (
-    <div className="flex flex-col items-center">
-      <button
-        type="button"
-        aria-label={aria}
-        title={aria}
-        onClick={(e) => {
-          e.stopPropagation()
-          onOpen(order.id)
-        }}
-        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line/70 bg-surface/85 px-2 py-0.5 text-[11px] font-medium text-fg shadow-md backdrop-blur-md hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        <span className={cx('size-1.5 rounded-full', tone.dot)} aria-hidden />
-        <span className="tabular-nums">{compact ? short : order.number}</span>
-        {order.is_late && <LATE.icon className="size-3 text-danger" aria-hidden />}
-      </button>
-      <span className="h-2 w-px bg-fg-subtle/60" aria-hidden />
-    </div>
-  )
+  return s
 }
 
 // ───────────────────────── Escena ─────────────────────────
 
 interface WorldProps {
   bays: Bay[]
-  waiting: WorkOrder[]
-  layout: Layout
+  cars: { order: WorkOrder; spot: Spot }[]
+  layout: FloorLayout
   tokens: ThemeTokens
   reduced: boolean
-  spinning: boolean
-  selectedBay: number | null
+  enterDelay: Map<number, number>
+  focusBay: number | null
+  focusStall: Spot | null
+  selectedOrderId: number | null
   onSelectBay: (n: number | null) => void
-  onSelectOrder: (id: number) => void
+  onSelectOrder: (id: number | null) => void
   label: string
   overlay: OverlayStore
+  focus: CamFocus
+  overview: CamFocus
+  selKey: string
+  onUserMove: () => void
+  inset: { right: number; top: number; bottom: number }
 }
 
-interface Palette {
-  slab: string
-  slabEdge: string
-  wall: string
-  rib: string
-  line: string
-  post: string
-  postDark: string
-  windows: string
-  decal: string
+/** Material de arcilla con color por vértice (nave, marcas, elevadores): uno para toda la escena. */
+let vertexClay: THREE.MeshStandardMaterial | null = null
+function clayVertex() {
+  vertexClay ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.1 })
+  return vertexClay
 }
 
-function palette(t: ThemeTokens): Palette {
-  return t.light
-    ? {
-        slab: mixHex(t.surface3, '#b9b6ae', 0.25),
-        slabEdge: mixHex(t.surface3, '#8c8a82', 0.5),
-        wall: t.surface2,
-        rib: mixHex(t.surface3, '#8c8a82', 0.3),
-        line: t.lineStrong,
-        post: '#4a5258',
-        postDark: '#30363a',
-        windows: '#fff7e6',
-        decal: t.fgSubtle,
-      }
-    : {
-        slab: mixHex(t.surface2, '#000000', 0.18),
-        slabEdge: mixHex(t.surface, '#000000', 0.35),
-        wall: mixHex(t.surface, '#000000', 0.12),
-        rib: t.surface3,
-        line: t.lineStrong,
-        post: '#3a4247',
-        postDark: '#22282c',
-        windows: mixHex('#dfeaf2', t.info, 0.15),
-        decal: t.fgSubtle,
-      }
-}
-
-function WorkshopWorld({ bays, waiting, layout, tokens, reduced, spinning, selectedBay, onSelectBay, onSelectOrder, label, overlay }: WorldProps) {
+function WorkshopWorld({
+  bays,
+  cars,
+  layout,
+  tokens,
+  reduced,
+  enterDelay,
+  focusBay,
+  focusStall,
+  selectedOrderId,
+  onSelectBay,
+  onSelectOrder,
+  label,
+  overlay,
+  focus,
+  overview,
+  selKey,
+  onUserMove,
+  inset,
+}: WorldProps) {
   useCanvasLabel(label)
-  const pal = useMemo(() => palette(tokens), [tokens])
-  const shadowTex = useBlobTexture()
+  const pal = useMemo(() => dioramaPalette(tokens), [tokens])
+  const get = useThree((s) => s.get)
+  const gl = useThree((s) => s.gl)
+  const invalidate = useThree((s) => s.invalidate)
 
-  // Encuadre calculado proyectando la caja de la nave (o del elevador elegido) con el tamaño real del lienzo
-  const aspect = useThree((s) => s.size.width / Math.max(1, s.size.height))
-  const height = useThree((s) => s.size.height)
-  const focus: Focus = useMemo(() => {
-    const b = selectedBay != null ? layout.bays.find((x) => x.number === selectedBay) : null
-    // margen superior para los rótulos (~70 px) e inferior para la leyenda (~30 px)
-    const top = 1 - Math.min(0.5, 150 / Math.max(200, height))
-    const bottom = -1 + Math.min(0.3, 64 / Math.max(200, height))
-    if (b) {
-      const dir: [number, number, number] = [0.42, 0.45, 1]
-      const f = fitView(boxCorners([b.x - BAY_W / 2, 0, b.z - BAY_D / 2], [b.x + BAY_W / 2, LIFT_TOP + 0.5, b.z + BAY_D / 2]), dir, 30, aspect, {
-        x: [-0.9, 0.9],
-        y: [bottom, top],
-      })
-      return { target: f.target, direction: dir, distance: f.distance }
+  // Sombras: el mapa solo se recalcula cuando algo cambia o se mueve (mover la cámara no lo necesita)
+  const markShadows = useCallback(() => {
+    get().gl.shadowMap.needsUpdate = true
+    invalidate()
+  }, [get, invalidate])
+  useEffect(() => {
+    markShadows()
+  })
+
+
+
+  const carriages = useMemo(() => new Map<number, THREE.Object3D>(), [])
+  const carObjects = useMemo(() => new Map<number, THREE.Object3D>(), [])
+  // La entrada de los coches espera a que los shaders estén compilados: si no, en equipos lentos la animación
+  // transcurre mientras el hilo está bloqueado compilando y no se ve. Se compila con los coches visibles un instante
+  // (compile() solo recorre lo visible) para que sus materiales entren también.
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    let alive = true
+    const { gl: r, scene, camera } = get()
+    const objs = [...carObjects.values()]
+    const was = objs.map((o) => o.visible)
+    for (const o of objs) o.visible = true
+    const done = () => {
+      if (alive) setArmed(true)
     }
-    const dir: [number, number, number] = [0.5, 0.8, 1.2]
-    const f = fitView(
-      boxCorners([-layout.width / 2, 0, layout.backZ], [layout.width / 2, LIFT_TOP + 0.5, layout.frontZ + 1.2]),
-      dir,
-      30,
-      aspect,
-      { x: [-0.96, 0.96], y: [bottom, top] },
-    )
-    return { target: f.target, direction: dir, distance: f.distance }
-  }, [selectedBay, layout, aspect, height])
+    r.compileAsync(scene, camera).then(done, done)
+    objs.forEach((o, i) => (o.visible = was[i]))
+    return () => {
+      alive = false
+    }
+  }, [get, carObjects])
+
+  // Medición (solo en desarrollo): window.__workshop3d.info.render → draw calls y triángulos del último fotograma
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const w = window as unknown as { __workshop3d?: unknown }
+    // project(x, y, z) → px del lienzo; car(id) → px del centro del coche (para apuntar en las pruebas)
+    const project = (x: number, y: number, z: number) => {
+      const { camera, size } = get()
+      const v = new THREE.Vector3(x, y, z).project(camera)
+      return { x: (v.x * 0.5 + 0.5) * size.width, y: (-v.y * 0.5 + 0.5) * size.height }
+    }
+    const car = (id: number) => {
+      const o = carObjects.get(id)
+      if (!o) return null
+      const p = o.getWorldPosition(new THREE.Vector3())
+      return project(p.x, p.y + 0.35, p.z)
+    }
+    w.__workshop3d = { info: gl.info, invalidate, shadows: markShadows, project, car, layout }
+    return () => {
+      delete w.__workshop3d
+    }
+  }, [gl, invalidate, markShadows, get, carObjects, layout])
+
+  const [hover, setHover] = useState<string | null>(null)
+  useCursor(!!hover, 'pointer', '', gl.domElement)
 
   const anchors: OverlayAnchor[] = useMemo(() => {
     const list: OverlayAnchor[] = layout.bays.map((b) => {
       const bay = bays.find((x) => x.number === b.number)
-      const sel = selectedBay === b.number
+      const sel = focusBay === b.number
       return {
         id: `bay-${b.number}`,
-        position: [b.x, LIFT_TOP + 0.5, b.z],
+        position: [b.x - POST_X * 0.2, POST_H + 0.45, b.z],
         pivot: 'bottom',
         priority: sel ? 10 : bay?.work_order ? 3 : 2,
         fixed: sel,
-        dim: selectedBay != null && !sel,
+        dim: (focusBay != null || focusStall != null) && !sel,
       }
     })
-    waiting.forEach((o, k) => {
-      const s = layout.stalls[k]
-      const h = getCarBuild(resolveBody(o.vehicle.body_type), 'low').size.height
-      list.push({ id: `wait-${o.id}`, position: [s.x, h + 0.35, s.z], pivot: 'bottom', priority: 1, dim: selectedBay != null })
-    })
+    for (const c of cars) {
+      if (c.spot.kind === 'bay') continue
+      const id = c.order.id
+      const h = getClayCar(resolveBody(c.order.vehicle.body_type)).size.height
+      const sel = selectedOrderId === id
+      list.push({
+        id: `car-${id}`,
+        position: [0, h + 0.3, 0],
+        track: () => carObjects.get(id),
+        pivot: 'bottom',
+        priority: sel ? 9 : 1,
+        fixed: sel,
+        dim: (focusBay != null || focusStall != null) && !sel,
+      })
+    }
     return list
-  }, [layout, bays, waiting, selectedBay])
+  }, [layout, bays, cars, focusBay, focusStall, selectedOrderId, carObjects])
+
+  const selStallPose = focusStall ? spotPose(layout, focusStall, 'received') : null
+  const selBayPos = focusBay != null ? layout.bays.find((b) => b.number === focusBay) : null
 
   return (
     <>
-      <StudioEnvironment />
-      <directionalLight position={[8, 14, 10]} intensity={tokens.light ? 1.1 : 0.85} />
-      <ambientLight intensity={tokens.light ? 0.35 : 0.18} />
-      <Hall layout={layout} pal={pal} tokens={tokens} shadowTex={shadowTex} />
+      <color attach="background" args={[pal.background]} />
+      <Lights layout={layout} pal={pal} small={gl.domElement.clientWidth < 640} />
+      <Diorama layout={layout} pal={pal} />
       {layout.bays.map((b) => {
-        const bay = bays.find((x) => x.number === b.number)!
+        const bay = bays.find((x) => x.number === b.number)
+        const st = bay?.work_order ? WORK_ORDER_STATUS[bay.work_order.status] : null
         return (
           <Lift
             key={b.number}
+            number={b.number}
             x={b.x}
             z={b.z}
-            bay={bay}
             pal={pal}
-            tokens={tokens}
-            reduced={reduced}
-            spinning={spinning}
-            selected={selectedBay === b.number}
-            shadowTex={shadowTex}
-            onSelect={() => onSelectBay(selectedBay === b.number ? null : b.number)}
+            lamp={st ? toneColor(st.tone, tokens) : pal.postDark}
+            register={(o) => {
+              if (o) carriages.set(b.number, o)
+              else carriages.delete(b.number)
+            }}
+            onSelect={() => onSelectBay(focusBay === b.number ? null : b.number)}
+            onHover={(on) => setHover(on ? `bay-${b.number}` : null)}
           />
         )
       })}
-      {waiting.map((o, k) => (
-        <WaitingCar key={o.id} order={o} stall={layout.stalls[k]} tokens={tokens} shadowTex={shadowTex} onOpen={() => onSelectOrder(o.id)} />
+      {cars.map((c) => (
+        <ClayCarActor
+          key={c.order.id}
+          order={c.order}
+          spot={c.spot}
+          layout={layout}
+          pal={pal}
+          reduced={reduced}
+          armed={armed}
+          enterDelay={enterDelay.get(c.order.id) ?? 0}
+          carriages={carriages}
+          register={(o) => {
+            if (o) carObjects.set(c.order.id, o)
+            else carObjects.delete(c.order.id)
+          }}
+          markShadows={markShadows}
+          onSelect={() => onSelectOrder(selectedOrderId === c.order.id ? null : c.order.id)}
+          onHover={(on) => setHover(on ? `car-${c.order.id}` : null)}
+        />
       ))}
-      <CameraRig
-        focus={focus}
-        reducedMotion={reduced}
-        enableRotate
-        enableZoom
-        minDistance={5}
-        maxDistance={Math.max(70, focus.distance * 1.6)}
+      {selBayPos && <SelectionOutline kind="bay" x={selBayPos.x} z={selBayPos.z} color={tokens.accent} />}
+      {selStallPose && <SelectionOutline kind="stall" x={selStallPose.x} z={selStallPose.z} color={tokens.accent} />}
+      <IsoRig focus={focus} overview={overview} selKey={selKey} reduced={reduced} layout={layout} onUserMove={onUserMove} />
+      <OverlayProjector store={overlay} anchors={anchors} inset={inset} />
+      <ReleaseOnUnmount />
+    </>
+  )
+}
+
+// ───────────────────────── Luz de estudio ─────────────────────────
+
+function Lights({ layout, pal, small }: { layout: FloorLayout; pal: DioramaPalette; small: boolean }) {
+  const light = useRef<THREE.DirectionalLight>(null)
+  const target = useMemo(() => new THREE.Object3D(), [])
+  const center = useMemo(
+    () => new THREE.Vector3((layout.minX + layout.apronX) / 2, 0, (layout.backZ + layout.frontZ) / 2),
+    [layout],
+  )
+  const invalidate = useThree((s) => s.invalidate)
+  const get = useThree((s) => s.get)
+
+  useLayoutEffect(() => {
+    const l = light.current
+    if (!l) return
+    l.position.copy(center).addScaledVector(SUN_DIR, 40)
+    target.position.copy(center)
+    target.updateMatrixWorld()
+    l.target = target
+    // Cámara de sombra ajustada a la nave (y a la sombra de la losa sobre la mesa), proyectando sus esquinas
+    const cam = new THREE.OrthographicCamera()
+    cam.position.copy(l.position)
+    cam.lookAt(center)
+    cam.updateMatrixWorld()
+    const inv = cam.matrixWorldInverse
+    let x0 = Infinity
+    let x1 = -Infinity
+    let y0 = Infinity
+    let y1 = -Infinity
+    let z0 = Infinity
+    let z1 = -Infinity
+    for (const p of boxPoints(layout.minX - 2, layout.apronX + 3, -SLAB_H, WALL_H + 1.6, layout.backZ - 3, layout.frontZ + 1)) {
+      p.applyMatrix4(inv)
+      x0 = Math.min(x0, p.x)
+      x1 = Math.max(x1, p.x)
+      y0 = Math.min(y0, p.y)
+      y1 = Math.max(y1, p.y)
+      z0 = Math.min(z0, p.z)
+      z1 = Math.max(z1, p.z)
+    }
+    const sc = l.shadow.camera
+    sc.left = x0
+    sc.right = x1
+    sc.bottom = y0
+    sc.top = y1
+    sc.near = Math.max(0.5, -z1 - 1)
+    sc.far = -z0 + 1
+    sc.updateProjectionMatrix()
+    l.shadow.needsUpdate = true
+    get().gl.shadowMap.needsUpdate = true
+    invalidate()
+  }, [center, layout, target, get, invalidate])
+
+  const map = small ? 1024 : 2048
+  return (
+    <>
+      <hemisphereLight args={[pal.hemiSky, pal.hemiGround, pal.hemi]} />
+      <directionalLight
+        ref={light}
+        color="#fff5e8"
+        intensity={pal.sun}
+        castShadow
+        shadow-mapSize={[map, map]}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.03}
+        shadow-radius={3}
       />
-      <OverlayProjector store={overlay} anchors={anchors} />
+      <primitive object={target} />
     </>
   )
 }
 
 // ───────────────────────── Nave ─────────────────────────
 
-function Hall({ layout, pal, tokens, shadowTex }: { layout: Layout; pal: Palette; tokens: ThemeTokens; shadowTex: THREE.Texture | null }) {
-  const { width, backZ, frontZ } = layout
-  const depth = frontZ - backZ + 1.2
-  const midZ = (frontZ + backZ) / 2 + 0.6
-  const slab = useMemo(() => {
-    const g = new RoundedBoxGeometry(width, 0.24, depth, 3, 0.1)
-    g.translate(0, -0.12, midZ - 0.6 + 0.6)
-    return g
-  }, [width, depth, midZ])
-  useEffect(() => () => slab.dispose(), [slab])
-
-  const ribCount = Math.max(2, Math.floor(width / 1.25))
-  const ribs = useMemo(() => {
-    const m = new THREE.Matrix4()
-    const list: THREE.Matrix4[] = []
-    for (let i = 0; i <= ribCount; i++) {
-      const x = -width / 2 + 0.2 + ((width - 0.4) * i) / ribCount
-      list.push(m.clone().makeTranslation(x, WALL_H / 2, backZ + 0.16))
-    }
-    const sideLen = (frontZ - backZ) * 0.55
-    const sideCount = Math.max(2, Math.floor(sideLen / 1.25))
-    for (let i = 0; i <= sideCount; i++) {
-      const z = backZ + 0.25 + ((sideLen - 0.3) * i) / sideCount
-      list.push(m.clone().makeTranslation(-width / 2 + 0.27, WALL_H / 2, z))
-    }
-    return list
-  }, [width, backZ, frontZ, ribCount])
-  const ribRef = useRef<THREE.InstancedMesh>(null)
+function Diorama({ layout, pal }: { layout: FloorLayout; pal: DioramaPalette }) {
+  const statics = useMemo(() => buildStatic(layout, pal), [layout, pal])
+  const marks = useMemo(() => buildMarkings(layout, pal), [layout, pal])
+  const [fontTick, setFontTick] = useState(0)
   useEffect(() => {
-    const im = ribRef.current
-    if (!im) return
-    ribs.forEach((mat, i) => im.setMatrixAt(i, mat))
-    im.count = ribs.length
-    im.instanceMatrix.needsUpdate = true
-    im.computeBoundingSphere()
-  }, [ribs])
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined
+    if (!fonts || fonts.status === 'loaded') return
+    let alive = true
+    void fonts.ready.then(() => alive && setFontTick((t) => t + 1))
+    return () => {
+      alive = false
+    }
+  }, [])
+  const decals = useMemo(() => buildDecals(layout, pal.decal), [layout, pal.decal, fontTick]) // eslint-disable-line react-hooks/exhaustive-deps
+  const decalMat = useMemo(
+    () =>
+      decals
+        ? new THREE.MeshStandardMaterial({ map: decals.texture, transparent: true, depthWrite: false, roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 })
+        : null,
+    [decals],
+  )
+  const catcher = useMemo(() => new THREE.ShadowMaterial({ opacity: pal.shadowOpacity, transparent: true, depthWrite: false }), [pal.shadowOpacity])
+  useEffect(() => () => statics.dispose(), [statics])
+  useEffect(() => () => marks.dispose(), [marks])
+  useEffect(
+    () => () => {
+      decals?.geometry.dispose()
+      decals?.texture.dispose()
+      decalMat?.dispose()
+    },
+    [decals, decalMat],
+  )
+  useEffect(() => () => catcher.dispose(), [catcher])
 
-  const sideLen = (frontZ - backZ) * 0.55
-  const lineMat = useMemo(() => new THREE.MeshBasicMaterial({ color: pal.line, toneMapped: false, transparent: true, opacity: 0.85 }), [pal.line])
-  useEffect(() => () => lineMat.dispose(), [lineMat])
-
-  const waitingDecal = useTextTexture('ZONA DE ESPERA', pal.decal, 0.5)
-  const nStalls = layout.stalls.length
-
+  const w = layout.apronX - layout.minX
+  const d = layout.frontZ - layout.backZ
   return (
     <group>
-      {/* Sombra de la maqueta sobre la página */}
-      {shadowTex && (
-        <mesh rotation-x={-Math.PI / 2} position={[0, -0.26, midZ]} renderOrder={-2}>
-          <planeGeometry args={[width * 1.35, depth * 1.35]} />
-          <meshBasicMaterial map={shadowTex} transparent opacity={tokens.light ? 0.35 : 0.7} depthWrite={false} toneMapped={false} />
-        </mesh>
-      )}
-      {/* Losa (suelo pulido) */}
-      <mesh geometry={slab}>
-        <meshPhysicalMaterial color={pal.slab} roughness={0.42} metalness={0.05} clearcoat={0.35} clearcoatRoughness={0.4} />
+      {/* Mesa: solo recoge la sombra de la maqueta (el fondo es el color de la escena) */}
+      <mesh rotation-x={-Math.PI / 2} position={[(layout.minX + layout.apronX) / 2, -SLAB_H - 0.002, (layout.backZ + layout.frontZ) / 2]} receiveShadow material={catcher}>
+        <planeGeometry args={[w + 30, d + 30]} />
       </mesh>
-      {/* Pared del fondo con ventanas altas y costillas; pared lateral izquierda más corta */}
-      <mesh position={[0, WALL_H / 2, backZ]}>
-        <boxGeometry args={[width, WALL_H, 0.22]} />
-        <meshStandardMaterial color={pal.wall} roughness={0.8} metalness={0.05} />
-      </mesh>
-      <mesh position={[-width / 2 + 0.11, WALL_H / 2, backZ + sideLen / 2]}>
-        <boxGeometry args={[0.22, WALL_H, sideLen]} />
-        <meshStandardMaterial color={pal.wall} roughness={0.8} metalness={0.05} />
-      </mesh>
-      <instancedMesh ref={ribRef} args={[undefined, undefined, 64]} frustumCulled={false}>
-        <boxGeometry args={[0.1, WALL_H, 0.1]} />
-        <meshStandardMaterial color={pal.rib} roughness={0.6} metalness={0.3} />
-      </instancedMesh>
-      <mesh position={[0, WALL_H - 0.75, backZ + 0.115]}>
-        <planeGeometry args={[width - 0.8, 0.42]} />
-        <meshBasicMaterial color={pal.windows} toneMapped={false} transparent opacity={tokens.light ? 0.9 : 0.55} />
-      </mesh>
-      {/* Zócalo con la línea de acento */}
-      <mesh position={[0, 0.06, backZ + 0.13]}>
-        <boxGeometry args={[width, 0.12, 0.04]} />
-        <meshBasicMaterial color={tokens.accent} toneMapped={false} transparent opacity={0.55} />
-      </mesh>
-
-      {/* Marcas del suelo: elevadores */}
-      {layout.bays.map((b) => (
-        <BayMarkings key={b.number} x={b.x} z={b.z} number={b.number} mat={lineMat} decalColor={pal.decal} />
-      ))}
-
-      {/* Pasillo y zona de espera */}
-      {nStalls > 0 && (
-        <group>
-          {Array.from({ length: nStalls + 1 }, (_, k) => {
-            const x = (k - nStalls / 2) * STALL_W
-            return (
-              <mesh key={k} position={[x, 0.004, layout.waitingZ]} rotation={[-Math.PI / 2, 0, 0.3]} material={lineMat}>
-                <planeGeometry args={[0.06, 5]} />
-              </mesh>
-            )
-          })}
-          {waitingDecal && (
-            <mesh rotation-x={-Math.PI / 2} position={[0, 0.005, layout.waitingZ + 2.95]}>
-              <planeGeometry args={[4.2, 0.6]} />
-              <meshBasicMaterial map={waitingDecal} transparent toneMapped={false} depthWrite={false} />
-            </mesh>
-          )}
-        </group>
-      )}
-      <mesh position={[0, 0.004, BAY_D / 2 + 1.0]} rotation-x={-Math.PI / 2} material={lineMat}>
-        <planeGeometry args={[width - 1.2, 0.05]} />
-      </mesh>
-    </group>
-  )
-}
-
-function BayMarkings({ x, z, number, mat, decalColor }: { x: number; z: number; number: number; mat: THREE.Material; decalColor: string }) {
-  const w = BAY_W - 0.7
-  const d = BAY_D - 0.6
-  const num = useTextTexture(String(number), decalColor, 0.55)
-  return (
-    <group position={[x, 0.004, z]}>
-      {[
-        [0, d / 2, w, 0.06],
-        [0, -d / 2, w, 0.06],
-        [w / 2, 0, 0.06, d],
-        [-w / 2, 0, 0.06, d],
-      ].map(([px, pz, sx, sz], i) => (
-        <mesh key={i} position={[px, 0, pz]} rotation-x={-Math.PI / 2} material={mat}>
-          <planeGeometry args={[sx, sz]} />
-        </mesh>
-      ))}
-      {num && (
-        <mesh rotation-x={-Math.PI / 2} position={[w / 2 - 0.55, 0.001, d / 2 - 0.55]}>
-          <planeGeometry args={[0.8, 0.8]} />
-          <meshBasicMaterial map={num} transparent toneMapped={false} depthWrite={false} />
-        </mesh>
-      )}
+      <mesh geometry={statics} material={clayVertex()} castShadow receiveShadow />
+      <mesh geometry={marks} material={clayVertex()} receiveShadow />
+      {decals && decalMat && <mesh geometry={decals.geometry} material={decalMat} receiveShadow renderOrder={1} />}
     </group>
   )
 }
 
 // ───────────────────────── Elevador ─────────────────────────
 
-const postGeo = new RoundedBoxGeometry(0.28, LIFT_TOP, 0.36, 2, 0.03)
-postGeo.translate(0, LIFT_TOP / 2, 0)
-const beamGeo = new RoundedBoxGeometry(POST_X * 2 + 0.3, 0.2, 0.24, 2, 0.04)
-const baseGeo = new RoundedBoxGeometry(0.62, 0.05, 0.7, 1, 0.02)
-const carriageGeo = new RoundedBoxGeometry(0.36, 0.42, 0.44, 2, 0.03)
-const armGeo = new RoundedBoxGeometry(1, 0.07, 0.11, 1, 0.02)
-const padGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.05, 16)
-const ledGeo = new THREE.BoxGeometry(0.03, LIFT_TOP - 0.5, 0.06)
-const beaconDome = new THREE.SphereGeometry(0.085, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2)
-const beaconBase = new THREE.CylinderGeometry(0.1, 0.11, 0.06, 20)
-const beamCone = new THREE.ConeGeometry(0.22, 1.1, 20, 1, true)
-beamCone.rotateZ(-Math.PI / 2)
-beamCone.translate(0.55, 0, 0)
+const lampGeo = new THREE.SphereGeometry(0.13, 16, 10)
+const lampCache = new Map<string, THREE.MeshStandardMaterial>()
+function lampMaterial(color: string) {
+  let m = lampCache.get(color)
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.5, metalness: 0 })
+    lampCache.set(color, m)
+  }
+  return m
+}
+const PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+const unitBox = new THREE.BoxGeometry(1, 1, 1)
 
 function Lift({
+  number,
   x,
   z,
-  bay,
   pal,
-  tokens,
-  reduced,
-  spinning,
-  selected,
-  shadowTex,
+  lamp,
+  register,
   onSelect,
+  onHover,
 }: {
+  number: number
   x: number
   z: number
-  bay: Bay
-  pal: Palette
-  tokens: ThemeTokens
-  reduced: boolean
-  spinning: boolean
-  selected: boolean
-  shadowTex: THREE.Texture | null
+  pal: DioramaPalette
+  lamp: string
+  register: (o: THREE.Object3D | null) => void
   onSelect: () => void
+  onHover: (on: boolean) => void
 }) {
-  const o = bay.work_order
-  const st = o ? WORK_ORDER_STATUS[o.status] : null
-  const statusColor = st ? toneColor(st.tone, tokens) : null
-  const ledColor = statusColor ?? mixHex(pal.postDark, '#000000', 0.2)
-  const body = o ? resolveBody(o.vehicle.body_type) : null
-  const color = o ? resolveColor(o.vehicle.color_hex) : null
-  const build = body ? getCarBuild(body, 'low') : null
-  const sill = body ? Math.min(...BODY_SPECS[body].bottomLine.map((p) => p[1])) : 0.3
-  const target = o ? LIFT_HEIGHT[o.status] : 0
-
-  const lifted = useRef<THREE.Group>(null)
-  const shadow = useRef<THREE.Mesh>(null)
-  const beam = useRef<THREE.Group>(null)
-  const h = useRef(target)
-  // Altura con la que se monta la parte móvil; después la anima useFrame escribiendo en el objeto (sin renders).
-  // R3F compara los arrays de props elemento a elemento, así que este valor fijo no pisa la altura animada.
-  const [initialY] = useState(target)
-  const invalidate = useThree((s) => s.invalidate)
-  const spin = spinning && o?.status === 'in_progress'
-
-  const apply = (v: number) => {
-    if (lifted.current) lifted.current.position.y = v
-    if (shadow.current) {
-      const k = 1 + v * 0.35
-      shadow.current.scale.set(k, k, 1)
-      ;(shadow.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0.18, 0.85 - v * 0.42)
-    }
-  }
-  useEffect(() => {
-    if (reduced) {
-      h.current = target
-      apply(target)
-    }
-    invalidate()
-  })
-  useFrame((_, dt) => {
-    if (Math.abs(h.current - target) > 0.0005) {
-      h.current = reduced ? target : THREE.MathUtils.damp(h.current, target, 2.4, Math.min(dt, 0.05))
-      apply(h.current)
-      invalidate()
-    }
-    if (spin && beam.current) beam.current.rotation.y += Math.min(dt, 0.05) * 4.2
-  })
-
-  const ledMat = useMemo(() => new THREE.MeshBasicMaterial({ color: ledColor, toneMapped: false }), [ledColor])
-  const beaconMat = useMemo(() => new THREE.MeshBasicMaterial({ color: ledColor, toneMapped: false }), [ledColor])
-  const beamMat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: statusColor ?? '#000000',
-        transparent: true,
-        opacity: 0.22,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        toneMapped: false,
-      }),
-    [statusColor],
-  )
-  useEffect(
-    () => () => {
-      ledMat.dispose()
-      beaconMat.dispose()
-      beamMat.dispose()
-    },
-    [ledMat, beaconMat, beamMat],
-  )
-
-  const armY = sill - 0.05
-  const arms = useMemo(() => {
-    const list: { pos: [number, number, number]; rotY: number; len: number; pad: [number, number, number] }[] = []
-    for (const side of [1, -1]) {
-      for (const dz of [0.95, -1.05]) {
-        const from = new THREE.Vector2(side * (POST_X - 0.12), 0)
-        const to = new THREE.Vector2(side * 0.62, dz)
-        const len = from.distanceTo(to)
-        const mid = from.clone().add(to).multiplyScalar(0.5)
-        const rotY = -Math.atan2(to.y - from.y, to.x - from.x)
-        list.push({ pos: [mid.x, 0, mid.y], rotY, len, pad: [to.x, 0.05, to.y] })
-      }
-    }
-    return list
-  }, [])
-
-  const [hover, setHover] = useState(false)
-  const gl = useThree((s) => s.gl)
-  useCursor(hover, 'pointer', '', gl.domElement)
-
+  const carriage = liftCarriage(pal)
   return (
-    <group position={[x, 0, z]}>
-      {/* Columnas, travesaño y bases */}
-      {[1, -1].map((side) => (
-        <group key={side} position={[side * POST_X, 0, 0]}>
-          <mesh geometry={baseGeo} position={[0, 0.025, 0]}>
-            <meshStandardMaterial color={pal.postDark} roughness={0.6} metalness={0.4} />
-          </mesh>
-          <mesh geometry={postGeo}>
-            <meshStandardMaterial color={pal.post} roughness={0.38} metalness={0.55} />
-          </mesh>
-          {/* Tira LED en la cara interior con el color del estado */}
-          <mesh geometry={ledGeo} material={ledMat} position={[-side * 0.15, LIFT_TOP / 2 + 0.05, 0]} />
-        </group>
-      ))}
-      <mesh geometry={beamGeo} position={[0, LIFT_TOP + 0.1, 0]}>
-        <meshStandardMaterial color={pal.post} roughness={0.38} metalness={0.55} />
-      </mesh>
-      {/* Baliza */}
-      <group position={[-POST_X, LIFT_TOP + 0.23, 0]}>
-        <mesh geometry={beaconBase}>
-          <meshStandardMaterial color={pal.postDark} roughness={0.5} metalness={0.5} />
-        </mesh>
-        <mesh geometry={beaconDome} material={beaconMat} position={[0, 0.03, 0]} />
-        {spin && (
-          <group ref={beam} position={[0, 0.07, 0]}>
-            <mesh geometry={beamCone} material={beamMat} />
-            <mesh geometry={beamCone} material={beamMat} rotation-y={Math.PI} />
-          </group>
-        )}
-      </group>
-
-      {/* Sombra difusa del coche */}
-      {shadowTex && build && (
-        <mesh ref={shadow} rotation-x={-Math.PI / 2} position={[0, 0.006, 0]}>
-          <planeGeometry args={[build.size.width * 1.55, build.size.length * 1.2]} />
-          <meshBasicMaterial map={shadowTex} transparent opacity={0.8} depthWrite={false} toneMapped={false} />
-        </mesh>
-      )}
-
-      {/* Parte móvil: carros, brazos y coche */}
-      <group ref={lifted} position={[0, initialY, 0]}>
-        {[1, -1].map((side) => (
-          <mesh key={side} geometry={carriageGeo} position={[side * POST_X, armY + 0.12, 0]}>
-            <meshStandardMaterial color={pal.postDark} roughness={0.5} metalness={0.5} />
-          </mesh>
-        ))}
-        {arms.map((a, i) => (
-          <group key={i} position={[a.pos[0], armY, a.pos[2]]}>
-            <mesh geometry={armGeo} rotation-y={a.rotY} scale={[a.len, 1, 1]}>
-              <meshStandardMaterial color={pal.post} roughness={0.4} metalness={0.55} />
-            </mesh>
-          </group>
-        ))}
-        {arms.map((a, i) => (
-          <mesh key={`p${i}`} geometry={padGeo} position={[a.pad[0], armY + 0.05, a.pad[2]]}>
-            <meshStandardMaterial color="#111315" roughness={0.9} />
-          </mesh>
-        ))}
-        {o && body && color && (
-          <group rotation-y={-Math.PI / 2}>
-            <CarModel body={body} color={color} accent={tokens.accent} detail="low" />
-          </group>
-        )}
-      </group>
-
-      {/* Zona de clic del elevador completo (invisible) */}
+    <group>
+      <mesh ref={register} name={`elevador-${number}`} geometry={carriage} material={clayVertex()} position={[x, 0, z]} castShadow receiveShadow />
+      <mesh geometry={lampGeo} material={lampMaterial(lamp)} position={[x - POST_X, POST_H + 0.22, z]} />
+      {/* Zona de clic (invisible): la plaza del elevador */}
       <mesh
-        position={[0, 1.6, 0]}
+        geometry={unitBox}
+        material={PROXY_MAT}
+        visible={false}
+        position={[x, 0.9, z]}
+        scale={[BAY_W - 0.4, 1.8, BAY_D - 0.4]}
         onClick={(e: ThreeEvent<MouseEvent>) => {
           e.stopPropagation()
+          if (e.delta > 6) return
           onSelect()
         }}
         onPointerOver={(e) => {
           e.stopPropagation()
-          setHover(true)
+          onHover(true)
         }}
-        onPointerOut={() => setHover(false)}
-      >
-        <boxGeometry args={[BAY_W - 0.6, 3.6, BAY_D - 0.8]} />
-        <meshBasicMaterial colorWrite={false} depthWrite={false} />
-      </mesh>
-      {selected && <SelectionRing tokens={tokens} />}
+        onPointerOut={() => onHover(false)}
+      />
     </group>
   )
 }
 
-function SelectionRing({ tokens }: { tokens: ThemeTokens }) {
-  const w = BAY_W - 0.7
-  const d = BAY_D - 0.6
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: tokens.accent, toneMapped: false }), [tokens.accent])
+const outlineGeos: Partial<Record<'bay' | 'stall', THREE.BufferGeometry>> = {}
+function SelectionOutline({ kind, x, z, color }: { kind: 'bay' | 'stall'; x: number; z: number; color: string }) {
+  const geo = (outlineGeos[kind] ??= selectionOutline(kind))
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 0.95, depthWrite: false }), [color])
   useEffect(() => () => mat.dispose(), [mat])
-  return (
-    <group position={[0, 0.008, 0]}>
-      {[
-        [0, d / 2, w + 0.1, 0.1],
-        [0, -d / 2, w + 0.1, 0.1],
-        [w / 2, 0, 0.1, d],
-        [-w / 2, 0, 0.1, d],
-      ].map(([px, pz, sx, sz], i) => (
-        <mesh key={i} position={[px, 0, pz]} rotation-x={-Math.PI / 2} material={mat}>
-          <planeGeometry args={[sx, sz]} />
-        </mesh>
-      ))}
-    </group>
+  return <mesh geometry={geo} material={mat} position={[x, 0, z]} renderOrder={2} />
+}
+
+// ───────────────────────── Coche ─────────────────────────
+
+let blobTex: THREE.Texture | null = null
+function blobTexture(): THREE.Texture | null {
+  if (blobTex || typeof document === 'undefined') return blobTex
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const g = c.getContext('2d')
+  if (!g) return null
+  const grad = g.createRadialGradient(32, 32, 4, 32, 32, 32)
+  grad.addColorStop(0, 'rgba(0,0,0,0.6)')
+  grad.addColorStop(0.55, 'rgba(0,0,0,0.3)')
+  grad.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = grad
+  g.fillRect(0, 0, 64, 64)
+  blobTex = new THREE.CanvasTexture(c)
+  return blobTex
+}
+let blobMat: THREE.MeshBasicMaterial | null = null
+function blobMaterial() {
+  blobMat ??= new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, toneMapped: false, opacity: 0.55 })
+  return blobMat
+}
+const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)
+
+const _p = new THREE.Vector3()
+const _t = new THREE.Vector3()
+
+function curveOf(pts: P2[]) {
+  return new THREE.CatmullRomCurve3(
+    pts.map(([x, z]) => new THREE.Vector3(x, 0, z)),
+    false,
+    'centripetal',
   )
 }
 
-function WaitingCar({
+function ClayCarActor({
   order,
-  stall,
-  tokens,
-  shadowTex,
-  onOpen,
+  spot,
+  layout,
+  pal,
+  reduced,
+  armed,
+  enterDelay,
+  carriages,
+  register,
+  markShadows,
+  onSelect,
+  onHover,
 }: {
   order: WorkOrder
-  stall: { x: number; z: number; rot: number }
-  tokens: ThemeTokens
-  shadowTex: THREE.Texture | null
-  onOpen: () => void
+  spot: Spot
+  layout: FloorLayout
+  pal: DioramaPalette
+  reduced: boolean
+  /** false hasta que la escena está compilada: los coches que entran esperan ocultos en la entrada. */
+  armed: boolean
+  enterDelay: number
+  carriages: Map<number, THREE.Object3D>
+  register: (o: THREE.Object3D | null) => void
+  markShadows: () => void
+  onSelect: () => void
+  onHover: (on: boolean) => void
 }) {
   const body = resolveBody(order.vehicle.body_type)
-  const color = resolveColor(order.vehicle.color_hex)
-  const build = getCarBuild(body, 'low')
+  const geo = getClayCar(body)
+  const paint = clayPaint(clayColor(order.vehicle.color_hex, order.vehicle.id))
+  const glass = clayGlass(pal.glass)
+  const group = useRef<THREE.Group>(null)
+  const blob = useRef<THREE.Mesh>(null)
+  /** Pose actual, plaza en la que está parado (null: de camino) y elevador cuyo carro le acompaña en altura. */
+  const pose = useRef<Pose | null>(null)
+  const at = useRef<Spot | 'entrance' | null>(null)
+  const bayAt = useRef<number | null>(null)
+
+  const target = spotPose(layout, spot, order.status)
+  const tx = target?.x ?? 0
+  const tz = target?.z ?? 0
+  const ty = target?.y ?? 0
+  const th = target?.heading ?? 0
+  const key = `${spotKey(spot)}|${tx.toFixed(2)}|${tz.toFixed(2)}|${ty}`
+
+  useLayoutEffect(() => {
+    const g = group.current
+    if (!g || !target) return
+    const final: Pose = { x: tx, z: tz, y: ty, heading: th }
+    const apply = (p: Pose) => {
+      g.position.set(p.x, p.y, p.z)
+      g.rotation.y = p.heading
+      pose.current = p
+      const c = bayAt.current != null ? carriages.get(bayAt.current) : null
+      if (c) c.position.y = p.y
+      if (blob.current) {
+        blob.current.position.y = 0.012 - p.y
+        ;(blob.current.material as THREE.MeshBasicMaterial).opacity = 0.55
+      }
+      markShadows()
+    }
+    const toSpot = spot
+
+    if (reduced) {
+      // Movimiento reducido: posición final directa (también al entrar)
+      if (bayAt.current != null && (toSpot.kind !== 'bay' || toSpot.bay !== bayAt.current)) {
+        const old = carriages.get(bayAt.current)
+        if (old) old.position.y = 0
+      }
+      bayAt.current = toSpot.kind === 'bay' ? toSpot.bay : null
+      at.current = toSpot
+      g.visible = true
+      g.scale.setScalar(1)
+      apply(final)
+      return
+    }
+
+    if (pose.current == null || at.current === 'entrance') {
+      // Primera vez: aparece en la entrada y espera su turno
+      bayAt.current = null
+      at.current = 'entrance'
+      g.visible = false
+      apply(entrancePose(layout))
+    }
+    const cur = pose.current!
+    const from = at.current
+    const entering = from === 'entrance'
+    if (entering && !armed) return
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ delay: entering ? enterDelay : 0 })
+      if (from && from !== 'entrance' && sameSpot(from, toSpot)) {
+        // Misma plaza: solo cambia la altura del elevador
+        if (Math.abs(cur.y - final.y) > 0.001) {
+          const h = { y: cur.y }
+          tl.to(h, { y: final.y, duration: 0.8, ease: 'power2.inOut', onUpdate: () => apply({ ...pose.current!, y: h.y }) })
+        }
+        return
+      }
+      if (entering) {
+        tl.call(() => {
+          g.visible = true
+          markShadows()
+        })
+        tl.fromTo(g.scale, { x: 0.6, y: 0.6, z: 0.6 }, { x: 1, y: 1, z: 1, duration: 0.3, ease: 'back.out(2)', onUpdate: markShadows })
+      }
+      if (cur.y > 0.001) {
+        const h = { y: cur.y }
+        tl.to(h, { y: 0, duration: 0.55, ease: 'power2.inOut', onUpdate: () => apply({ ...pose.current!, y: h.y }) })
+      }
+      tl.call(() => {
+        at.current = null
+        bayAt.current = null
+      })
+      const route = planRoute(layout, { ...cur, y: 0 }, from, toSpot, final)
+      const follow = (curve: THREE.CatmullRomCurve3, u: number, backwards: boolean) => {
+        curve.getPointAt(u, _p)
+        curve.getTangentAt(u, _t)
+        const heading = backwards ? Math.atan2(-_t.x, -_t.z) : Math.atan2(_t.x, _t.z)
+        apply({ x: _p.x, z: _p.z, y: 0, heading })
+      }
+      if (route.reverse) {
+        const curve = curveOf(route.reverse)
+        const prog = { u: 0 }
+        tl.to(prog, { u: 1, duration: Math.min(1.4, Math.max(0.8, polyLength(route.reverse) / 3.5)), ease: 'power1.inOut', onUpdate: () => follow(curve, prog.u, true) })
+      }
+      const curve = curveOf(route.forward)
+      const prog = { u: 0 }
+      tl.to(
+        prog,
+        { u: 1, duration: driveDuration(polyLength(route.forward)), ease: 'power2.inOut', onUpdate: () => follow(curve, prog.u, false) },
+        '>',
+      )
+      tl.call(() => {
+        at.current = toSpot
+        bayAt.current = toSpot.kind === 'bay' ? toSpot.bay : null
+        apply({ ...final, y: 0 })
+      })
+      if (final.y > 0.001) {
+        const h = { y: 0 }
+        tl.to(h, { y: final.y, duration: 0.75, ease: 'power2.out', onUpdate: () => apply({ ...pose.current!, y: h.y }) })
+      }
+    })
+    return () => ctx.kill()
+    // la clave resume la plaza y la altura de destino; el resto se lee de refs
+  }, [key, reduced, armed]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Al desaparecer (orden entregada o cancelada), el elevador que ocupaba vuelve al suelo
+  useEffect(
+    () => () => {
+      const c = bayAt.current != null ? carriages.get(bayAt.current) : null
+      if (c) c.position.y = 0
+    },
+    [carriages],
+  )
+
+  const { length, width, height } = geo.size
   return (
-    <group position={[stall.x, 0, stall.z]} rotation-y={stall.rot}>
-      {shadowTex && (
-        <mesh rotation-x={-Math.PI / 2} position={[0, 0.006, 0]}>
-          <planeGeometry args={[build.size.length * 1.2, build.size.width * 1.55]} />
-          <meshBasicMaterial map={shadowTex} transparent opacity={0.8} depthWrite={false} toneMapped={false} />
-        </mesh>
-      )}
-      <CarModel body={body} color={color} accent={tokens.accent} detail="low" />
+    <group
+      ref={(o) => {
+        group.current = o
+        register(o)
+      }}
+      name={`coche-${order.id}`}
+    >
+      <mesh ref={blob} geometry={blobGeo} material={blobMaterial()} scale={[width * 1.5, 1, length * 1.22]} position={[0, 0.012, 0]} renderOrder={-1} />
+      <mesh geometry={geo.paint} material={paint} castShadow receiveShadow />
+      <mesh geometry={geo.glass} material={glass} castShadow />
+      {/* ruedas y pilotos sin sombra propia (la mancha de oclusión ya asienta el coche): 13 draw calls menos en la pasada de sombras */}
+      <mesh geometry={geo.trim} material={clayTrim()} receiveShadow />
+      {/* Zona de clic (invisible) */}
       <mesh
-        position={[0, 0.8, 0]}
+        geometry={unitBox}
+        material={PROXY_MAT}
+        visible={false}
+        position={[0, height / 2, 0]}
+        scale={[width + 0.2, height + 0.2, length + 0.2]}
         onClick={(e: ThreeEvent<MouseEvent>) => {
           e.stopPropagation()
-          onOpen()
+          if (e.delta > 6) return
+          onSelect()
         }}
-      >
-        <boxGeometry args={[build.size.length, 1.6, build.size.width]} />
-        <meshBasicMaterial colorWrite={false} depthWrite={false} />
-      </mesh>
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          onHover(true)
+        }}
+        onPointerOut={() => onHover(false)}
+      />
     </group>
   )
 }
 
-// ───────────────────────── Texturas procedurales ─────────────────────────
+// ───────────────────────── Cámara ─────────────────────────
 
-/** Degradado radial negro → transparente (sombras difusas sin render extra). */
-function useBlobTexture(): THREE.Texture | null {
-  const tex = useMemo(() => {
-    if (typeof document === 'undefined') return null
-    const c = document.createElement('canvas')
-    c.width = c.height = 128
-    const g = c.getContext('2d')
-    if (!g) return null
-    const grad = g.createRadialGradient(64, 64, 6, 64, 64, 64)
-    grad.addColorStop(0, 'rgba(0,0,0,0.85)')
-    grad.addColorStop(0.5, 'rgba(0,0,0,0.42)')
-    grad.addColorStop(1, 'rgba(0,0,0,0)')
-    g.fillStyle = grad
-    g.fillRect(0, 0, 128, 128)
-    return new THREE.CanvasTexture(c)
-  }, [])
-  useEffect(() => () => tex?.dispose(), [tex])
-  return tex
-}
+function IsoRig({
+  focus,
+  overview,
+  selKey,
+  reduced,
+  layout,
+  onUserMove,
+}: {
+  focus: CamFocus
+  overview: CamFocus
+  selKey: string
+  reduced: boolean
+  layout: FloorLayout
+  onUserMove: () => void
+}) {
+  const controls = useRef<OrbitControlsImpl>(null)
+  const get = useThree((s) => s.get)
+  const invalidate = useThree((s) => s.invalidate)
+  const lastSel = useRef<string | null>(null)
+  const tween = useRef<gsap.core.Tween | null>(null)
 
-/** Texto pintado en el suelo (números de elevador, "ZONA DE ESPERA") con la tipografía de la app. */
-function useTextTexture(text: string, color: string, opacity: number): THREE.Texture | null {
-  const tex = useMemo(() => {
-    if (typeof document === 'undefined') return null
-    const square = text.length <= 2
-    const c = document.createElement('canvas')
-    c.width = square ? 256 : 1024
-    c.height = square ? 256 : 146
-    const g = c.getContext('2d')
-    if (!g) return null
-    g.clearRect(0, 0, c.width, c.height)
-    g.globalAlpha = opacity
-    g.fillStyle = color
-    g.textAlign = 'center'
-    g.textBaseline = 'middle'
-    g.font = `600 ${square ? 200 : 104}px "Archivo Variable", system-ui, sans-serif`
-    if (!square) (g as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '10px'
-    g.fillText(text, c.width / 2, c.height / 2 + (square ? 8 : 4))
-    const t = new THREE.CanvasTexture(c)
-    t.colorSpace = THREE.SRGBColorSpace
-    t.anisotropy = 4
-    return t
-  }, [text, color, opacity])
-  useEffect(() => () => tex?.dispose(), [tex])
-  return tex
+  const fx = Math.round(focus.x * 100) / 100
+  const fz = Math.round(focus.z * 100) / 100
+  const fzoom = Math.round(focus.zoom * 100) / 100
+
+  useLayoutEffect(() => {
+    const c = controls.current
+    if (!c) return
+    const camera = get().camera as THREE.OrthographicCamera
+    const apply = (x: number, z: number, zoom: number) => {
+      c.target.set(x, 0, z)
+      camera.position.set(x + ISO_DIR.x * CAM_DIST, ISO_DIR.y * CAM_DIST, z + ISO_DIR.z * CAM_DIST)
+      camera.zoom = zoom
+      camera.updateProjectionMatrix()
+      c.update()
+      invalidate()
+    }
+    // Vuela si cambia la selección o si ya había un vuelo en marcha (p. ej. el panel de la página cambia el margen
+    // justo después de elegir): se reencamina sin saltos. Un cambio de tamaño en reposo se aplica directamente.
+    const flying = !!tween.current?.isActive()
+    tween.current?.kill()
+    const animate = !reduced && lastSel.current !== null && (lastSel.current !== selKey || flying)
+    lastSel.current = selKey
+    if (!animate) {
+      apply(fx, fz, fzoom)
+      return
+    }
+    const s = { x: c.target.x, z: c.target.z, zoom: camera.zoom }
+    tween.current = gsap.to(s, { x: fx, z: fz, zoom: fzoom, duration: 0.8, ease: 'power3.out', onUpdate: () => apply(s.x, s.z, s.zoom) })
+    return () => {
+      tween.current?.kill()
+    }
+  }, [fx, fz, fzoom, selKey, reduced, get, invalidate])
+
+  // Paneo acotado a la maqueta (con algo de holgura)
+  const bounds = useMemo(
+    () => ({ x0: layout.minX - 6, x1: layout.apronX + 6, z0: layout.backZ - 6, z1: layout.frontZ + 8 }),
+    [layout],
+  )
+  const onChange = () => {
+    const c = controls.current
+    if (!c) return
+    const t = c.target
+    const nx = Math.min(bounds.x1, Math.max(bounds.x0, t.x))
+    const nz = Math.min(bounds.z1, Math.max(bounds.z0, t.z))
+    if (nx !== t.x || nz !== t.z) {
+      const camera = get().camera
+      camera.position.x += nx - t.x
+      camera.position.z += nz - t.z
+      t.x = nx
+      t.z = nz
+    }
+  }
+
+  return (
+    <OrbitControls
+      ref={controls}
+      makeDefault
+      enableRotate={false}
+      enablePan
+      screenSpacePanning={false}
+      enableZoom
+      enableDamping
+      dampingFactor={0.14}
+      zoomSpeed={0.9}
+      minZoom={overview.zoom * 0.7}
+      maxZoom={overview.zoom * 5}
+      mouseButtons={{ LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
+      touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN }}
+      onStart={() => {
+        tween.current?.kill()
+        onUserMove()
+      }}
+      onChange={onChange}
+    />
+  )
 }
