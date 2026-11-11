@@ -1,14 +1,17 @@
 import { CalendarClock, ChevronDown, CircleCheck, Plus, SquareKanban, TriangleAlert, UserRound } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { LIVE_REFRESH_MS, useOpenWorkOrders, useWorkshopDashboard } from '@/api/hooks/workshop'
 import type { Bay, WorkOrder, WorkshopDashboard as WorkshopDashboardData } from '@/api/types'
-import { ButtonLink } from '@/components/ui/Button'
+import { Button, ButtonLink } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Section } from '@/components/ui/Section'
 import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { buttonClasses } from '@/components/ui/variants'
+import { FirstStepsGuide } from '@/components/vehicles/FirstSteps'
+import { useHiddenGuide } from '@/hooks/useHiddenGuide'
 import { ReminderItem } from '@/components/vehicles/ReminderItem'
 import { useAuth } from '@/features/auth/auth-context'
 import { PriorityBadge } from '@/features/workshop/components/OrderBadges'
@@ -17,7 +20,9 @@ import { attentionOrders, controlCenterHeadline, formatWhen, formatWhenInline, s
 import { type OrderActions, useOrderActions } from '@/features/workshop/components/useOrderActions'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { workshopFirstSteps } from '@/lib/firstSteps'
 import { formatPlate } from '@/lib/format'
+import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { WORK_ORDER_STATUS_LABEL } from '@/lib/labels'
 import { plural } from '@/lib/text'
 
@@ -25,35 +30,46 @@ import { plural } from '@/lib/text'
 const MAX_ROWS = 8
 
 /**
- * Centro de control del taller (plan UX 5.3): una línea de resumen, lo que requiere atención,
+ * Inicio del taller, antes "Centro de control" (plan UX 5.3): una línea de resumen, lo que requiere atención,
  * la tabla de elevadores y las alertas de flota. Sin 3D (está en Taller 3D) y sin importes
  * (están en Analítica). Dos peticiones, refrescadas cada minuto solo con la pestaña visible.
  */
 export default function WorkshopDashboard() {
   const ctx = useWorkspace()
-  useDocumentTitle('Centro de control')
+  useDocumentTitle('Inicio')
   const dashboard = useWorkshopDashboard(ctx.id)
   const data = dashboard.data ?? null
   const canOperate = ctx.can('operate')
+  // Taller recién creado: la guía de primeros pasos lleva la única acción principal (sin "Nueva orden" arriba, R1)
+  const { hidden, hide } = useHiddenGuide(String(ctx.id))
+  const [baysConfirmed, setBaysConfirmed] = useState(() => readStorage(STORAGE_KEYS.baysConfirmed(ctx.id)) === '1')
+  const guide = data && ctx.can('manage') && !hidden ? workshopFirstSteps(data, baysConfirmed) : null
+  const confirmBays = () => {
+    writeStorage(STORAGE_KEYS.baysConfirmed(ctx.id), '1')
+    setBaysConfirmed(true)
+  }
 
   return (
     <>
       <PageHeader
-        title="Centro de control"
+        title="Inicio"
         description={data ? controlCenterHeadline(data) : undefined}
         actions={
-          <>
-            <ButtonLink to={`${ctx.base}/ordenes`} icon={<SquareKanban aria-hidden />}>
-              Tablero
-            </ButtonLink>
-            {canOperate && (
-              <ButtonLink to={`${ctx.base}/ordenes/nueva`} variant="primary" icon={<Plus aria-hidden />}>
-                Nueva orden
+          !guide && (
+            <>
+              <ButtonLink to={`${ctx.base}/ordenes`} icon={<SquareKanban aria-hidden />}>
+                Tablero
               </ButtonLink>
-            )}
-          </>
+              {canOperate && (
+                <ButtonLink to={`${ctx.base}/ordenes/nueva`} variant="primary" icon={<Plus aria-hidden />}>
+                  Nueva orden
+                </ButtonLink>
+              )}
+            </>
+          )
         }
       />
+      {data && guide && <WorkshopFirstSteps data={data} steps={guide} onHide={hide} onConfirmBays={confirmBays} />}
       {dashboard.isPending ? (
         <DashboardSkeleton />
       ) : dashboard.isError ? (
@@ -61,13 +77,14 @@ export default function WorkshopDashboard() {
       ) : !data ? (
         <ErrorState title="Este espacio no es un taller" />
       ) : (
-        <ControlCenter data={data} />
+        <ControlCenter data={data} fresh={!!guide} />
       )}
     </>
   )
 }
 
-function ControlCenter({ data }: { data: WorkshopDashboardData }) {
+/** `fresh`: taller recién creado con la guía a la vista; sin órdenes, "Requiere atención" y las alertas solo dirían que no hay nada. */
+function ControlCenter({ data, fresh = false }: { data: WorkshopDashboardData; fresh?: boolean }) {
   const ctx = useWorkspace()
   const { user } = useAuth()
   const open = useOpenWorkOrders(ctx.id, {}, LIVE_REFRESH_MS)
@@ -88,9 +105,9 @@ function ControlCenter({ data }: { data: WorkshopDashboardData }) {
           onRetry={() => void open.refetch()}
         />
       )}
-      <Attention data={data} excludeAssignedTo={mineShown} />
+      {!fresh && <Attention data={data} excludeAssignedTo={mineShown} />}
       <Bays bays={data.bays} orders={orders} loading={open.isPending} actions={actions} />
-      <FleetAlerts data={data} />
+      {!fresh && <FleetAlerts data={data} />}
       {actions.dialogs}
     </div>
   )
@@ -286,7 +303,7 @@ function Bays({ bays, orders, loading, actions }: { bays: Bay[]; orders: WorkOrd
       title="Elevadores"
       action={
         <Link to={`${ctx.base}/taller`} className="text-sm font-medium text-accent-ink hover:underline">
-          Ver Taller 3D
+          Ver el taller
         </Link>
       }
     >
@@ -405,7 +422,7 @@ function FleetAlerts({ data }: { data: WorkshopDashboardData }) {
       description="Según los intervalos anotados, no medido."
       action={
         <Link to={`${ctx.base}/agenda`} className="text-sm font-medium text-accent-ink hover:underline">
-          Agenda de flota
+          Ver la agenda
         </Link>
       }
     >
@@ -422,10 +439,76 @@ function FleetAlerts({ data }: { data: WorkshopDashboardData }) {
   )
 }
 
+/**
+ * Primeros pasos de un taller recién creado (10/11/2026): revisar los elevadores → dar de alta el primer cliente →
+ * abrir la primera orden. Todo con rutas que ya existen: los ajustes del taller, el alta de cliente y la nueva orden.
+ */
+function WorkshopFirstSteps({
+  data,
+  steps,
+  onHide,
+  onConfirmBays,
+}: {
+  data: WorkshopDashboardData
+  steps: NonNullable<ReturnType<typeof workshopFirstSteps>>
+  onHide: () => void
+  onConfirmBays: () => void
+}) {
+  const ctx = useWorkspace()
+  const done = (key: string) => steps.find((s) => s.key === key)?.done ?? false
+  const bays = data.bays.length
+  return (
+    <FirstStepsGuide
+      className="mb-10 max-w-3xl"
+      onHide={onHide}
+      steps={[
+        {
+          key: 'bays',
+          title: 'Indica cuántos elevadores tiene el taller',
+          why: `Ahora tiene ${plural(bays, 'elevador', 'elevadores')}. Son los puestos donde subís los coches: los verás en Inicio y en Taller, y al abrir una orden.`,
+          done: done('bays'),
+          action: (
+            <ButtonLink to={`/app/ajustes?ajustar=${ctx.id}#espacios`} variant="primary">
+              Cambiar los elevadores
+            </ButtonLink>
+          ),
+          alternative: (
+            <Button variant="ghost" onClick={onConfirmBays}>
+              Son {bays}, está bien
+            </Button>
+          ),
+        },
+        {
+          key: 'customer',
+          title: 'Da de alta tu primer cliente',
+          why: 'Con su nombre y su teléfono. Después le añades sus vehículos y le abres órdenes.',
+          done: done('customer'),
+          action: (
+            <ButtonLink to={`${ctx.base}/clientes?nuevo=1`} variant="primary">
+              Añadir cliente
+            </ButtonLink>
+          ),
+        },
+        {
+          key: 'order',
+          title: 'Abre tu primera orden de trabajo',
+          why: 'Una orden es un trabajo para un coche: qué le pasa, quién lo hace y cuándo se entrega. Empieza en «Recibido» y la mueves por el tablero.',
+          done: done('order'),
+          action: (
+            <ButtonLink to={`${ctx.base}/ordenes/nueva`} variant="primary">
+              Abrir orden
+            </ButtonLink>
+          ),
+        },
+      ]}
+    />
+  )
+}
+
 function DashboardSkeleton() {
   return (
     <div role="status" aria-live="polite" className="space-y-10">
-      <span className="sr-only">Cargando el centro de control…</span>
+      <span className="sr-only">Cargando el inicio del taller…</span>
       <div aria-hidden className="space-y-3">
         <Skeleton className="h-6 w-48" />
         <SkeletonText lines={4} />

@@ -69,7 +69,7 @@ function CustomerDetail({ customer }: { customer: Customer }) {
   return (
     <>
       <PageHeader
-        back={{ to: `${ctx.base}/clientes`, label: 'Clientes' }}
+        crumbs={[{ label: 'Clientes', to: `${ctx.base}/clientes` }, { label: customer.name }]}
         title={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {customer.name}

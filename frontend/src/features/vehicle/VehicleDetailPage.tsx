@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ArrowLeft, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
+import { Archive, ArchiveRestore, BellPlus, ChevronDown, ClipboardPlus, EllipsisVertical, FileText, Gauge, OctagonAlert, Pencil, Plus, Printer, Receipt, Store, Trash2, Wrench } from 'lucide-react'
 import { BrandLogo } from '@/components/vehicles/BrandLogo'
 import { paintVars } from '@/lib/colors'
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { errorMessage } from '@/api/client'
 import type { Vehicle } from '@/api/types'
 import { useArchiveVehicle, useDeleteVehicle, useVehicle } from '@/api/hooks/vehicles'
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
@@ -40,6 +41,7 @@ export default function VehicleDetailPage() {
   const id = Number(vehicleId)
   const query = useVehicle(Number.isFinite(id) ? id : undefined)
   const vehicle = query.data
+  const { pathname } = useLocation()
   useDocumentTitle(vehicle?.display_name ?? 'Vehículo')
 
   if (query.isPending) return <HeaderSkeleton />
@@ -59,10 +61,13 @@ export default function VehicleDetailPage() {
     { to: `${base}/datos`, label: 'Datos' },
   ]
   const outlet: VehicleOutletContext = { vehicle }
+  // Pestaña actual, para las migas de pan ("Garaje › Kia Sportage › Gastos")
+  const path = pathname.replace(/\/+$/, '')
+  const section = tabs.find((t) => (t.end ? path === t.to : path === t.to || path.startsWith(`${t.to}/`)))?.label ?? 'Resumen'
 
   return (
     <>
-      <Header vehicle={vehicle} />
+      <Header vehicle={vehicle} section={section} />
       <VehicleTabs tabs={tabs} />
       <Outlet context={outlet} />
     </>
@@ -164,7 +169,7 @@ function VehicleTabs({ tabs }: { tabs: Tab[] }) {
  * como texto. Sin miniatura (no descarga three.js) y sin píldoras. "Registrar ▾" es la acción primaria en escritorio;
  * en el móvil la da la barra inferior, que ya sabe en qué vehículo estás (R1 y R14). "Informe" va en el menú "⋯".
  */
-function Header({ vehicle }: { vehicle: Vehicle }) {
+function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
   const ctx = useWorkspace()
   const quick = useQuickActions()
   const navigate = useNavigate()
@@ -210,10 +215,14 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
 
   return (
     <header className="mb-4">
-      <Link to={`${ctx.base}/garaje`} className="no-print mb-1 inline-flex min-h-11 items-center gap-1 text-sm text-fg-muted hover:text-fg md:mb-2 md:min-h-0">
-        <ArrowLeft aria-hidden className="size-4" />
-        {ctx.isWorkshop ? 'Vehículos' : 'Garaje'}
-      </Link>
+      <Breadcrumbs
+        className="mb-1 md:mb-2"
+        items={[
+          { label: ctx.isWorkshop ? 'Vehículos' : 'Garaje', to: `${ctx.base}/garaje` },
+          // En el Resumen, el vehículo es la pantalla actual; en las demás pestañas, el paso anterior
+          ...(section === 'Resumen' ? [{ label: vehicle.display_name }] : [{ label: vehicle.display_name, to: base }, { label: section }]),
+        ]}
+      />
 
       {archived && (
         <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-line px-4 py-3 text-sm">
@@ -306,7 +315,10 @@ function Header({ vehicle }: { vehicle: Vehicle }) {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem icon={<Wrench aria-hidden />} onSelect={() => navigate(`${base}/intervenciones/nueva`)}>
-                  Intervención
+                  <span className="min-w-0">
+                    <span className="block">Intervención</span>
+                    <span className="block text-xs text-fg-muted">Revisión, reparación, ITV…</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem icon={<BellPlus aria-hidden />} onSelect={() => quick.run('reminder', vehicle.id)}>
                   Recordatorio

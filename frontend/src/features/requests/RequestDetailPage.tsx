@@ -41,7 +41,7 @@ export default function RequestDetailPage() {
   const id = Number(requestId) || undefined
   const query = useRepairRequest(id)
   useDocumentTitle(query.data?.title ?? 'Solicitud')
-  const back = { to: `${ctx.base}/solicitudes`, label: 'Solicitudes' }
+  const back = { to: `${ctx.base}/solicitudes`, label: 'Mis solicitudes' }
 
   if (!id || query.isError) {
     const notFound = !id || (isApiError(query.error) && query.error.status === 404)

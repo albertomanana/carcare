@@ -1,26 +1,44 @@
 import { BellPlus, ClipboardPlus, Ellipsis, FileText, Gauge, Moon, Plus, Receipt, Search, Sun, Wrench } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import { NavLink, useMatch, useNavigate } from 'react-router'
+import { Link, useLocation, useMatch, useNavigate } from 'react-router'
 import { useTheme } from '@/app/theme-context'
 import { Dialog, DialogBody, DialogContent } from '@/components/ui/Dialog'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useOptionalWorkspace } from '@/features/workspace/workspace-context'
 import { cn } from '@/lib/cn'
-import { type NavItem, SETTINGS_ITEM } from './nav'
+import { isNavItemActive, navGroups, type NavItem, SETTINGS_ITEM } from './nav'
 
 /** Fila de las hojas "Registrar" y "Más": icono pequeño sin baldosa (R7) y texto. */
-function SheetButton({ icon, label, description, onClick }: { icon: ReactNode; label: string; description?: string; onClick: () => void }) {
+function SheetButton({
+  icon,
+  label,
+  description,
+  current,
+  onClick,
+}: {
+  icon: ReactNode
+  label: string
+  description?: string
+  /** La pantalla actual: se marca con fondo y "Estás aquí" (no solo con color). */
+  current?: boolean
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-14 w-full items-center gap-3 rounded-control px-3 text-left transition-colors hover:bg-surface-2 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-fg-muted"
+      aria-current={current ? 'page' : undefined}
+      className={cn(
+        'flex min-h-14 w-full items-center gap-3 rounded-control px-3 text-left transition-colors hover:bg-surface-2 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-fg-muted',
+        current && 'bg-surface-2',
+      )}
     >
       {icon}
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-fg">{label}</span>
         {description && <span className="block text-xs text-fg-muted">{description}</span>}
       </span>
+      {current && <span className="shrink-0 text-xs text-fg-muted">Estás aquí</span>}
     </button>
   )
 }
@@ -36,8 +54,19 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
   const { theme, toggleTheme } = useTheme()
   const [addOpen, setAddOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
+  const { pathname } = useLocation()
   const primary = items.filter((i) => i.mobile).slice(0, 3)
-  const rest = [...items.filter((i) => !primary.includes(i)), SETTINGS_ITEM]
+  const inBar = new Set(primary.map((i) => i.to))
+  // La hoja "Más" repite los grupos de la barra lateral (sin lo que ya está abajo), con qué hay en cada sección
+  const restGroups = [
+    ...navGroups(ctx)
+      .map((g) => ({ ...g, items: g.items.filter((i) => !inBar.has(i.to)) }))
+      .filter((g) => g.items.length > 0),
+    { id: 'cuenta', label: 'Cuenta', items: [SETTINGS_ITEM] },
+  ]
+  const rest = restGroups.flatMap((g) => g.items)
+  // Si la pantalla es de una sección de "Más", "Más" se marca como activo: siempre sabes dónde estás
+  const moreActive = !primary.some((i) => isNavItemActive(i, pathname)) && rest.some((i) => isNavItemActive(i, pathname))
   // En la ficha de un vehículo, "Registrar" va directo a ese vehículo (la cabecera no repite el botón en el móvil)
   const vehicleMatch = useMatch('/app/:ws/vehiculos/:vehicleId/*')
   const vehicleNumber = Number(vehicleMatch?.params.vehicleId)
@@ -51,23 +80,21 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
 
   const tab = (item: NavItem) => {
     const Icon = item.icon
+    const isActive = isNavItemActive(item, pathname)
     return (
-      <NavLink
+      <Link
         key={item.to}
         to={item.to}
-        end={item.end}
+        aria-current={isActive ? 'page' : undefined}
         aria-label={item.mobileLabel ? item.label : undefined}
-        className={({ isActive }) =>
-          cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-[color,scale] duration-150 active:scale-95', isActive ? 'text-accent-ink' : 'text-fg-subtle')
-        }
-      >
-        {({ isActive }) => (
-          <>
-            <Icon aria-hidden className="size-5" strokeWidth={isActive ? 2.4 : 2} />
-            <span className="max-w-full truncate px-1">{item.mobileLabel ?? item.label}</span>
-          </>
+        className={cn(
+          'flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-[color,scale] duration-150 active:scale-95',
+          isActive ? 'text-accent-ink' : 'text-fg-subtle',
         )}
-      </NavLink>
+      >
+        <Icon aria-hidden className="size-5" strokeWidth={isActive ? 2.4 : 2} />
+        <span className="max-w-full truncate px-1">{item.mobileLabel ?? item.label}</span>
+      </Link>
     )
   }
 
@@ -97,10 +124,10 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium text-fg-subtle"
-            aria-label="Más secciones"
+            className={cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium', moreActive ? 'text-accent-ink' : 'text-fg-subtle')}
+            aria-label={moreActive ? 'Más secciones (estás en una de ellas)' : 'Más secciones'}
           >
-            <Ellipsis aria-hidden className="size-5" />
+            <Ellipsis aria-hidden className="size-5" strokeWidth={moreActive ? 2.4 : 2} />
             Más
           </button>
         </div>
@@ -124,7 +151,7 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
               />
             )}
             {ctx?.isWorkshop && (
-              <SheetButton icon={<ClipboardPlus aria-hidden />} label="Orden de trabajo" onClick={() => run(() => navigate(`${ctx.base}/ordenes/nueva`))} />
+              <SheetButton icon={<ClipboardPlus aria-hidden />} label="Orden de trabajo" description="Para un coche que entra al taller" onClick={() => run(() => navigate(`${ctx.base}/ordenes/nueva`))} />
             )}
           </DialogBody>
         </DialogContent>
@@ -134,10 +161,28 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
         <DialogContent title="Más">
           <DialogBody className="grid gap-1">
             <SheetButton icon={<Search aria-hidden />} label="Buscar" description="Vehículos, acciones y secciones" onClick={() => run(onOpenPalette)} />
-            {rest.map((item) => {
-              const Icon = item.icon
-              return <SheetButton key={item.to} icon={<Icon aria-hidden />} label={item.label} onClick={() => run(() => navigate(item.to))} />
-            })}
+            {restGroups.map((g) => (
+              <section key={g.id} aria-labelledby={g.label ? `mas-${g.id}` : undefined} className="mt-2 grid gap-1">
+                {g.label && (
+                  <h3 id={`mas-${g.id}`} className="tag-label px-3 pt-1 text-fg-muted">
+                    {g.label}
+                  </h3>
+                )}
+                {g.items.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <SheetButton
+                      key={item.to}
+                      icon={<Icon aria-hidden />}
+                      label={item.label}
+                      description={item.description}
+                      current={isNavItemActive(item, pathname)}
+                      onClick={() => run(() => navigate(item.to))}
+                    />
+                  )
+                })}
+              </section>
+            ))}
             <SheetButton icon={theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />} label={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'} onClick={toggleTheme} />
           </DialogBody>
         </DialogContent>

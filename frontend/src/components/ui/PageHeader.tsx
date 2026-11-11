@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { cn } from '@/lib/cn'
+import { Breadcrumbs, type Crumb } from './Breadcrumbs'
 
 export interface PageHeaderProps {
   title: ReactNode
@@ -13,14 +14,18 @@ export interface PageHeaderProps {
   eyebrow?: ReactNode
   actions?: ReactNode
   back?: { to: string; label: string }
+  /** Migas de pan de una pantalla de segundo nivel; sustituyen a `back` (en el móvil queda solo el paso anterior). */
+  crumbs?: Crumb[]
   className?: string
   children?: ReactNode
 }
 
-export function PageHeader({ title, description, eyebrow, actions, back, className, children }: PageHeaderProps) {
+export function PageHeader({ title, description, eyebrow, actions, back, crumbs, className, children }: PageHeaderProps) {
   return (
     <header className={cn('mb-6 flex flex-col gap-3 md:mb-8', className)}>
-      {back && (
+      {crumbs ? (
+        <Breadcrumbs items={crumbs} className="-mb-1" />
+      ) : back && (
         <Link to={back.to} className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm text-fg-muted hover:text-fg md:min-h-0">
           <ArrowLeft aria-hidden className="size-4" />
           {back.label}

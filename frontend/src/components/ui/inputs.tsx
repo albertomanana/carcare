@@ -80,7 +80,8 @@ export function MoneyInput(props: Omit<InputProps, 'type' | 'suffix'>) {
 
 /** Kilómetros enteros. El valor es texto; se convierte con parseIntegerInput. */
 export function MileageInput(props: Omit<InputProps, 'type' | 'suffix'>) {
-  return <Input type="text" inputMode="numeric" autoComplete="off" placeholder="0" suffix="km" className="tabular text-right" {...props} />
+  // Sin "0" de ejemplo: parecía un valor ya puesto (auditoría 10/11/2026). El ejemplo va en la ayuda del campo.
+  return <Input type="text" inputMode="numeric" autoComplete="off" suffix="km" className="tabular text-right" {...props} />
 }
 
 /** Fecha 'YYYY-MM-DD' nativa. `allowFuture=false` limita a hoy. */

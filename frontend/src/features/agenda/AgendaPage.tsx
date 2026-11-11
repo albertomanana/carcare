@@ -62,7 +62,7 @@ const GROUP_TITLE: Record<
 /** Agenda del espacio: todos los recordatorios pendientes por urgencia y en calendario mensual. */
 export default function AgendaPage() {
   const ctx = useWorkspace();
-  const title = ctx.isWorkshop ? "Agenda de flota" : "Agenda";
+  const title = "Agenda";
   useDocumentTitle(title);
   const quick = useQuickActions();
   const query = useAllWorkspaceReminders(ctx.id);

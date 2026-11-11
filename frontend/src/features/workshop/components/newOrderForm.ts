@@ -59,7 +59,7 @@ export const newOrderSchema = z
     else if (v.make.trim().length > 60) issue('make', 'Máximo 60 caracteres.')
     if (!v.model.trim()) issue('model', 'Indica el modelo.')
     else if (v.model.trim().length > 80) issue('model', 'Máximo 80 caracteres.')
-    if (v.plate.trim() && !/^[A-Z0-9]{2,12}$/.test(normalizePlate(v.plate))) issue('plate', 'Solo letras y números (entre 2 y 12).')
+    if (v.plate.trim() && !/^[A-Z0-9]{2,12}$/.test(normalizePlate(v.plate))) issue('plate', 'Escribe solo letras y números, entre 2 y 12. P. ej. 1234 ABC.')
     if (v.color_hex && !COLOR_HEX_REGEX.test(v.color_hex)) issue('color_hex', 'Color no válido.')
     if (v.customer_mode === 'existing' && !v.customer_id) issue('customer_id', 'Elige el cliente, crea uno nuevo o marca «Sin cliente».')
     if (v.customer_mode === 'new') {

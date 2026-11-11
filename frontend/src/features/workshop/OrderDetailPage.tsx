@@ -203,7 +203,7 @@ function OrderDetail({ order }: { order: WorkOrder }) {
 
   return (
     <>
-      <PageHeader back={{ to: `${ctx.base}/ordenes`, label: 'Órdenes' }} title={order.title} description={<OrderMeta order={order} />} actions={headerActions} />
+      <PageHeader crumbs={[{ label: 'Órdenes', to: `${ctx.base}/ordenes` }, { label: order.number }]} title={order.title} description={<OrderMeta order={order} />} actions={headerActions} />
 
       {/* Estado y elevador se aplican al momento, como en el tablero, con «Deshacer» en el aviso. */}
       <section aria-label="Estado y elevador" className="mb-10 space-y-4">

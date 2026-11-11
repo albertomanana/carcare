@@ -7,6 +7,7 @@ import { useSaveReminder } from '@/api/hooks/records'
 import type { Reminder, ReminderKind, Vehicle, Zone } from '@/api/types'
 import { FormErrors } from '@/components/forms/MileageConflictNotice'
 import { Button } from '@/components/ui/Button'
+import { Disclosure } from '@/components/ui/Disclosure'
 import { Dialog, DialogBody, DialogClose, DialogContent, DialogFooter } from '@/components/ui/Dialog'
 import { Field, Fieldset } from '@/components/ui/Field'
 import { DateInput, Input, MileageInput, Select, Textarea } from '@/components/ui/inputs'
@@ -82,6 +83,12 @@ function ReminderForm({ vehicle, reminder, defaultZone, onDone }: { vehicle: Veh
   })
   const errors = formState.errors
   const kind = watch('kind')
+  const [zone, everyMonths, everyKm, notes] = watch(['zone', 'recurrence_months', 'recurrence_km', 'notes'])
+  // Lo opcional (zona, repetición y notas) va plegado en «Más detalles»; abierto si ya hay algo o un error dentro
+  const [moreOpen, setMoreOpen] = useState(() => !!(reminder && (reminder.recurrence_months || reminder.recurrence_km || reminder.notes)))
+  const moreErrors = !!(errors.zone || errors.recurrence_months || errors.recurrence_km || errors.notes)
+  const repeatText = [everyMonths.trim() ? `cada ${everyMonths.trim()} meses` : null, everyKm.trim() ? `cada ${everyKm.trim()} km` : null].filter(Boolean).join(' o ')
+  const moreSummary = [ZONE_LABEL[zone], repeatText ? `se repite ${repeatText}` : 'sin repetir', notes.trim() ? 'con notas' : null].filter(Boolean).join(' · ')
 
   const onKindChange = (next: ReminderKind) => {
     const prevKind = getValues('kind')
@@ -136,19 +143,10 @@ function ReminderForm({ vehicle, reminder, defaultZone, onDone }: { vehicle: Veh
               ))}
             </Select>
           </Field>
-          <Field label="Zona del vehículo" hint="Se ilumina en el mapa 3D.">
-            <Select {...register('zone')}>
-              {ZONES.map((z) => (
-                <option key={z} value={z}>
-                  {ZONE_LABEL[z]}
-                </option>
-              ))}
-            </Select>
+          <Field label="Título" required error={errors.title?.message} hint="Lo que verás en la agenda.">
+            <Input placeholder={kind === 'custom' ? 'P. ej. Cambiar escobillas' : undefined} maxLength={120} {...register('title')} />
           </Field>
         </div>
-        <Field label="Título" required error={errors.title?.message}>
-          <Input placeholder={kind === 'custom' ? 'P. ej. Cambiar escobillas' : undefined} maxLength={120} {...register('title')} />
-        </Field>
 
         <Fieldset legend="¿Cuándo vence?" description="Por fecha, por kilómetros o lo que llegue antes.">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -158,7 +156,11 @@ function ReminderForm({ vehicle, reminder, defaultZone, onDone }: { vehicle: Veh
             <Field
               label="A los kilómetros"
               error={errors.due_mileage?.message}
-              hint={vehicle.current_mileage !== null ? `Ahora: ${formatKm(vehicle.current_mileage)}` : 'El vehículo aún no tiene kilometraje.'}
+              hint={
+                vehicle.current_mileage !== null
+                  ? `Ahora marca ${formatKm(vehicle.current_mileage)}: escribe a cuántos km vence, p. ej. ${formatKm(vehicle.current_mileage + 15000)}.`
+                  : 'El vehículo aún no tiene kilometraje: anótalo para avisar por km.'
+              }
             >
               <MileageInput {...register('due_mileage')} />
             </Field>
@@ -178,20 +180,30 @@ function ReminderForm({ vehicle, reminder, defaultZone, onDone }: { vehicle: Veh
           </div>
         </Fieldset>
 
-        <Fieldset legend="Repetir" description="Opcional. Al completarlo se creará el siguiente automáticamente.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Cada (meses)" error={errors.recurrence_months?.message}>
-              <Input type="text" inputMode="numeric" className="tabular text-right" suffix="meses" {...register('recurrence_months')} />
-            </Field>
-            <Field label="Cada (km)" error={errors.recurrence_km?.message}>
-              <MileageInput {...register('recurrence_km')} />
-            </Field>
-          </div>
-        </Fieldset>
-
-        <Field label="Notas" error={errors.notes?.message}>
-          <Textarea rows={2} {...register('notes')} />
-        </Field>
+        <Disclosure label="Más detalles" summary={moreSummary} open={moreOpen || moreErrors} onOpenChange={setMoreOpen}>
+          <Field label="Zona del vehículo" hint="La que se marca en el mapa de zonas.">
+            <Select {...register('zone')}>
+              {ZONES.map((z) => (
+                <option key={z} value={z}>
+                  {ZONE_LABEL[z]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Fieldset legend="Repetir" description="Opcional. Al marcarlo como hecho se crea el siguiente solo.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Cada (meses)" error={errors.recurrence_months?.message} hint="P. ej. 12 para la ITV o el seguro.">
+                <Input type="text" inputMode="numeric" className="tabular text-right" suffix="meses" {...register('recurrence_months')} />
+              </Field>
+              <Field label="Cada (km)" error={errors.recurrence_km?.message} hint="P. ej. 15.000 para el aceite.">
+                <MileageInput {...register('recurrence_km')} />
+              </Field>
+            </div>
+          </Fieldset>
+          <Field label="Notas" error={errors.notes?.message} hint="Opcional.">
+            <Textarea rows={2} maxLength={1000} {...register('notes')} />
+          </Field>
+        </Disclosure>
         <FormErrors messages={orphans} />
       </DialogBody>
       <DialogFooter>

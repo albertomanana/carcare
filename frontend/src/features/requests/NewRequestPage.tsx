@@ -74,7 +74,7 @@ export default function NewRequestPage() {
   const inList = !!presetId && !!directory.data?.data.some((w) => w.id === presetId)
   const preset = useDirectoryWorkshop(presetId && directory.isSuccess && !inList ? presetId : undefined)
 
-  const back = { to: `${ctx.base}/solicitudes`, label: 'Solicitudes' }
+  const back = { to: `${ctx.base}/solicitudes`, label: 'Mis solicitudes' }
   const header = <PageHeader title="Pedir una reparación" back={back} />
 
   if (!ctx.isPersonal || !ctx.can('own')) {

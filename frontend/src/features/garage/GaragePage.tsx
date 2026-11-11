@@ -66,7 +66,7 @@ export default function GaragePage() {
             ? "Todos los vehículos que gestiona el taller, con su cliente y su orden abierta."
             : undefined
         }
-        back={archived ? { to: `${ctx.base}/garaje`, label: title } : undefined}
+        crumbs={archived ? [{ label: title, to: `${ctx.base}/garaje` }, { label: 'Archivados' }] : undefined}
         actions={
           canOperate &&
           !archived && (

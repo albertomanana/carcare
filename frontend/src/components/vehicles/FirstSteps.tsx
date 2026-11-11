@@ -1,140 +1,277 @@
+import { CircleCheck, Plus } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import type { Vehicle } from "@/api/types";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { Guide } from "@/components/ui/Guide";
 import { useQuickActions } from "@/features/quick-actions/quick-actions-context";
 import { useWorkspace } from "@/features/workspace/workspace-context";
 import { cn } from "@/lib/cn";
-import type { FirstStepKey } from "@/lib/firstSteps";
+import type { FirstStepState } from "@/lib/firstSteps";
 
-export interface FirstStep {
+export interface GuideStep {
   key: string;
+  /** Lo que hay que hacer, en imperativo ("Añade tu coche"). */
   title: string;
-  description: string;
-  /** Botón o enlace que hace el paso (nunca decorativo). */
+  /** Por qué importa, en una frase. Solo se lee en el paso que toca. */
+  why: string;
+  done: boolean;
+  /** La acción principal del paso (botón primario). Solo se pinta en el paso que toca. */
   action: ReactNode;
+  /** Alternativa en texto, opcional ("o registra la última revisión"). */
+  alternative?: ReactNode;
 }
 
 /**
- * Guía "Primeros pasos" para un vehículo sin datos (E5‑7, tarea 26): una sola sección en lugar de varios estados
- * vacíos. Solo recibe los pasos que faltan; cada uno desaparece al hacerlo. Sin números grandes ni acento (5.1).
+ * Guía "Primeros pasos" (rehecha el 10/11/2026): el progreso ("Paso 2 de 3"), los pasos en orden y **una sola acción
+ * principal**, la del paso que toca, con una frase de por qué importa. Lo hecho queda marcado con icono y palabra;
+ * lo que viene después, solo con su nombre. Se puede ocultar.
  */
-export function FirstSteps({
+export function FirstStepsGuide({
+  title = "Primeros pasos",
   steps,
-  vehicleName,
+  onHide,
   className,
   id = "primeros-pasos",
 }: {
-  steps: FirstStep[];
-  vehicleName?: string;
+  title?: string;
+  steps: GuideStep[];
+  onHide?: () => void;
   className?: string;
   id?: string;
 }) {
-  if (!steps.length) return null;
+  const currentIndex = steps.findIndex((s) => !s.done);
+  if (currentIndex < 0) return null;
+  const done = steps.filter((s) => s.done).length;
   return (
     <section
       aria-labelledby={`${id}-title`}
       className={cn("min-w-0", className)}
     >
-      <h2
-        id={`${id}-title`}
-        className="font-display text-lg font-semibold tracking-tight text-fg-warm"
-      >
-        Primeros pasos{vehicleName ? ` con ${vehicleName}` : ""}
-      </h2>
-      <p className="mt-0.5 text-sm text-fg-muted">
-        Con estos datos CarCare empieza a calcular tus avisos, tus kilómetros y
-        tus gastos.
-      </p>
-      <ol className="mt-3 list-panel">
-        {steps.map((s, i) => (
-          <li
-            key={s.key}
-            className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3"
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2
+            id={`${id}-title`}
+            className="font-display text-lg font-semibold tracking-tight text-fg-warm"
           >
-            <div className="min-w-0 flex-1 basis-56">
-              <h3 className="font-medium text-fg">{s.title}</h3>
-              <p className="text-sm text-fg-muted">{s.description}</p>
-            </div>
-            {/* el primer paso pendiente late tres veces: es por donde empezar */}
-            <Guide on={i === 0} cue={s.key} className="shrink-0">
-              {s.action}
-            </Guide>
-          </li>
+            {title}
+          </h2>
+          <p className="mt-0.5 text-sm text-fg-muted" aria-live="polite">
+            Paso {currentIndex + 1} de {steps.length}
+            {done > 0 && ` · ${done === 1 ? "1 hecho" : `${done} hechos`}`}
+          </p>
+        </div>
+        {onHide && (
+          <Button variant="ghost" size="sm" onClick={onHide} className="shrink-0">
+            Ocultar guía
+          </Button>
+        )}
+      </div>
+      {/* Progreso: un tramo por paso, en tinta (el azul queda para la acción) */}
+      <div aria-hidden className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+        {steps.map((s, i) => (
+          <span
+            key={s.key}
+            className={cn(
+              "h-1 rounded-full transition-colors duration-300 motion-reduce:transition-none",
+              s.done ? "bg-fg" : i === currentIndex ? "bg-line-strong" : "bg-surface-3",
+            )}
+          />
         ))}
+      </div>
+      <ol className="mt-3 list-panel">
+        {steps.map((s, i) => {
+          const current = i === currentIndex;
+          return (
+            <li
+              key={s.key}
+              aria-current={current ? "step" : undefined}
+              className={cn("flex gap-3 py-3", current && "py-4")}
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold tabular",
+                  s.done
+                    ? "text-ok"
+                    : current
+                      ? "bg-fg text-canvas"
+                      : "border border-line-strong text-fg-muted",
+                )}
+              >
+                {s.done ? <CircleCheck className="size-5" /> : i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3
+                  className={cn(
+                    "font-medium",
+                    current ? "text-fg" : "text-fg-muted",
+                  )}
+                >
+                  <span className="sr-only">Paso {i + 1}: </span>
+                  {s.title}
+                  {s.done && (
+                    <span className="ml-2 text-sm font-normal text-ok">
+                      Hecho
+                    </span>
+                  )}
+                </h3>
+                {current && (
+                  <div key={s.key} className="animate-fade-in">
+                    <p className="mt-0.5 text-sm text-fg-muted">{s.why}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                      {s.action}
+                      {s.alternative}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
 }
 
+const linkClass =
+  "inline-flex min-h-11 items-center text-sm font-medium text-accent-ink underline-offset-4 hover:underline md:min-h-0";
+
 /**
- * Los 3 primeros pasos de un vehículo (anotar km, primer repostaje si puede ver gastos, primera intervención o
- * recordatorio), con su acción real. Lo usan el Resumen de la ficha y el Inicio.
+ * Inicio del particular: añadir el coche → anotar sus km → crear el primer recordatorio. Sin vehículo, es lo único de
+ * la pantalla; con él, va junto a la placa de muestra.
+ */
+export function HomeFirstSteps({
+  vehicle,
+  steps,
+  onHide,
+  className,
+}: {
+  vehicle: Pick<Vehicle, "id" | "display_name"> | null;
+  steps: FirstStepState[];
+  /** Sin vehículo la guía es la pantalla entera y no se ofrece ocultarla (no quedaría nada que hacer). */
+  onHide?: () => void;
+  className?: string;
+}) {
+  const ctx = useWorkspace();
+  const quick = useQuickActions();
+  const done = (key: FirstStepState["key"]) =>
+    steps.find((s) => s.key === key)?.done ?? false;
+  const items: GuideStep[] = [
+    {
+      key: "vehicle",
+      title: "Añade tu coche",
+      why: "Con la marca y el modelo basta. Con él empiezas a llevar sus kilómetros, sus gastos y lo que le toca.",
+      done: done("vehicle"),
+      action: (
+        <ButtonLink
+          to={`${ctx.base}/vehiculos/nuevo`}
+          variant="primary"
+          icon={<Plus aria-hidden />}
+        >
+          Añadir mi coche
+        </ButtonLink>
+      ),
+    },
+    {
+      key: "km",
+      title: vehicle ? `Anota los kilómetros de ${vehicle.display_name}` : "Anota sus kilómetros",
+      why: "Lo que marca hoy el cuentakilómetros. Con dos lecturas calculamos los km del mes y avisamos de lo que vence por kilómetros.",
+      done: done("km"),
+      action: vehicle && (
+        <Button variant="primary" onClick={() => quick.run("mileage", vehicle.id)}>
+          Anotar km
+        </Button>
+      ),
+    },
+    {
+      key: "reminder",
+      title: "Crea tu primer recordatorio",
+      why: "La ITV, el seguro o el cambio de aceite, por fecha o por kilómetros: te avisamos antes de que venza.",
+      done: done("reminder"),
+      action: vehicle && (
+        <Button variant="primary" onClick={() => quick.run("reminder", vehicle.id)}>
+          Crear recordatorio
+        </Button>
+      ),
+      alternative: vehicle && (
+        <Link to={`${ctx.base}/vehiculos/${vehicle.id}/intervenciones/nueva`} className={linkClass}>
+          o anota la última revisión o reparación
+        </Link>
+      ),
+    },
+  ];
+  return (
+    <FirstStepsGuide steps={items} onHide={onHide} className={className} />
+  );
+}
+
+/**
+ * Resumen de la ficha de un vehículo sin intervenciones: anotar km → la última intervención o un recordatorio → primer
+ * repostaje (si puede ver gastos), con su acción real.
  */
 export function VehicleFirstSteps({
   vehicle,
   steps,
-  showName,
+  onHide,
 }: {
   vehicle: Pick<Vehicle, "id" | "display_name">;
-  steps: FirstStepKey[];
-  showName?: boolean;
+  steps: FirstStepState[];
+  onHide?: () => void;
 }) {
   const ctx = useWorkspace();
   const quick = useQuickActions();
+  if (!steps.length) return null;
+  // En la ficha, la acción principal es "Registrar ▾" de la cabecera (R1): los pasos van con botón normal
   const base = `${ctx.base}/vehiculos/${vehicle.id}`;
-  const items: FirstStep[] = [];
-  if (steps.includes("km"))
-    items.push({
-      key: "km",
-      title: "Anota los kilómetros de hoy",
-      description:
-        "Con dos lecturas calculamos los km del mes y del año y avisamos de lo que vence por kilómetros.",
-      action: (
-        <Button
-          onClick={() => quick.run("mileage", vehicle.id)}
-          aria-label={`Anotar km de ${vehicle.display_name}`}
-        >
-          Anotar km
-        </Button>
-      ),
-    });
-  if (steps.includes("fuel") && ctx.canExpenses)
-    items.push({
-      key: "fuel",
-      title: "Registra el primer repostaje",
-      description:
-        "Con los repostajes de depósito lleno calculamos el consumo y el coste por kilómetro.",
-      action: (
-        <Button onClick={() => quick.run("expense", vehicle.id)}>
-          Añadir repostaje
-        </Button>
-      ),
-    });
-  if (steps.includes("record"))
-    items.push({
-      key: "record",
-      title: "Registra la última intervención o crea un recordatorio",
-      description:
-        "El último cambio de aceite, la ITV o el seguro: así sabremos qué toca y cuándo.",
-      action: (
-        <div className="flex flex-wrap gap-2">
-          <ButtonLink to={`${base}/intervenciones/nueva`}>
-            Nueva intervención
-          </ButtonLink>
+  const items: GuideStep[] = steps.map((s): GuideStep => {
+    if (s.key === "km")
+      return {
+        key: "km",
+        title: "Anota los kilómetros de hoy",
+        why: "Con dos lecturas calculamos los km del mes y del año y avisamos de lo que vence por kilómetros.",
+        done: s.done,
+        action: (
           <Button
-            variant="ghost"
-            onClick={() => quick.run("reminder", vehicle.id)}
+           
+            onClick={() => quick.run("mileage", vehicle.id)}
+            aria-label={`Anotar km de ${vehicle.display_name}`}
           >
-            Nuevo recordatorio
+            Anotar km
           </Button>
-        </div>
+        ),
+      };
+    if (s.key === "fuel")
+      return {
+        key: "fuel",
+        title: "Registra el primer repostaje",
+        why: "Con los repostajes de depósito lleno calculamos el consumo y el coste por kilómetro.",
+        done: s.done,
+        action: (
+          <Button onClick={() => quick.run("expense", vehicle.id)}>
+            Añadir repostaje
+          </Button>
+        ),
+      };
+    return {
+      key: s.key,
+      title: "Anota la última intervención o crea un recordatorio",
+      why: "Una intervención es cualquier revisión o reparación: el último cambio de aceite, la ITV… Así sabremos qué toca y cuándo.",
+      done: s.done,
+      action: (
+        <ButtonLink to={`${base}/intervenciones/nueva`}>
+          Anotar intervención
+        </ButtonLink>
       ),
-    });
-  return (
-    <FirstSteps
-      steps={items}
-      vehicleName={showName ? vehicle.display_name : undefined}
-    />
-  );
+      alternative: (
+        <button
+          type="button"
+          onClick={() => quick.run("reminder", vehicle.id)}
+          className={linkClass}
+        >
+          o crea un recordatorio
+        </button>
+      ),
+    };
+  });
+  return <FirstStepsGuide steps={items} onHide={onHide} />;
 }

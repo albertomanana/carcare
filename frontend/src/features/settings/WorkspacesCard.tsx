@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { DoorOpen, EllipsisVertical, Plus, Settings2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { errorMessage } from '@/api/client'
@@ -37,7 +37,19 @@ function forgetWorkspace(qc: ReturnType<typeof useQueryClient>, id: number) {
 }
 
 export function WorkspacesCard({ user, workspaces }: { user: User; workspaces: Workspace[] }) {
-  const [editing, setEditing] = useState<Workspace | null>(null)
+  // ?ajustar=<id> abre directamente los ajustes de ese taller (desde la guía de primeros pasos: "Revisar elevadores")
+  const [params, setParams] = useSearchParams()
+  const [editing, setEditing] = useState<Workspace | null>(
+    () => workspaces.find((w) => String(w.id) === params.get('ajustar') && w.type === 'workshop' && can(w, 'manage')) ?? null,
+  )
+  const closeEditing = () => {
+    setEditing(null)
+    if (params.has('ajustar')) {
+      const next = new URLSearchParams(params)
+      next.delete('ajustar')
+      setParams(next, { replace: true, preventScrollReset: true })
+    }
+  }
   const [leaving, setLeaving] = useState<Workspace | null>(null)
   const [deleting, setDeleting] = useState<Workspace | null>(null)
   const sorted = [...workspaces].sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name, 'es') : a.type === 'personal' ? -1 : 1))
@@ -53,7 +65,7 @@ export function WorkspacesCard({ user, workspaces }: { user: User; workspaces: W
         </ul>
         <CreateWorkshopForm />
       </CardBody>
-      {editing && <WorkshopSettingsDialog workspace={editing} onClose={() => setEditing(null)} />}
+      {editing && <WorkshopSettingsDialog workspace={editing} onClose={closeEditing} />}
       <LeaveDialog workspace={leaving} userId={user.id} onClose={() => setLeaving(null)} />
       <DeleteWorkshopDialog workspace={deleting} onClose={() => setDeleting(null)} />
     </Card>
@@ -224,6 +236,8 @@ function WorkshopSettingsForm({ workspace, onDone }: { workspace: Workspace; onD
       { name: v.name.trim(), settings: { bays_count: Number(v.bays_count), tax_rate: tax } },
       {
         onSuccess: () => {
+          // Los elevadores quedan revisados para la guía de primeros pasos del taller
+          writeStorage(STORAGE_KEYS.baysConfirmed(workspace.id), '1')
           toast.success('Ajustes del taller guardados')
           onDone()
         },
@@ -240,7 +254,7 @@ function WorkshopSettingsForm({ workspace, onDone }: { workspace: Workspace; onD
           <Input maxLength={100} {...register('name')} />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Elevadores" required error={errors.bays_count?.message} hint="De 1 a 12. Se ven en el taller 3D.">
+          <Field label="Elevadores" required error={errors.bays_count?.message} hint="Los puestos donde trabajáis a la vez, de 1 a 12. Se ven en Inicio y en Taller.">
             <Input type="text" inputMode="numeric" className="tabular text-right" {...register('bays_count')} />
           </Field>
           <Field label="IVA por defecto" required error={errors.tax_rate?.message} hint="Para las órdenes nuevas.">

@@ -23,7 +23,7 @@ const PER_PAGE = 50
  */
 export default function DirectoryPage() {
   const ctx = useWorkspace()
-  useDocumentTitle('Talleres')
+  useDocumentTitle('Buscar taller')
   const [q, setQ] = useSearchParam('q')
   const [service] = useSearchParam('servicio')
   const [vehiculo] = useSearchParam('vehiculo')
@@ -49,7 +49,7 @@ export default function DirectoryPage() {
   return (
     <>
       <PageHeader
-        title="Talleres"
+        title="Buscar taller"
         description={
           canRequest
             ? 'Talleres de CarCare a los que puedes pedir una reparación. Solo aparecen los que han decidido publicarse.'

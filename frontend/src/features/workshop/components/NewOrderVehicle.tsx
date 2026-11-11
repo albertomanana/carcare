@@ -241,7 +241,7 @@ function NewVehicleFields({ form }: { form: Form }) {
           <Field label="Modelo" required error={e.model?.message}>
             <Input autoComplete="off" maxLength={80} placeholder="P. ej. León" {...register('model')} />
           </Field>
-          <Field label="Matrícula" error={e.plate?.message} hint="Se guarda en mayúsculas y sin espacios.">
+          <Field label="Matrícula" error={e.plate?.message} hint="P. ej. 1234 ABC: se guarda en mayúsculas y sin espacios.">
             <Input autoComplete="off" maxLength={15} className="font-mono uppercase tracking-wider" {...register('plate')} />
           </Field>
           <Field label="Carrocería" error={e.body_type?.message} hint="Para su miniatura y el taller 3D.">

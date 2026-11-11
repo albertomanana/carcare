@@ -60,10 +60,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     const list: Command[] = []
     if (ctx) {
       const { base, isWorkshop, isPersonal } = ctx
-      list.push({ id: 'a-km', group: 'Acciones', label: 'Actualizar kilometraje', icon: Gauge, keywords: 'km odometro lectura', perform: close(() => quick.run('mileage')) })
+      list.push({ id: 'a-km', group: 'Acciones', label: 'Anotar kilómetros', icon: Gauge, keywords: 'km odometro lectura actualizar kilometraje', perform: close(() => quick.run('mileage')) })
       if (isPersonal && ctx.canExpenses)
         list.push({ id: 'a-expense', group: 'Acciones', label: 'Añadir gasto', icon: Receipt, keywords: 'repostaje gasolina combustible', perform: close(() => quick.run('expense')) })
-      list.push({ id: 'a-record', group: 'Acciones', label: 'Nueva intervención', icon: Wrench, keywords: 'mantenimiento reparacion aceite itv', perform: close(() => quick.run('record')) })
+      list.push({ id: 'a-record', group: 'Acciones', label: 'Nueva intervención', hint: 'Revisión, reparación, ITV…', icon: Wrench, keywords: 'mantenimiento reparacion aceite itv', perform: close(() => quick.run('record')) })
       list.push({ id: 'a-reminder', group: 'Acciones', label: 'Nuevo recordatorio', icon: BellPlus, keywords: 'aviso vencimiento', perform: close(() => quick.run('reminder')) })
       list.push({ id: 'a-vehicle', group: 'Acciones', label: 'Añadir vehículo', icon: Plus, keywords: 'coche nuevo alta', perform: close(() => navigate(`${base}/vehiculos/nuevo`)) })
       if (isWorkshop) {
@@ -83,7 +83,15 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       }
     }
     for (const item of [...navItems(ctx), SETTINGS_ITEM]) {
-      list.push({ id: `n-${item.to}`, group: 'Ir a', label: item.label, icon: item.to === SETTINGS_ITEM.to ? Settings : item.icon, perform: close(() => navigate(item.to)) })
+      list.push({
+        id: `n-${item.to}`,
+        group: 'Ir a',
+        label: item.label,
+        hint: item.description,
+        keywords: item.keywords,
+        icon: item.to === SETTINGS_ITEM.to ? Settings : item.icon,
+        perform: close(() => navigate(item.to)),
+      })
     }
     for (const w of workspaces) {
       if (w.id === ctx?.id) continue
@@ -91,6 +99,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         id: `w-${w.id}`,
         group: 'Espacios',
         label: `Cambiar a ${w.type === 'personal' ? 'Mi garaje' : w.name}`,
+        hint: w.type === 'personal' ? 'Particular: tus coches' : 'Taller: clientes y órdenes',
+        keywords: 'espacio cambiar taller garaje',
         icon: w.type === 'workshop' ? Warehouse : Car,
         perform: close(() => navigate(`/app/${w.id}`)),
       })

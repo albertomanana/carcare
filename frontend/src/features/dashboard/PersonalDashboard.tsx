@@ -12,7 +12,8 @@ import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { buttonClasses } from '@/components/ui/variants'
-import { VehicleFirstSteps } from '@/components/vehicles/FirstSteps'
+import { HomeFirstSteps } from '@/components/vehicles/FirstSteps'
+import { useHiddenGuide } from '@/hooks/useHiddenGuide'
 import { ReminderItem, ReminderList } from '@/components/vehicles/ReminderItem'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useReminderActions } from '@/features/vehicle/useReminderActions'
@@ -38,18 +39,26 @@ export default function PersonalDashboard() {
   const dashboard = useDashboard(ctx.id)
   const data = dashboard.data?.type === 'personal' ? dashboard.data : null
   const hasVehicles = !!data && data.vehicles.length > 0
+  const canOperate = ctx.can('operate')
+  const { hidden, hide } = useHiddenGuide(String(ctx.id))
+  // Primeros pasos: mientras se ve la guía, su paso es la única acción principal (sin "Registrar ▾" a la vez, R1)
+  const guide = canOperate && data && !hidden ? dashboardFirstSteps(data) : null
 
   return (
     <>
-      <PageHeader title="Inicio" description={hasVehicles ? statusLine(data) : undefined} actions={hasVehicles && ctx.can('operate') ? <RegisterMenu vehicles={data.vehicles} /> : undefined} />
+      <PageHeader
+        title="Inicio"
+        description={hasVehicles ? statusLine(data) : undefined}
+        actions={hasVehicles && canOperate && !guide ? <RegisterMenu vehicles={data.vehicles} /> : undefined}
+      />
       {dashboard.isPending ? (
         <DashboardSkeleton />
       ) : dashboard.isError ? (
         <ErrorState error={dashboard.error} onRetry={() => void dashboard.refetch()} />
       ) : !data || data.vehicles.length === 0 ? (
-        <Onboarding />
+        canOperate ? <HomeFirstSteps vehicle={null} steps={dashboardFirstSteps(data)?.steps ?? []} className="max-w-2xl" /> : <Onboarding />
       ) : (
-        <Home data={data} />
+        <Home data={data} guide={guide} onHideGuide={hide} />
       )}
     </>
   )
@@ -89,7 +98,10 @@ function RegisterMenu({ vehicles }: { vehicles: Vehicle[] }) {
           </DropdownMenuItem>
         )}
         <DropdownMenuItem icon={<Wrench aria-hidden />} onSelect={() => quick.run('record', only)}>
-          Intervención
+          <span className="min-w-0">
+            <span className="block">Intervención</span>
+            <span className="block text-xs text-fg-muted">Revisión, reparación, ITV…</span>
+          </span>
         </DropdownMenuItem>
         <DropdownMenuItem icon={<BellPlus aria-hidden />} onSelect={() => quick.run('reminder', only)}>
           Recordatorio
@@ -99,10 +111,9 @@ function RegisterMenu({ vehicles }: { vehicles: Vehicle[] }) {
   )
 }
 
-function Home({ data }: { data: PersonalDashboardData }) {
+function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide: ReturnType<typeof dashboardFirstSteps>; onHideGuide: () => void }) {
   const ctx = useWorkspace()
   const canOperate = ctx.can('operate')
-  const guide = canOperate ? dashboardFirstSteps(data, ctx.canExpenses) : null
 
   // Primer pantallazo: la placa de muestra del vehículo elegido y, a su lado, lo que toca. Debajo, sus tres cifras del
   // mes; después, los vehículos, el gasto de todos y lo último registrado.
@@ -114,7 +125,8 @@ function Home({ data }: { data: PersonalDashboardData }) {
     <div className="space-y-10">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start">
         {vehicle && <Showroom vehicles={data.vehicles} vehicle={vehicle} onSelect={setSelectedId} />}
-        {guide ? <VehicleFirstSteps vehicle={guide.vehicle} steps={guide.steps} showName /> : <Pending data={data} canOperate={canOperate} />}
+        {/* En el móvil la guía va antes que la placa: es lo primero que hay que hacer */}
+        {guide ? <HomeFirstSteps vehicle={guide.vehicle} steps={guide.steps} onHide={onHideGuide} className="max-xl:order-first" /> : <Pending data={data} canOperate={canOperate} />}
       </div>
 
       {vehicle && <MonthFigures vehicle={vehicle} canOperate={canOperate} />}
@@ -352,7 +364,7 @@ function ActivityList({ items }: { items: Activity[] }) {
   )
 }
 
-/** Primer uso: una sola acción (5.1). Sin pasos numerados ni manchas de luz. */
+/** Sin vehículos y sin permiso para añadirlos: solo se explica (quien puede, ve la guía de primeros pasos). */
 function Onboarding() {
   const ctx = useWorkspace()
   return (

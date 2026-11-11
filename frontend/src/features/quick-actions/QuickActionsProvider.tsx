@@ -18,7 +18,7 @@ const ExpenseDialog = lazy(() => import('@/features/vehicle/dialogs/ExpenseDialo
 const ReminderDialog = lazy(() => import('@/features/vehicle/dialogs/ReminderDialog'))
 
 const TITLES: Record<QuickActionKind, string> = {
-  mileage: 'Actualizar kilometraje',
+  mileage: 'Anotar kilómetros',
   expense: 'Añadir gasto',
   reminder: 'Nuevo recordatorio',
   record: 'Nueva intervención',

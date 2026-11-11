@@ -25,4 +25,8 @@ export const STORAGE_KEYS = {
   /** 'off' si en la portada se pulsó "Detener animación": el coche 3D ya no se monta solo. */
   landing3d: 'carcare.landing3d',
   lastVehicle: (ws: number) => `carcare.lastVehicle.${ws}`,
+  /** '1' si se ocultó la guía de primeros pasos de ese espacio (o de ese vehículo: `ws.v12`). */
+  firstStepsHidden: (scope: string) => `carcare.firstSteps.hidden.${scope}`,
+  /** '1' si el taller confirmó su número de elevadores en la guía de primeros pasos. */
+  baysConfirmed: (ws: number) => `carcare.firstSteps.bays.${ws}`,
 } as const

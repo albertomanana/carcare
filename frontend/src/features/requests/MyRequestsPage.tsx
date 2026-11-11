@@ -21,7 +21,7 @@ type Filter = 'abiertas' | 'todas'
 /** E16 · "Solicitudes" del particular: las que ha enviado, de la más reciente a la más antigua (§3.13.1). */
 export default function MyRequestsPage() {
   const ctx = useWorkspace()
-  useDocumentTitle('Solicitudes')
+  useDocumentTitle('Mis solicitudes')
   const [filterParam, setFilter] = useSearchParam('ver', 'todas')
   const filter: Filter = filterParam === 'abiertas' ? 'abiertas' : 'todas'
   const params = { per_page: 20, ...(filter === 'abiertas' ? { status: 'open' } : {}) }
@@ -38,7 +38,7 @@ export default function MyRequestsPage() {
 
   return (
     <>
-      <PageHeader title="Solicitudes" description="Reparaciones que has pedido a talleres de CarCare." actions={newAction} />
+      <PageHeader title="Mis solicitudes" description="Reparaciones que has pedido a talleres de CarCare." actions={newAction} />
 
       <SegmentedControl<Filter>
         label="Qué solicitudes ver"

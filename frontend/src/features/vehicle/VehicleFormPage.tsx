@@ -56,7 +56,7 @@ import {
 } from "@/lib/catalog";
 import { VEHICLE_COLORS } from "@/lib/colors";
 import { cn } from "@/lib/cn";
-import { formatDate, parseIntegerInput } from "@/lib/format";
+import { formatDate, parseIntegerInput, todayISO } from "@/lib/format";
 import { applyServerErrors } from "@/lib/forms";
 import { AFTER_SAVE } from "@/lib/navigation";
 import { BODY_LABEL, FUEL_LABEL, TRANSMISSION_LABEL } from "@/lib/labels";
@@ -112,7 +112,7 @@ const schema = z.object({
     .string()
     .refine(
       (v) => !v.trim() || /^[A-Z0-9]{2,12}$/.test(normalizePlate(v)),
-      "Solo letras y números (entre 2 y 12).",
+      "Escribe solo letras y números, entre 2 y 12. P. ej. 1234 ABC.",
     ),
   vin: z
     .string()
@@ -238,7 +238,8 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
 
   const goTo = async (next: number) => {
     if (next > step) {
-      const ok = await trigger(steps[step].fields);
+      // El foco va al primer campo con error: el aviso queda junto a él y no solo en las luces del coche
+      const ok = await trigger(steps[step].fields, { shouldFocus: true });
       if (!ok) {
         flash("hazard");
         return;
@@ -298,7 +299,11 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
           const idx = steps.findIndex((s) =>
             s.fields.includes(firstField as FieldName),
           );
-          if (!isEdit && idx >= 0) setStep(idx);
+          if (!isEdit && idx >= 0) {
+            setStep(idx);
+            // El campo se monta al cambiar de paso: el foco llega en el siguiente fotograma
+            requestAnimationFrame(() => form.setFocus(firstField as FieldName));
+          }
           return;
         }
         setOrphans([err.message]);
@@ -316,19 +321,20 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
   return (
     <>
       <PageHeader
-        back={{
-          to: backTo,
-          label: vehicle
-            ? vehicle.display_name
-            : ctx.isWorkshop
-              ? "Vehículos"
-              : "Garaje",
-        }}
+        crumbs={[
+          { label: ctx.isWorkshop ? "Vehículos" : "Garaje", to: `${ctx.base}/garaje` },
+          ...(vehicle
+            ? [
+                { label: vehicle.display_name, to: backTo },
+                { label: "Editar" },
+              ]
+            : [{ label: "Añadir vehículo" }]),
+        ]}
         title={isEdit ? "Editar vehículo" : "Añadir vehículo"}
         description={
           isEdit
             ? "Cambia sus datos y su aspecto. El kilometraje se actualiza desde la ficha."
-            : "En cuatro pasos. Solo la marca y el modelo son obligatorios."
+            : "Solo la marca y el modelo son obligatorios (los marcados con *). Lo demás puedes rellenarlo ahora o más tarde desde su ficha."
         }
       />
 
@@ -396,7 +402,11 @@ function VehicleForm({ vehicle }: { vehicle: Vehicle | null }) {
                 loading={mutation.isPending}
                 icon={<Check aria-hidden />}
               >
-                {isEdit ? "Guardar cambios" : "Añadir vehículo"}
+                {isEdit
+                  ? "Guardar cambios"
+                  : ctx.isWorkshop
+                    ? "Guardar vehículo"
+                    : "Guardar coche"}
               </Button>
             ) : (
               <Button
@@ -463,6 +473,11 @@ function Stepper({
 }) {
   return (
     <nav aria-label="Pasos">
+      <p className="mb-2 text-sm text-fg-muted" aria-live="polite">
+        Paso {current + 1} de {steps.length}:{" "}
+        <span className="font-medium text-fg">{steps[current]}</span>
+        {current > 0 && " · opcional"}
+      </p>
       <ol className="grid grid-cols-4 gap-2">
         {steps.map((title, i) => {
           const done = i < current;
@@ -661,12 +676,16 @@ function StepVehicle({
             />
           </Field>
         </Guide>
-        <Field label="Año" error={e.year?.message}>
+        <Field
+          label="Año"
+          error={e.year?.message}
+          hint="Opcional. El de matriculación; ayuda a encontrar su versión."
+        >
           <Input
             inputMode="numeric"
             maxLength={4}
             className="tabular"
-            placeholder={String(new Date().getFullYear())}
+            placeholder="P. ej. 2019"
             {...register("year")}
           />
         </Field>
@@ -934,7 +953,7 @@ function StepDetails({ form }: { form: UseFormReturn<Values> }) {
           <Field
             label="Matrícula"
             error={e.plate?.message}
-            hint="Se guarda en mayúsculas y sin espacios."
+            hint="Opcional. P. ej. 1234 ABC: se guarda en mayúsculas y sin espacios."
           >
             <Input
               autoComplete="off"
@@ -943,7 +962,11 @@ function StepDetails({ form }: { form: UseFormReturn<Values> }) {
               {...register("plate")}
             />
           </Field>
-          <Field label="Número de bastidor (VIN)" error={e.vin?.message}>
+          <Field
+            label="Número de bastidor (VIN)"
+            error={e.vin?.message}
+            hint="Opcional. 17 letras y números; viene en el permiso de circulación (casilla E)."
+          >
             <Input
               autoComplete="off"
               className="font-mono uppercase"
@@ -992,6 +1015,7 @@ function StepDetails({ form }: { form: UseFormReturn<Values> }) {
           <Field
             label="Kilómetros al comprarlo"
             error={e.purchase_mileage?.message}
+            hint="Opcional. Si no lo sabes, déjalo vacío."
           >
             <MileageInput {...register("purchase_mileage")} />
           </Field>
@@ -1011,7 +1035,7 @@ function StepMileage({ form }: { form: UseFormReturn<Values> }) {
       <Field
         label="Kilómetros actuales"
         error={formState.errors.current_mileage?.message}
-        hint={`Lectura con fecha de hoy, ${formatDate(new Date().toISOString().slice(0, 10), "long")}.`}
+        hint={`Lo que marca ahora el cuentakilómetros, p. ej. 45.230. Se guarda con fecha de hoy, ${formatDate(todayISO(), "long")}.`}
       >
         <MileageInput autoFocus {...register("current_mileage")} />
       </Field>

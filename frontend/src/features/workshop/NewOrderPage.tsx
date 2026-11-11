@@ -159,7 +159,11 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
 
   return (
     <>
-      <PageHeader back={{ to: `${ctx.base}/ordenes`, label: 'Órdenes' }} title="Nueva orden de trabajo" description="Empezará en «Recibido»." />
+      <PageHeader
+        crumbs={[{ label: 'Órdenes', to: `${ctx.base}/ordenes` }, { label: 'Nueva orden' }]}
+        title="Nueva orden de trabajo"
+        description="Para un coche que entra al taller. Solo el vehículo y el título son obligatorios; la orden empieza en «Recibido»."
+      />
 
       <form onSubmit={onSubmit} noValidate className="max-w-3xl space-y-10">
         <section aria-labelledby="vehiculo-title" className="space-y-4">
@@ -317,7 +321,7 @@ function PlanningFields({ form }: { form: Form }) {
       <Field
         label="Km de entrada"
         error={e.mileage_in?.message}
-        hint={current !== null ? `Último registro: ${formatKm(current)}. Se guarda como lectura del vehículo.` : 'Se guarda como lectura del vehículo.'}
+        hint={current !== null ? `Último registro: ${formatKm(current)}. Se guarda como lectura del vehículo.` : 'Los que marca el cuentakilómetros al entrar, p. ej. 45.230. Se guarda como lectura del vehículo.'}
         labelAside={
           current !== null &&
           !mileage && (

@@ -148,7 +148,7 @@ function ExpenseForm({ vehicle, expense, onDone }: { vehicle: Vehicle; expense: 
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Importe" required error={errors.amount?.message}>
+          <Field label="Importe" required error={errors.amount?.message} hint="Con IVA, p. ej. 54,90.">
             <MoneyInput autoFocus {...register('amount')} />
           </Field>
           <Field label="Fecha" required error={errors.expense_date?.message}>
@@ -181,7 +181,7 @@ function ExpenseForm({ vehicle, expense, onDone }: { vehicle: Vehicle; expense: 
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Kilómetros" error={errors.mileage?.message} hint={isFuel ? 'Necesarios para el consumo.' : 'Opcional.'}>
+          <Field label="Kilómetros" error={errors.mileage?.message} hint={isFuel ? 'Los del cuentakilómetros al repostar: con ellos se calcula el consumo.' : 'Opcional. Los del cuentakilómetros ese día.'}>
             <MileageInput {...register('mileage')} />
           </Field>
           <Field label="Descripción" error={errors.description?.message}>
@@ -197,7 +197,7 @@ function ExpenseForm({ vehicle, expense, onDone }: { vehicle: Vehicle; expense: 
           <Button>Cancelar</Button>
         </DialogClose>
         <Button type="submit" variant="primary" loading={mutation.isPending} disabled={!!conflict && !confirmDrop}>
-          {expense ? 'Guardar cambios' : 'Añadir gasto'}
+          {expense ? 'Guardar cambios' : isFuel ? 'Guardar repostaje' : 'Guardar gasto'}
         </Button>
       </DialogFooter>
     </form>

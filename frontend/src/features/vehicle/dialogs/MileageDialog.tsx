@@ -37,7 +37,7 @@ export function MileageDialog({ vehicle, open, onOpenChange }: MileageDialogProp
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title="Actualizar kilometraje"
+        title="Anotar kilómetros"
         description={
           vehicle.current_mileage !== null
             ? `${vehicle.display_name} · último: ${formatKm(vehicle.current_mileage)}${vehicle.mileage_updated_at ? ` el ${formatDate(vehicle.mileage_updated_at)}` : ''}`
@@ -94,7 +94,7 @@ function MileageForm({ vehicle, onDone }: { vehicle: Vehicle; onDone: () => void
   return (
     <form onSubmit={onSubmit} noValidate>
       <DialogBody className="space-y-4">
-        <Field label="Kilómetros del cuentakilómetros" required error={formState.errors.mileage?.message} hint={lower && !conflict ? 'Es menor que la última lectura: se te pedirá confirmarlo.' : undefined}>
+        <Field label="Kilómetros del cuentakilómetros" required error={formState.errors.mileage?.message} hint={lower && !conflict ? 'Es menor que la última lectura: se te pedirá confirmarlo.' : 'Los que marca ahora el cuentakilómetros, p. ej. 45.230.'}>
           <MileageInput autoFocus {...register('mileage')} />
         </Field>
         <Field label="Fecha de la lectura" required error={formState.errors.recorded_at?.message}>

@@ -6,6 +6,7 @@ import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
 import { VehicleFirstSteps } from '@/components/vehicles/FirstSteps'
+import { useHiddenGuide } from '@/hooks/useHiddenGuide'
 import { ReminderItem, ReminderList } from '@/components/vehicles/ReminderItem'
 import { ZoneMap } from '@/components/vehicles/ZoneMap'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
@@ -37,7 +38,8 @@ export default function OverviewTab() {
   const reminderActions = useReminderActions({ canOperate, currentMileage: vehicle.current_mileage })
   const base = `${ctx.base}/vehiculos/${vehicle.id}`
   const s = summary.data
-  const guide = s && canOperate ? vehicleFirstSteps(vehicle, s, ctx.canExpenses) : []
+  const hiddenGuide = useHiddenGuide(`${ctx.id}.v${vehicle.id}`)
+  const guide = s && canOperate && !hiddenGuide.hidden ? vehicleFirstSteps(vehicle, s, ctx.canExpenses) : []
 
   return (
     <div className="space-y-10">
@@ -51,7 +53,7 @@ export default function OverviewTab() {
       ) : summary.isError || !s ? (
         <ErrorState error={summary.error} title="No se pudo cargar el resumen" onRetry={() => void summary.refetch()} compact />
       ) : guide.length ? (
-        <VehicleFirstSteps vehicle={vehicle} steps={guide} />
+        <VehicleFirstSteps vehicle={vehicle} steps={guide} onHide={hiddenGuide.hide} />
       ) : (
         <Pending vehicle={vehicle} summary={s} actions={reminderActions.actions} />
       )}

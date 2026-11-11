@@ -1,18 +1,20 @@
 import { PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { Link, Outlet, useLocation } from 'react-router'
 import { IconButton } from '@/components/ui/Button'
 import { PrimaryActionContext } from '@/components/ui/primary-action'
 import { PageSpinner } from '@/components/ui/Spinner'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { QuickActionsProvider } from '@/features/quick-actions/QuickActionsProvider'
 import { useOptionalWorkspace } from '@/features/workspace/workspace-context'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/cn'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { CommandPalette } from './CommandPalette'
 import { Logo, LogoMark } from './Logo'
 import { MobileNav } from './MobileNav'
-import { navItems, SETTINGS_ITEM, type NavItem } from './nav'
+import { isNavItemActive, navGroups, type NavGroup, type NavItem, SETTINGS_ITEM } from './nav'
 import { PaintFan } from './PaintFan'
 import { NotificationBell } from './NotificationBell'
 import { SkipLink } from './SkipLink'
@@ -22,34 +24,82 @@ import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 /** Muelle del indicador de sección activa: se desliza de una sección a otra sin rebote apreciable. */
 const NAV_SPRING = { type: 'spring', duration: 0.35, bounce: 0.12 } as const
 
-/** Enlace de la barra lateral grafito. Estrecha (76 px): solo el icono, con el nombre para lectores de pantalla. */
+/**
+ * Enlace de la barra lateral grafito. Estrecha (76 px): solo el icono, con el nombre para lectores de pantalla y un
+ * tooltip con el nombre y qué hay dentro (también al llegar con el teclado). Activo también en sus rutas `also`:
+ * la ficha de un vehículo marca "Garaje".
+ */
 function RailLink({ item, narrow }: { item: NavItem; narrow: boolean }) {
   const Icon = item.icon
-  return (
-    <NavLink
+  const { pathname } = useLocation()
+  const active = isNavItemActive(item, pathname)
+  const link = (
+    <Link
       to={item.to}
-      end={item.end}
-      title={narrow ? item.label : undefined}
-      className={({ isActive }) =>
-        cn(
-          'relative flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors duration-150',
-          isActive ? 'text-rail-fg' : 'text-rail-muted hover:bg-rail-2 hover:text-rail-fg',
-          narrow ? 'justify-center' : 'lg:justify-start max-lg:justify-center',
-        )
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'relative flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors duration-150',
+        active ? 'text-rail-fg' : 'text-rail-muted hover:bg-rail-2 hover:text-rail-fg',
+        narrow ? 'justify-center' : 'justify-start',
+      )}
+    >
+      {active && (
+        <motion.span layoutId="rail-pill" aria-hidden transition={NAV_SPRING} className="absolute inset-0 rounded-control bg-rail-2">
+          <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-full bg-rail-accent" />
+        </motion.span>
+      )}
+      <Icon aria-hidden className={cn('relative size-5 shrink-0', active && 'text-rail-accent')} />
+      <span className={cn('relative', narrow && 'sr-only')}>{item.label}</span>
+    </Link>
+  )
+  if (!narrow) return link
+  return (
+    <Tooltip
+      side="right"
+      content={
+        <>
+          <span className="block font-medium">{item.label}</span>
+          {item.description && <span className="block text-fg-muted">{item.description}</span>}
+        </>
       }
     >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <motion.span layoutId="rail-pill" aria-hidden transition={NAV_SPRING} className="absolute inset-0 rounded-control bg-rail-2">
-              <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-full bg-rail-accent" />
-            </motion.span>
-          )}
-          <Icon aria-hidden className={cn('relative size-5 shrink-0', isActive && 'text-rail-accent')} />
-          <span className={cn('relative', narrow ? 'sr-only' : 'max-lg:sr-only')}>{item.label}</span>
-        </>
-      )}
-    </NavLink>
+      {link}
+    </Tooltip>
+  )
+}
+
+/** Secciones por grupos de tarea: encabezado en la barra ancha y una línea fina en la estrecha (con el nombre para lectores). */
+function RailGroups({ groups, narrow }: { groups: NavGroup[]; narrow: boolean }) {
+  return (
+    <nav className="flex flex-col gap-4 overflow-y-auto px-3 py-3" aria-label="Secciones">
+      {groups.map((g) => {
+        const headingId = `nav-${g.id}`
+        return (
+          <div key={g.id}>
+            {g.label &&
+              (narrow ? (
+                <>
+                  <span aria-hidden className="mx-2 mb-3 block border-t border-rail-line" />
+                  <span id={headingId} className="sr-only">
+                    {g.label}
+                  </span>
+                </>
+              ) : (
+                <p id={headingId} className="tag-label mb-1.5 px-3 text-rail-muted">
+                  {g.label}
+                </p>
+              ))}
+            <ul className="flex flex-col gap-1" aria-labelledby={g.label ? headingId : undefined}>
+              {g.items.map((item) => (
+                <li key={item.to}>
+                  <RailLink item={item} narrow={narrow} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      })}
+    </nav>
   )
 }
 
@@ -85,7 +135,11 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(() => readStorage(STORAGE_KEYS.sidebarCollapsed) === '1')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [claims, setClaims] = useState(0)
-  const items = navItems(ctx)
+  const groups = navGroups(ctx)
+  const items = groups.flatMap((g) => g.items)
+  // Solo iconos con la barra plegada y en tableta (76 px de 768 a 1023 px)
+  const wide = useMediaQuery('(min-width: 1024px)')
+  const narrow = collapsed || !wide
   const sidebar = !!ctx?.isWorkshop
   const fullBleed = /\/taller\/?$/.test(location.pathname)
   const home = ctx ? ctx.base : '/app'
@@ -156,11 +210,7 @@ export function AppShell() {
                 </span>
               </Link>
             </div>
-            <nav className="flex flex-col gap-1 overflow-y-auto px-3 py-3" aria-label="Secciones">
-              {items.map((item) => (
-                <RailLink key={item.to} item={item} narrow={collapsed} />
-              ))}
-            </nav>
+            <RailGroups groups={groups} narrow={narrow} />
             {ctx && !ctx.isWorkshop && !collapsed && (
               <div className="mt-4 hidden lg:block">
                 <PaintFan ctx={ctx} />
@@ -168,7 +218,7 @@ export function AppShell() {
             )}
             <div className="min-h-4 flex-1" />
             <div className="flex flex-col gap-1 border-t border-rail-line px-3 py-3">
-              <RailLink item={SETTINGS_ITEM} narrow={collapsed} />
+              <RailLink item={SETTINGS_ITEM} narrow={narrow} />
               <button
                 type="button"
                 onClick={toggleCollapsed}

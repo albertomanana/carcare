@@ -253,7 +253,16 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
 
   return (
     <>
-      <PageHeader back={{ to: `${base}/historial`, label: vehicle.display_name }} title={isEdit ? 'Editar intervención' : 'Nueva intervención'} description={isEdit ? record.title : undefined} />
+      <PageHeader
+        crumbs={[
+          { label: ctx.isWorkshop ? 'Vehículos' : 'Garaje', to: `${ctx.base}/garaje` },
+          { label: vehicle.display_name, to: base },
+          { label: 'Historial', to: `${base}/historial` },
+          { label: isEdit ? 'Editar intervención' : 'Nueva intervención' },
+        ]}
+        title={isEdit ? 'Editar intervención' : 'Nueva intervención'}
+        description={isEdit ? record.title : 'Cualquier cosa que se le haya hecho al vehículo: una revisión, una reparación, la ITV… Solo el título y la fecha son obligatorios.'}
+      />
 
       <form onSubmit={onSubmit} noValidate className="max-w-3xl space-y-6">
         <WhatSection form={form} onQuick={applyQuick} />
@@ -270,7 +279,7 @@ function MaintenanceForm({ vehicle, record }: { vehicle: Vehicle; record: Mainte
                 hint={
                   vehicle.current_mileage !== null
                     ? `Último registro: ${formatKm(vehicle.current_mileage)}${vehicle.mileage_updated_at ? ` (${formatDate(vehicle.mileage_updated_at)})` : ''}. Se guarda también como lectura.`
-                    : 'Opcional. Se guarda también como lectura de kilometraje.'
+                    : 'Opcional. Los que marcaba el cuentakilómetros, p. ej. 45.230. Se guarda también como lectura.'
                 }
                 labelAside={
                   !isEdit &&
