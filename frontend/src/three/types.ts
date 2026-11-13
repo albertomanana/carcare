@@ -80,6 +80,11 @@ export interface WorkshopSceneProps {
    * (el coche enfocado no queda debajo del panel derecho). El lienzo va a sangre, sin borde propio.
    */
   focusInset?: { right?: number; top?: number; bottom?: number }
+  /**
+   * Fuerza la vista 2D: los elevadores y los coches en espera como rejilla de botones, sin WebGL ni descarga de three.js.
+   * Es la vista del móvil y la tableta (por debajo de 1024 px), donde se navega con botones.
+   */
+  flat?: boolean
 }
 
 /** Un vehículo del garaje isométrico. Todo opcional salvo `id` y `name`: sin carrocería ⇒ 'hatchback'; sin color ⇒ azul, amarillo, blanco o rojo de maqueta según el id. */

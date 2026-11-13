@@ -74,23 +74,23 @@ export interface ThemeTokens {
   light: boolean
 }
 
-/** Valores del tema claro del mundo «Diorama» (src/index.css), por si faltan las variables CSS (tests, SSR). */
+/** Valores del tema de noche de «Apex Telemetry» (src/index.css), por si faltan las variables CSS (tests, SSR). */
 const FALLBACK: ThemeTokens = {
-  base: '#e9f0fa',
-  surface: '#ffffff',
-  surface2: '#f1f5fb',
-  surface3: '#e2eaf5',
-  line: '#d3deed',
-  lineStrong: '#7384a1',
-  fg: '#14213a',
-  fgMuted: '#45536f',
-  fgSubtle: '#53627e',
-  accent: '#2559e8',
-  danger: '#b32119',
-  warning: '#7d4e00',
-  ok: '#0f6a49',
-  info: '#1b5fa8',
-  light: true,
+  base: '#0b0d13',
+  surface: '#131722',
+  surface2: '#1a1f2d',
+  surface3: '#232a3b',
+  line: '#262b38',
+  lineStrong: '#6b7590',
+  fg: '#e8ecf4',
+  fgMuted: '#a7b0c2',
+  fgSubtle: '#8892a6',
+  accent: '#ff5500',
+  danger: '#f43f5e',
+  warning: '#f59e0b',
+  ok: '#10b981',
+  info: '#38bdf8',
+  light: false,
 }
 
 let tokenCache: { key: string; tokens: ThemeTokens } | null = null
@@ -99,7 +99,7 @@ let tokenCache: { key: string; tokens: ThemeTokens } | null = null
 export function readThemeTokens(): ThemeTokens {
   if (typeof document === 'undefined') return FALLBACK
   const root = document.documentElement
-  const key = `${root.getAttribute('data-theme') ?? ''}|${root.className}`
+  const key = `${root.getAttribute('data-theme') ?? ''}|${root.getAttribute('data-sun') ?? ''}|${root.className}`
   if (tokenCache && tokenCache.key === key) return tokenCache.tokens
   const cs = getComputedStyle(root)
   const v = (name: string, fb: string) => {
@@ -130,7 +130,7 @@ export function readThemeTokens(): ThemeTokens {
 function subscribeTheme(cb: () => void) {
   if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return () => {}
   const mo = new MutationObserver(cb)
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] })
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-sun', 'class', 'style'] })
   return () => mo.disconnect()
 }
 

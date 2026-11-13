@@ -34,7 +34,7 @@ export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selec
         className={cx(
           'flex cursor-pointer flex-col items-start gap-0.5 rounded-card border px-2.5 py-1.5 text-left text-xs shadow-lg backdrop-blur-md',
           'transition-[background-color,box-shadow,border-color] duration-200 motion-reduce:transition-none',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
           selected ? 'border-accent bg-surface text-fg ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 text-fg hover:bg-surface',
         )}
       >
@@ -112,7 +112,7 @@ export function CarLabel({
           title={aria}
           onClick={click}
           className={cx(
-            'grid size-6 cursor-pointer place-items-center rounded-full border bg-surface/90 shadow-md backdrop-blur-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+            'grid size-6 cursor-pointer place-items-center rounded-full border bg-surface/90 shadow-md backdrop-blur-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
             order.is_late ? 'border-danger' : 'border-line/80',
           )}
         >
@@ -138,7 +138,7 @@ export function CarLabel({
         onClick={click}
         className={cx(
           'inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium text-fg shadow-md backdrop-blur-md',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
           selected ? 'border-accent bg-surface ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 hover:bg-surface',
         )}
       >

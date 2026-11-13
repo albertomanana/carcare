@@ -89,7 +89,7 @@ export function WorkshopScene(props: WorkshopSceneProps) {
       Cargando taller 3D…
     </div>
   )
-  if (!webgl) return fallback
+  if (!webgl || props.flat) return fallback
   if (!seen) return loading
   return (
     <ThreeBoundary fallback={fallback}>

@@ -67,7 +67,7 @@ export const ZoneMarkerButton = forwardRef<HTMLButtonElement, ZoneMarkerButtonPr
       className={[
         'group relative flex select-none items-center gap-1.5 rounded-full border p-[3px] text-xs font-medium whitespace-nowrap shadow-lg backdrop-blur-md',
         'transition-[transform,background-color,box-shadow] duration-200 motion-reduce:transition-none',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
         selected ? 'scale-105 border-transparent bg-surface text-fg' : 'border-line/70 bg-surface/85 text-fg hover:bg-surface',
       ].join(' ')}
       style={selected ? { boxShadow: `0 0 0 2px ${bg}, 0 10px 30px -8px ${bg}` } : undefined}

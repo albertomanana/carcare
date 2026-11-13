@@ -120,11 +120,11 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrd
                   aria-pressed={sel}
                   onClick={() => (sel ? onSelectBay?.(null) : onSelectOrder?.(o.id))}
                   className={cx(
-                    'rounded-control border bg-surface px-2 py-1 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                    sel ? 'border-accent' : 'border-line',
+                    'min-h-12 rounded-control border px-3 text-left text-sm text-fg',
+                    sel ? 'border-accent bg-accent-soft' : 'border-line-strong/45 bg-surface-2',
                   )}
                 >
-                  {o.number} · {o.vehicle.display_name} · {WORK_ORDER_STATUS[o.status].label}
+                  <span className="tabular">{o.number}</span> · {o.vehicle.display_name} · {WORK_ORDER_STATUS[o.status].label}
                 </button>
               </li>
             )
@@ -146,15 +146,16 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrd
                 aria-pressed={sel}
                 onClick={() => onSelectBay?.(sel ? null : b.number)}
                 className={cx(
-                  'flex w-full flex-col items-stretch gap-1 rounded-card border bg-surface p-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                  sel ? 'border-accent' : 'border-line',
+                  'flex min-h-28 w-full flex-col items-stretch gap-1 rounded-control border p-3 text-left text-xs',
+                  sel ? 'border-accent bg-accent-soft' : 'border-line-strong/45 bg-surface-2',
                 )}
               >
                 <span className="font-display text-sm font-semibold text-fg">Elevador {b.number}</span>
                 {o ? (
                   <>
                     <CarSilhouette appearance={{ bodyType: o.vehicle.body_type, colorHex: o.vehicle.color_hex }} className="h-12 w-full" title={o.vehicle.display_name} />
-                    <span className="truncate text-fg">{o.number} · {o.vehicle.display_name}</span>
+                    <span className="tabular text-fg-muted">{o.number}</span>
+                    <span className="truncate text-sm font-medium text-fg">{o.vehicle.display_name}</span>
                     {st && <span className="text-fg-muted">{st.label}</span>}
                   </>
                 ) : (
@@ -188,7 +189,7 @@ export function Garage2D({ vehicles, selectedId = null, onSelect, compact = fals
                 aria-label={aria}
                 onClick={() => onSelect?.(sel ? null : v.id)}
                 className={cx(
-                  'flex w-full flex-col items-stretch gap-1 rounded-card border bg-surface p-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                  'flex w-full flex-col items-stretch gap-1 rounded-card border bg-surface p-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
                   sel ? 'border-accent' : 'border-line',
                 )}
               >

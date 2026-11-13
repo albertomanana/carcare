@@ -35,7 +35,7 @@ export function VehicleLabel({
         }}
         className={cx(
           'inline-flex max-w-52 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-card border px-2.5 py-1 text-xs font-medium text-fg shadow-md backdrop-blur-md',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
           selected ? 'border-accent bg-surface ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 hover:bg-surface',
         )}
       >

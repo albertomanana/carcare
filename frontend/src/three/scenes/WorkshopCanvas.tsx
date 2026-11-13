@@ -240,7 +240,7 @@ export default function WorkshopCanvas({
           type="button"
           onClick={deselect}
           style={{ bottom: insetB + 8, right: insetR + 12 }}
-          className="absolute rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="absolute rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
         >
           Ver toda la nave
         </button>
@@ -294,7 +294,7 @@ function FloorLegend({
         aria-expanded={open}
         aria-controls="leyenda-taller"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-control border border-line bg-surface/90 px-2.5 py-1 text-xs font-medium text-fg-muted shadow-md backdrop-blur-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="rounded-control border border-line bg-surface/90 px-2.5 py-1 text-xs font-medium text-fg-muted shadow-md backdrop-blur-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
       >
         Leyenda{note && !open ? ' · hay plazas ocultas' : ''}
       </button>

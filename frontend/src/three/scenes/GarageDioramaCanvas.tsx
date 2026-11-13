@@ -199,7 +199,7 @@ export default function GarageDioramaCanvas({ vehicles, selectedId = null, onSel
             <button
               type="button"
               onClick={deselect}
-              className="pointer-events-auto shrink-0 rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="pointer-events-auto shrink-0 rounded-control border border-line bg-surface px-2.5 py-1 text-xs font-medium text-fg shadow-md hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
             >
               Ver todo el garaje
             </button>
