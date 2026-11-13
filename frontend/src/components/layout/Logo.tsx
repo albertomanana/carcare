@@ -1,21 +1,19 @@
 import { cn } from '@/lib/cn'
 
 /**
- * Marca de CarCare («Diorama»): una ficha de azul eléctrico con su canto, y encima una plataforma isométrica con un
- * bloque, como una pieza de maqueta. Los colores son fijos (la marca no cambia con el tema).
+ * Marca de CarCare («Apex Telemetry»): una placa naranja con la trazada de una curva y su vértice marcado, como en una
+ * hoja de telemetría. Los colores son fijos (la marca no cambia con el tema).
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn('size-8 shrink-0', className)}>
-      <rect y="2" width="32" height="30" rx="9" fill="#1a3fae" />
-      <rect width="32" height="30" rx="9" fill="#2559e8" />
-      {/* plataforma */}
-      <path d="M4 15.5 16 21.5 28 15.5V18.5L16 24.5 4 18.5Z" fill="#7f9fee" />
-      <path d="M16 9.5 28 15.5 16 21.5 4 15.5Z" fill="#bcd0ff" />
-      {/* bloque */}
-      <path d="M11 9.8 16 12.6V17.8L11 15Z" fill="#dbe5fd" />
-      <path d="M16 12.6 21 9.8V15L16 17.8Z" fill="#aac0f7" />
-      <path d="M16 7 21 9.8 16 12.6 11 9.8Z" fill="#ffffff" />
+    <svg viewBox="0 0 32 32" aria-hidden className={cn('size-8 shrink-0', className)} fill="none">
+      <rect width="32" height="32" rx="8" fill="#ff5500" />
+      {/* borde interior de la curva */}
+      <path d="M14 25C14 19.5 17.5 16 25 16" stroke="#0b0d13" strokeOpacity="0.4" strokeWidth="2.5" strokeLinecap="round" />
+      {/* trazada */}
+      <path d="M7 25C7 14.5 13.5 9 25 9" stroke="#0b0d13" strokeWidth="3" strokeLinecap="round" />
+      {/* vértice */}
+      <circle cx="11.6" cy="13.6" r="2.6" fill="#0b0d13" stroke="#ff5500" strokeWidth="1.2" />
     </svg>
   )
 }
@@ -25,7 +23,7 @@ export function Logo({ className, showText = true }: { className?: string; showT
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <LogoMark />
-      {showText && <span className="font-display text-lg font-extrabold text-fg-warm">CarCare</span>}
+      {showText && <span className="font-display text-lg font-bold text-fg-warm">CarCare</span>}
     </span>
   )
 }

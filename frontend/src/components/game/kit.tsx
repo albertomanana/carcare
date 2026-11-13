@@ -45,17 +45,18 @@ export function HudHeader({
         <Breadcrumbs items={crumbs} className="mb-2" />
       ) : (
         back && (
-          <Link to={back.to} className="mb-2 inline-flex min-h-11 w-fit items-center gap-1.5 text-sm font-bold text-fg-muted hover:text-fg md:min-h-0">
+          <Link to={back.to} className="mb-2 inline-flex min-h-12 w-fit items-center gap-1.5 text-sm font-bold text-fg-muted hover:text-fg lg:min-h-0">
             <ArrowLeft aria-hidden className="size-4" />
             {back.label}
           </Link>
         )
       )}
+      {/* El bloque del título pide al menos 15 rem: si las acciones no caben a su lado, bajan a su propia línea en vez de aplastarlo */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
+        <div className="flex min-w-0 flex-[1_1_15rem] items-center gap-3.5 sm:gap-4">
           {leading}
           <div className="min-w-0">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-fg-warm text-balance md:text-3xl">{title}</h1>
+            <h1 className="font-display text-2xl font-bold text-fg-warm md:text-3xl">{title}</h1>
             {description && <p className="mt-1 max-w-2xl text-sm text-fg-muted md:text-base">{description}</p>}
           </div>
         </div>
@@ -116,7 +117,7 @@ export function GamePanel({
             </span>
           )}
           <div className="min-w-0">
-            <h2 id={headingId} className="font-display text-base font-bold tracking-tight text-fg-warm md:text-lg">
+            <h2 id={headingId} className="truncate font-display text-base font-bold text-fg-warm md:text-lg">
               {title}
             </h2>
             {description && <p className="text-xs text-fg-muted">{description}</p>}
@@ -171,15 +172,15 @@ export function StatTile({
   className?: string
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-col justify-between gap-2 p-4', className)}>
+    <div className={cn('flex min-w-0 flex-col gap-2 p-4', className)}>
       <p className="tag-label text-fg-muted">{label}</p>
       {loading ? (
         <Skeleton className="h-8 w-28" />
       ) : value !== null && value !== undefined ? (
         <div>
-          <p className="tabular flex items-baseline gap-1.5 whitespace-nowrap font-display text-2xl font-extrabold leading-8 text-fg-warm md:text-[1.75rem]">
+          <p className="tabular flex items-baseline gap-1.5 whitespace-nowrap text-2xl font-bold leading-8 text-fg-warm md:text-[1.75rem]">
             {value}
-            {unit && <span className="text-sm font-bold text-fg-muted">{unit}</span>}
+            {unit && <span className="text-sm font-medium text-fg-muted">{unit}</span>}
           </p>
           {progress !== undefined && progress !== null && <Progress value={progress} tone={tone} label={progressLabel ?? label} className="mt-2" />}
           {note && <p className="mt-1.5 text-xs text-fg-muted">{note}</p>}
@@ -231,7 +232,7 @@ export function EmptyBoard({
           <path d="M142 84 L80 108 L80 100 L142 76 Z" fill="var(--line-strong)" opacity="0.35" />
           <path d="M80 52 L142 76 L80 100 L18 76 Z" fill="var(--surface-2)" stroke="var(--line)" />
         </svg>
-        <span className="absolute left-1/2 top-2.5 grid size-14 -translate-x-1/2 place-items-center rounded-2xl bg-accent text-on-accent shadow-[0_4px_0_0_var(--accent-edge),0_14px_20px_-8px_hsl(var(--shadow-color)/0.45)] [&_svg]:size-7">
+        <span className="absolute left-1/2 top-2.5 grid size-14 -translate-x-1/2 place-items-center rounded-control bg-accent text-on-accent shadow-[0_14px_20px_-8px_hsl(var(--shadow-color)/0.45)] [&_svg]:size-7">
           {icon ?? <Inbox />}
         </span>
       </span>

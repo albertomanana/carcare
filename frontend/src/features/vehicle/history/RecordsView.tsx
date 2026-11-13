@@ -338,7 +338,7 @@ function RecordRow({
       id={`intervencion-${r.id}`}
       tabIndex={highlighted ? -1 : undefined}
       className={cn(
-        "scroll-mt-32 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+        "scroll-mt-32 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-ink",
         highlighted && "bg-surface-2",
       )}
     >
@@ -380,7 +380,7 @@ function RecordRow({
         {canOperate && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="mt-1 grid size-11 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg md:size-9"
+              className="mt-1 grid size-12 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg lg:size-9"
               aria-label={`Acciones de ${r.title}`}
             >
               <EllipsisVertical aria-hidden className="size-4" />

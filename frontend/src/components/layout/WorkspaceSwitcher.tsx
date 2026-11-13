@@ -59,7 +59,7 @@ export function WorkspaceSwitcher({ compact }: { compact?: boolean }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'flex min-h-11 min-w-0 shrink items-center gap-2 rounded-xl border border-line bg-surface-2 py-1 pl-1.5 pr-2.5 text-left text-sm font-bold text-fg shadow-[0_2px_0_0_var(--line)] transition-[background-color,border-color,translate,scale,box-shadow] duration-150 ease-out-soft hover:border-line-strong hover:bg-accent-soft active:translate-y-px active:scale-[0.98] active:shadow-none data-[state=open]:border-accent data-[state=open]:bg-accent-soft md:min-h-10',
+          'flex min-h-12 min-w-0 shrink items-center gap-2 rounded-xl border border-line bg-surface-2 py-1 pl-1.5 pr-2.5 text-left text-sm font-bold text-fg shadow-[0_2px_0_0_var(--line)] transition-[background-color,border-color,translate,scale,box-shadow] duration-150 ease-out-soft hover:border-line-strong hover:bg-accent-soft active:translate-y-px active:scale-[0.98] active:shadow-none data-[state=open]:border-accent data-[state=open]:bg-accent-soft lg:min-h-10',
           compact ? 'max-w-[11rem]' : 'max-w-[15rem]',
         )}
       >

@@ -1,49 +1,58 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/archivo/standard.css';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/jetbrains-mono';
 
 /*
- * Tokens de diseño de CarCare · mundo «Diorama» (11/11/2026, pedido de Alberto; sustituye a «Carta de colores»).
- * Toda la app es una maqueta tipo juego de estrategia: un lienzo azul pastel muy tenue sobre el que flotan paneles
- * blancos con cristal sutil, botones «gordos» con volumen y una barra de estado (HUD) en lugar de cabecera plana.
- * `--base` es también el color de fondo del entorno 3D (three/env.ts lo lee con getComputedStyle): las escenas se
- * funden con la página. Cada vehículo conserva su pintura (`--paint`) como acento en fichas y muestras.
+ * Tokens de diseño de CarCare · identidad «Apex Telemetry» (13/11/2026, pedido de Alberto; sustituye a «Diorama»).
+ * Un panel de telemetría: asfalto y carbono de fondo, superficies de cristal oscuro en los márgenes, un solo acento
+ * (naranja papaya) para lo activo y la acción principal, y los datos en monoespaciada.
+ * El tema sigue al sol (app/ThemeProvider.tsx): `:root` es el DÍA (asfalto al sol, claro) y `[data-theme='dark']` la NOCHE
+ * (los valores exactos del encargo). ThemeProvider templa además `--base` cerca del amanecer y del atardecer.
+ * `--base` es también el fondo del entorno 3D (three/env.ts lo lee con getComputedStyle): las escenas se funden con la página.
+ * El texto sobre el naranja es siempre oscuro (`--on-accent`): el blanco se queda en 3,2:1 y no cumple AA.
  * Uso en Tailwind: bg-canvas, bg-surface, text-fg, border-line, bg-accent, text-on-accent…
- * El tema se cambia con data-theme="light" | "dark" en <html>. Contrastes comprobados con cálculo (ver DESIGN.md).
+ * Contrastes comprobados con cálculo (ver DESIGN.md).
  */
 :root {
   color-scheme: light;
-  --base: #e9f0fa; /* lienzo del diorama (= fondo del 3D) */
-  --surface: #ffffff; /* paneles que flotan */
-  --surface-2: #f1f5fb;
-  --surface-3: #e2eaf5;
-  --line: #d3deed;
-  --line-strong: #7384a1; /* ≥ 3:1 sobre base y surface (WCAG 1.4.11) */
-  --fg: #14213a;
-  --fg-warm: #0c1730;
-  --fg-muted: #45536f;
-  --fg-subtle: #53627e;
-  --accent: #2559e8; /* azul eléctrico corporativo: lo activo y la acción principal */
-  --accent-ink: #1d4cd0;
-  --accent-edge: #1a3fae; /* el «canto» del botón gordo */
-  --on-accent: #ffffff;
-  --accent-soft: rgb(37 89 232 / 0.1);
-  --danger: #b32119;
-  --danger-edge: #7c130d;
-  --danger-soft: rgb(179 33 25 / 0.1);
+  --base: #eef0f4; /* asfalto al sol (= fondo del 3D) */
+  --surface: #ffffff;
+  --surface-2: #f4f5f8;
+  --surface-3: #e6e9ef;
+  --line: #d9dde6;
+  --line-strong: #6f788c; /* ≥ 3:1 sobre base y surface (WCAG 1.4.11) */
+  --fg: #131722;
+  --fg-warm: #0b0d13;
+  --fg-muted: #454d60;
+  --fg-subtle: #566076;
+  --accent: #ff5500; /* Papaya Telemetry Orange: lo activo y la acción principal */
+  --accent-ink: #b83c00; /* el acento como texto o trazo sobre claro (≥ 4,5:1) */
+  --accent-edge: #c23f00;
+  --on-accent: #0b0d13;
+  --accent-soft: rgb(255 85 0 / 0.12);
+  --danger: #c81e3f;
+  --danger-edge: #96122c;
+  --danger-soft: rgb(244 63 94 / 0.12);
   --on-danger: #ffffff;
-  --warning: #7d4e00;
-  --warning-soft: rgb(214 150 20 / 0.16);
-  --ok: #0f6a49;
-  --ok-soft: rgb(15 106 73 / 0.11);
-  --info: #1b5fa8;
-  --info-soft: rgb(27 95 168 / 0.1);
-  --neutral-edge: #c2d0e5; /* canto de los botones claros */
-  --chart-1: #2559e8;
-  --chart-2: #17694a;
+  --warning: #8a5300;
+  --warning-soft: rgb(245 158 11 / 0.18);
+  --ok: #0b7a55;
+  --ok-soft: rgb(16 185 129 / 0.14);
+  --info: #0b6ca8;
+  --info-soft: rgb(56 189 248 / 0.16);
+  --neutral-edge: #c9cfdb;
+  /* Pilotos: los cuatro estados como luz (puntos, barras, líneas del 3D). Iguales de día y de noche; nunca como texto sobre claro. */
+  --lamp-shop: #f59e0b; /* en taller */
+  --lamp-ready: #10b981; /* operativo / listo */
+  --lamp-alert: #f43f5e; /* alerta / gasto */
+  --lamp-info: #38bdf8; /* info / seguro */
+  --chart-1: #e04a00;
+  --chart-2: #0b7a55;
   --chart-3: #c98500;
   --chart-4: #7357c2;
-  --chart-5: #2a8bb5;
-  --chart-6: #7384a1;
+  --chart-5: #0b84c6;
+  --chart-6: #6f788c;
   /* Paleta categórica (validada con dataviz: CVD ΔE ≥ 8, contraste ≥ 3:1 sobre --surface) */
   --cat-1: #2a78d6;
   --cat-2: #d95926;
@@ -51,64 +60,64 @@
   --cat-4: #c98500;
   --cat-5: #d55181;
   --cat-other: #8a8c88;
-  --shadow-color: 222 45% 28%;
-  --overlay: rgb(14 26 48 / 0.4);
-  /* Cristal de los paneles del HUD (94 % opaco: el desenfoque es un detalle, no una necesidad) */
-  --glass: rgb(255 255 255 / 0.94);
-  --glass-edge: rgb(255 255 255 / 0.95);
+  --shadow-color: 225 30% 20%;
+  --overlay: rgb(11 13 19 / 0.45);
+  /* Cristal del HUD: deja ver la escena 3D que pasa por detrás */
+  --glass: rgb(255 255 255 / 0.86);
+  --glass-edge: rgb(19 23 34 / 0.1);
   /* Pintura por defecto cuando el vehículo no tiene color */
   --paint: #9aa0a6;
   /* Filo de luz arriba de las superficies */
-  --sheen: rgb(255 255 255 / 0.9);
-  /* Hueco que ocupa la barra de navegación flotante a la izquierda (lo fija AppShell por ancho de pantalla) */
+  --sheen: rgb(255 255 255 / 0.7);
+  /* Hueco que ocupa el carril de navegación a la izquierda (lo fija AppShell por ancho de pantalla) */
   --shell-left: 0px;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --base: #0e1a30; /* noche de diorama */
-  --surface: #162540;
-  --surface-2: #1c2e4d;
-  --surface-3: #263c61;
-  --line: #2b3f63;
-  --line-strong: #7189b3;
-  --fg: #e9effc;
-  --fg-warm: #f6f9ff;
-  --fg-muted: #b3c0da;
-  --fg-subtle: #9aa9c6;
-  --accent: #3b69f0;
-  --accent-ink: #a4bdff;
-  --accent-edge: #2142a8;
-  --on-accent: #ffffff;
-  --accent-soft: rgb(91 128 255 / 0.17);
-  --danger: #ff8a80;
-  --danger-edge: #b0443b;
-  --danger-soft: rgb(255 138 128 / 0.14);
-  --on-danger: #0e1a30;
-  --warning: #f4bb55;
-  --warning-soft: rgb(244 187 85 / 0.14);
-  --ok: #62d0a2;
-  --ok-soft: rgb(98 208 162 / 0.13);
-  --info: #84bbf5;
-  --info-soft: rgb(132 187 245 / 0.13);
-  --neutral-edge: #0a1424;
-  --chart-1: #6f92ff;
-  --chart-2: #5cc79b;
-  --chart-3: #f2b54a;
-  --chart-4: #b4a7f5;
-  --chart-5: #6cc3e6;
-  --chart-6: #8a9bbb;
+  --base: #0b0d13; /* Obsidian Asphalt */
+  --surface: #131722; /* Carbon Slate */
+  --surface-2: #1a1f2d;
+  --surface-3: #232a3b;
+  --line: #262b38;
+  --line-strong: #6b7590;
+  --fg: #e8ecf4;
+  --fg-warm: #f7f9fc;
+  --fg-muted: #a7b0c2;
+  --fg-subtle: #8892a6;
+  --accent: #ff5500;
+  --accent-ink: #ff7733;
+  --accent-edge: #c23f00;
+  --on-accent: #0b0d13;
+  --accent-soft: rgb(255 85 0 / 0.14);
+  --danger: #f43f5e; /* Rojo Freno */
+  --danger-edge: #b01e3a;
+  --danger-soft: rgb(244 63 94 / 0.14);
+  --on-danger: #0b0d13;
+  --warning: #f59e0b; /* Ámbar */
+  --warning-soft: rgb(245 158 11 / 0.14);
+  --ok: #10b981; /* Esmeralda */
+  --ok-soft: rgb(16 185 129 / 0.14);
+  --info: #38bdf8; /* Cian */
+  --info-soft: rgb(56 189 248 / 0.14);
+  --neutral-edge: #07080c;
+  --chart-1: #ff5500;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #a78bfa;
+  --chart-5: #38bdf8;
+  --chart-6: #8892a6;
   --cat-1: #3987e5;
   --cat-2: #d95926;
   --cat-3: #199e70;
   --cat-4: #c98500;
   --cat-5: #d55181;
   --cat-other: #5b6a85;
-  --shadow-color: 222 70% 3%;
-  --overlay: rgb(4 9 20 / 0.62);
-  --glass: rgb(22 37 64 / 0.9);
+  --shadow-color: 225 60% 2%;
+  --overlay: rgb(3 4 8 / 0.66);
+  --glass: rgb(19 23 34 / 0.8);
   --glass-edge: rgb(255 255 255 / 0.08);
-  --sheen: rgb(255 255 255 / 0.07);
+  --sheen: rgb(255 255 255 / 0.05);
 }
 
 @custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
@@ -146,18 +155,20 @@
   --color-chart-6: var(--chart-6);
   --color-overlay: var(--overlay);
 
-  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-lamp-shop: var(--lamp-shop);
+  --color-lamp-ready: var(--lamp-ready);
+  --color-lamp-alert: var(--lamp-alert);
+  --color-lamp-info: var(--lamp-info);
 
-  /* Pesos de juego: todo un escalón más grueso que el estándar (Archivo variable llega a 900) */
-  --font-weight-medium: 600;
-  --font-weight-semibold: 700;
-  --font-weight-bold: 800;
+  /* Tres voces: Space Grotesk titula, Plus Jakarta Sans habla y JetBrains Mono da los datos (clase .tabular). */
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
 
-  /* Esquinas de maqueta: controles xl, paneles algo más que 2xl, piezas grandes 3xl+ */
-  --radius-control: 12px;
-  --radius-card: 20px;
-  --radius-hero: 28px;
+  /* Esquinas de instrumento: contenidas, sin piezas redondas grandes */
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-hero: 18px;
 
   /* Curvas de movimiento: salida fuerte para entradas y respuestas, entrada-salida para lo que se mueve en pantalla */
   --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
@@ -288,6 +299,8 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: transparent;
+    /* El espacio de Plus Jakarta Sans mide 0,17 em y las palabras se pegan en tamaños pequeños: se abre hasta ~0,23 em */
+    word-spacing: 0.06em;
   }
 
   body {
@@ -299,7 +312,20 @@
   h1,
   h2,
   h3 {
+    font-family: var(--font-display);
+    word-spacing: normal;
     text-wrap: balance;
+  }
+
+  /* Cambio de tema al amanecer o al anochecer: un fundido lento en lugar de un salto (lo activa ThemeProvider ~1 s) */
+  :root.theme-shift,
+  :root.theme-shift * {
+    transition:
+      background-color 900ms ease,
+      color 900ms ease,
+      border-color 900ms ease,
+      fill 900ms ease,
+      stroke 900ms ease !important;
   }
 
   /*
@@ -316,14 +342,10 @@
     scroll-padding-top: 5rem;
   }
 
-  /* Foco visible: anillo azul eléctrico de 2px con 2px de separación (sigue la forma del control) */
+  /* Foco visible: anillo naranja de 2px con 2px de separación (sigue la forma del control). Usa la tinta del acento: ≥ 3:1 de día y de noche */
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-ink);
     outline-offset: 2px;
-  }
-
-  :root[data-theme='dark'] :focus-visible {
-    outline-color: var(--accent-ink);
   }
 
   ::selection {
@@ -419,9 +441,13 @@
 }
 
 @layer utilities {
-  /* Cifras de importes y kilómetros alineadas */
-  .tabular {
+  /* Datos (importes, fechas, matrículas, porcentajes, kilómetros, cronómetros): JetBrains Mono con cifras tabulares */
+  .tabular,
+  .tabular-nums {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    word-spacing: normal;
   }
 
   .skeleton {
@@ -434,23 +460,20 @@
     text-wrap: balance;
   }
 
-  /* ───────── Tipografía de juego ───────── */
+  /* ───────── Tipografía ───────── */
 
-  /* Títulos y cifras en Archivo ancho y grueso, como el rótulo de un juego de estrategia. */
+  /* Títulos en Space Grotesk, algo apretados. */
   .font-display {
-    font-stretch: 108%;
     letter-spacing: -0.02em;
+    word-spacing: normal;
   }
 
-  /* Etiqueta: rótulo corto en versalitas gruesas, para matrículas, códigos y estados (nunca sobre un título). */
+  /* Etiqueta: rótulo corto de un dato o de un grupo (nunca sobre un título). Sin mayúsculas forzadas. */
   .tag-label {
-    font-stretch: 100%;
-    font-weight: 750;
+    font-weight: 600;
     font-size: 0.75rem;
     line-height: 1rem;
-    letter-spacing: 0.06em;
-    word-spacing: 0.18em;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
   }
 
   /* La matrícula junto al título de la ficha no se parte en dos líneas ("7310" / "LFW") */
@@ -458,22 +481,18 @@
     white-space: nowrap;
   }
 
-  /* ───────── HUD: paneles de cristal sobre el diorama ───────── */
+  /* ───────── HUD: superficies de cristal en los márgenes de la escena ───────── */
 
-  /* Panel flotante: blanco con cristal sutil, esquinas grandes y sombra larga de maqueta. */
+  /* Superficie flotante: cristal (80 % de noche) con desenfoque de 16 px y un filo de 1 px. */
   .hud-panel,
   .hud-bar,
   .hud-pop {
     background: var(--glass);
-    -webkit-backdrop-filter: blur(12px) saturate(1.25);
-    backdrop-filter: blur(12px) saturate(1.25);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     border: 1px solid var(--glass-edge);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-hud);
-  }
-  /* Barra de estado (cabecera) y dock (navegación): una pieza más compacta, con la misma sombra. */
-  .hud-bar {
-    border-radius: 1.25rem;
   }
   /* Menús, avisos y paleta: flotan por encima de todo, con más sombra. */
   .hud-pop {
@@ -492,49 +511,7 @@
     }
   }
 
-  /* Botón gordo: volumen de pieza de juego (brillo arriba, canto abajo, sombra blanda) que se hunde al pulsar. */
-  .chunky {
-    --chunky-lip: 3px;
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.38),
-      0 var(--chunky-lip) 0 0 var(--chunky-edge, var(--neutral-edge)),
-      0 calc(var(--chunky-lip) + 6px) 14px -6px var(--chunky-glow, hsl(var(--shadow-color) / 0.35));
-    transition:
-      translate 140ms var(--ease-out-strong),
-      scale 140ms var(--ease-out-strong),
-      box-shadow 140ms var(--ease-out-strong),
-      background-color 160ms ease,
-      border-color 160ms ease,
-      filter 160ms ease,
-      color 160ms ease;
-  }
-  .chunky:active:not(:disabled):not([aria-disabled='true']) {
-    --chunky-lip: 1px;
-    translate: 0 2px;
-    scale: 0.97;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .chunky:hover:not(:disabled):not([aria-disabled='true']):not(:active) {
-      translate: 0 -1px;
-      --chunky-lip: 4px;
-    }
-  }
-  .chunky-accent {
-    --chunky-edge: var(--accent-edge);
-    --chunky-glow: color-mix(in srgb, var(--accent) 55%, transparent);
-  }
-  .chunky-danger {
-    --chunky-edge: var(--danger-edge);
-    --chunky-glow: color-mix(in srgb, var(--danger) 45%, transparent);
-  }
-  /* Con sombra apagada (deshabilitado) el botón queda plano */
-  .chunky:disabled,
-  .chunky[aria-disabled='true'] {
-    --chunky-lip: 0px;
-    box-shadow: none;
-  }
-
-  /* Insignia: píldora gruesa con icono y texto. Tonos: chip-accent | -ok | -warning | -danger | -info. */
+  /* Insignia: píldora con icono y texto. Tonos: chip-accent | -ok | -warning | -danger | -info. */
   .chip {
     display: inline-flex;
     align-items: center;
@@ -547,7 +524,7 @@
     color: var(--fg-muted);
     font-size: 0.75rem;
     line-height: 1rem;
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
     transition:
       background-color 160ms ease,
@@ -580,7 +557,7 @@
     background: var(--info-soft);
     color: var(--info);
   }
-  /* Chip que se puede pulsar (filtro): sube un poco y, seleccionado, se rellena con el azul */
+  /* Chip que se puede pulsar (filtro): seleccionado se rellena con el acento */
   button.chip,
   a.chip {
     cursor: pointer;
@@ -594,7 +571,15 @@
   .chip[data-active='true'] {
     background: var(--accent);
     color: var(--on-accent);
-    box-shadow: 0 2px 0 0 var(--accent-edge);
+  }
+  /* En el móvil y la tableta los filtros son botones táctiles de 48 px */
+  @media (max-width: 1023.98px) {
+    button.chip,
+    a.chip {
+      min-height: 3rem;
+      padding-inline: 1rem;
+      font-size: 0.875rem;
+    }
   }
 
   /* Misión: tarjeta de aviso o tarea. Barra de color a la izquierda según `data-tone` (el estado lleva además icono y texto). */
@@ -674,12 +659,11 @@
   .clay,
   .lacquer {
     background-color: var(--paint);
-    background-image: linear-gradient(160deg, rgb(255 255 255 / 0.34) 0%, rgb(255 255 255 / 0.06) 38%, transparent 55%, rgb(0 0 0 / 0.1) 100%);
-    color: var(--paint-ink, #0c1730);
+    background-image: linear-gradient(160deg, rgb(255 255 255 / 0.22) 0%, transparent 50%, rgb(0 0 0 / 0.12) 100%);
+    color: var(--paint-ink, #0b0d13);
     box-shadow:
-      inset 0 2px 0 rgb(255 255 255 / 0.38),
-      inset 0 -3px 0 rgb(0 0 0 / 0.14),
-      0 8px 16px -8px hsl(var(--shadow-color) / 0.5);
+      inset 0 0 0 1px rgb(255 255 255 / 0.16),
+      0 6px 14px -8px hsl(var(--shadow-color) / 0.6);
   }
 
   /* Cambio de pintura (heredado de «Carta de colores»): la nueva barre la ficha de arriba abajo. Pasa unas pocas veces por visita. */
@@ -823,7 +807,7 @@
   .canvas-hud :where(.hud-panel, .hud-bar, .hud-pop, .mission, a, button, input, select, textarea, [role='dialog'], [data-hud]) {
     pointer-events: auto;
   }
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .canvas-hud {
       padding: 5.25rem 1.5rem 2rem var(--shell-left);
     }
@@ -863,10 +847,17 @@
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Ejes de las gráficas (Recharts pinta SVG): las cifras y los meses, en la tipografía de datos */
+  .recharts-cartesian-axis-tick-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
 }
 
 /*
- * Guía luminosa: un anillo azul que late tres veces alrededor de lo que toca hacer ahora (marca vacía, modelo,
+ * Guía luminosa: un anillo naranja que late tres veces alrededor de lo que toca hacer ahora (marca vacía, modelo,
  * versión…). Solo transform y opacity; termina solo para no distraer. Con movimiento reducido no se ve (el bloque de
  * abajo lo deja en 0,01 ms) y el campo activo ya tiene su foco normal.
  */
@@ -883,7 +874,7 @@
 .guide-ring {
   position: absolute;
   inset: -6px;
-  border: 2px solid var(--accent);
+  border: 2px solid var(--accent-ink);
   border-radius: calc(var(--radius-card) + 4px);
   pointer-events: none;
   opacity: 0;
@@ -917,8 +908,8 @@
   --fg-warm: #111518;
   --fg-muted: #4a5459;
   --fg-subtle: #5b666c;
-  --accent-ink: #1a45c2;
-  --accent-soft: rgb(31 79 216 / 0.11);
+  --accent-ink: #b83c00;
+  --accent-soft: rgb(255 85 0 / 0.1);
   --danger: #b42828;
   --danger-soft: rgb(201 52 52 / 0.1);
   --warning: #8a5700;
@@ -947,7 +938,7 @@
     --fg-warm: #111111;
     --fg-muted: #3d4549;
     --fg-subtle: #52595d;
-    --accent-ink: #1a45c2;
+    --accent-ink: #b83c00;
   }
 
   html,

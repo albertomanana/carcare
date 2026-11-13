@@ -17,7 +17,10 @@ export function writeStorage(key: string, value: string | null): void {
 }
 
 export const STORAGE_KEYS = {
+  /** Último tema visto ('light' | 'dark'): index.html lo aplica antes de pintar. */
   theme: 'carcare.theme',
+  /** 'light' | 'dark' si el tema está fijado en Ajustes; sin valor, sigue al sol. */
+  themeMode: 'carcare.themeMode',
   lastWorkspace: 'carcare.lastWorkspace',
   sidebarCollapsed: 'carcare.sidebarCollapsed',
   zoneView: 'carcare.zoneView',

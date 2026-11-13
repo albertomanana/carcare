@@ -74,7 +74,7 @@ function VehicleLine({ vehicle }: { vehicle: Vehicle }) {
 export function VehicleSection({ form, presetCustomerId }: { form: Form; presetCustomerId: string | null }) {
   const [mode, vehicleId] = useWatch({ control: form.control, name: ['vehicle_mode', 'vehicle_id'] })
   const setMode = (m: NewOrderValues['vehicle_mode']) => form.setValue('vehicle_mode', m, { shouldDirty: true })
-  const linkCls = 'inline-flex min-h-11 items-center gap-1.5 rounded-control text-sm font-medium text-accent-ink hover:underline md:min-h-9'
+  const linkCls = 'inline-flex min-h-12 items-center gap-1.5 rounded-control text-sm font-medium text-accent-ink hover:underline lg:min-h-9'
   return (
     <div className="space-y-3">
       {mode === 'existing' ? (

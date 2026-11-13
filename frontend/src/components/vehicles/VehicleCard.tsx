@@ -12,9 +12,9 @@ import { BrandLogo } from './BrandLogo'
 import { VehicleThumb } from './VehicleVisuals'
 
 /**
- * Tarjeta del garaje / flota (mundo «Diorama»): una ficha que sube al pasar el ratón. Arriba, la ficha de pintura con el
- * nombre y la matrícula; en medio, la miniatura estática del coche sobre una plataforma (nunca un WebGL por tarjeta);
- * abajo, los km y lo vencido o próximo con icono y texto. Toda la tarjeta es un enlace a la ficha.
+ * Tarjeta del garaje / flota: sube al pasar el ratón. Arriba, la ficha de pintura con el nombre y la matrícula; en medio,
+ * la miniatura estática del coche (nunca un WebGL por tarjeta); abajo, en dos filas de alto fijo para que todas las
+ * tarjetas cuadren, los km con su fecha y lo vencido o próximo con icono y texto. Toda la tarjeta es un enlace a la ficha.
  */
 export function VehicleCard({ vehicle, to, showCustomer }: { vehicle: Vehicle; to: string; showCustomer?: boolean }) {
   const { stats } = vehicle
@@ -29,7 +29,7 @@ export function VehicleCard({ vehicle, to, showCustomer }: { vehicle: Vehicle; t
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-lg font-bold leading-tight text-fg-warm">{vehicle.display_name}</p>
           <p className="truncate text-sm text-fg-muted">
-            <span className="tag-label">{vehicle.plate ? formatPlate(vehicle.plate) : 'Sin matrícula'}</span>
+            {vehicle.plate ? <span className="tabular">{formatPlate(vehicle.plate)}</span> : 'Sin matrícula'}
             {subtitle && <span> · {subtitle}</span>}
           </p>
         </div>
@@ -43,14 +43,14 @@ export function VehicleCard({ vehicle, to, showCustomer }: { vehicle: Vehicle; t
         {showCustomer && <p className="truncate text-sm text-fg-muted">{vehicle.customer?.name ?? 'Sin cliente asignado'}</p>}
         {showCustomer && order && (
           <p className="truncate text-sm text-fg-muted">
-            {order.number} · {WORK_ORDER_STATUS[order.status].label}
+            <span className="tabular">{order.number}</span> · {WORK_ORDER_STATUS[order.status].label}
           </p>
         )}
-        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-1 text-sm">
-          <span className="tabular font-bold text-fg">
-            {formatKm(vehicle.current_mileage, { empty: 'Sin km' })}
-            {vehicle.mileage_updated_at && <span className="font-normal text-fg-subtle"> · {formatRelativeDate(vehicle.mileage_updated_at)}</span>}
-          </span>
+        <p className="mt-auto flex items-baseline justify-between gap-3 pt-1 text-sm">
+          <span className="tabular shrink-0 font-semibold text-fg">{formatKm(vehicle.current_mileage, { empty: 'Sin km' })}</span>
+          {vehicle.mileage_updated_at && <span className="min-w-0 truncate text-fg-subtle">leído {formatRelativeDate(vehicle.mileage_updated_at)}</span>}
+        </p>
+        <div className="flex min-h-7 flex-wrap items-center gap-1.5">
           {vehicle.archived_at && (
             <Chip icon={<Archive aria-hidden />}>Archivado</Chip>
           )}

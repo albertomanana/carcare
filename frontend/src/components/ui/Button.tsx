@@ -36,7 +36,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={buttonClasses({ variant, size, block, className: hideOnMobile ? `max-md:hidden ${className ?? ''}` : className })}
+      className={buttonClasses({ variant, size, block, className: hideOnMobile ? `max-lg:hidden ${className ?? ''}` : className })}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}

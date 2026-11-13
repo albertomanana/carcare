@@ -30,7 +30,7 @@ export function Disclosure({
         aria-expanded={open}
         aria-controls={open ? id : undefined}
         onClick={() => onOpenChange(!open)}
-        className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-control text-left text-sm font-medium text-fg hover:text-fg-warm md:min-h-9"
+        className="inline-flex min-h-12 max-w-full items-center gap-1.5 rounded-control text-left text-sm font-medium text-fg hover:text-fg-warm lg:min-h-9"
       >
         <ChevronRight aria-hidden className={cn('size-4 shrink-0 text-fg-subtle transition-transform duration-150 ease-out-soft motion-reduce:transition-none', open && 'rotate-90')} />
         <span>

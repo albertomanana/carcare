@@ -75,7 +75,7 @@ export default function OrdersTab() {
               title="Entregadas y canceladas"
               description="Las entregadas también están en el historial como intervenciones."
               action={
-                <Link to={`${ctx.base}/vehiculos/${vehicle.id}/historial`} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline md:min-h-0">
+                <Link to={`${ctx.base}/vehiculos/${vehicle.id}/historial`} className="inline-flex min-h-12 items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline lg:min-h-0">
                   <History aria-hidden className="size-4" />
                   Ver historial
                 </Link>

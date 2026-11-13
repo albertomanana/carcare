@@ -833,7 +833,7 @@ function StepLook({ form }: { form: UseFormReturn<Values> }) {
                 key={b}
                 className={cn(
                   "flex cursor-pointer flex-col items-center gap-1 rounded-card border p-2 text-sm font-medium transition-colors",
-                  "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
+                  "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink",
                   checked
                     ? "border-accent bg-accent-soft text-fg"
                     : "border-line bg-surface text-fg-muted hover:border-line-strong hover:text-fg",
@@ -889,7 +889,7 @@ function StepLook({ form }: { form: UseFormReturn<Values> }) {
                 <span
                   aria-hidden
                   className={cn(
-                    "grid size-11 place-items-center rounded-full border-2 transition-transform peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent",
+                    "grid size-11 place-items-center rounded-full border-2 transition-transform peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-ink",
                     checked
                       ? "scale-105 border-accent"
                       : "border-line-strong group-hover:scale-105",
@@ -907,7 +907,7 @@ function StepLook({ form }: { form: UseFormReturn<Values> }) {
               </label>
             );
           })}
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong px-3 text-sm text-fg-muted hover:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong px-3 text-sm text-fg-muted hover:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent-ink">
             <input
               type="color"
               value={COLOR_HEX_REGEX.test(colorHex) ? colorHex : "#888888"}

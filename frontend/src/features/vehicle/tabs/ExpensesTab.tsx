@@ -291,7 +291,7 @@ function ExpenseRow({
     <li
       id={`gasto-${e.id}`}
       tabIndex={highlighted ? -1 : undefined}
-      className={cn('flex scroll-mt-32 items-center gap-3 py-2.5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent', highlighted && 'bg-surface-2 px-2')}
+      className={cn('flex scroll-mt-32 items-center gap-3 py-2.5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-ink', highlighted && 'bg-surface-2 px-2')}
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">{e.description || EXPENSE_CATEGORY_LABEL[e.category]}</p>
@@ -305,7 +305,7 @@ function ExpenseRow({
       <p className="shrink-0 text-right font-medium text-fg tabular">{formatMoney(e.amount)}</p>
       {canWrite && !e.is_linked ? (
         <DropdownMenu>
-          <DropdownMenuTrigger className="grid size-11 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg md:size-9" aria-label="Acciones del gasto">
+          <DropdownMenuTrigger className="grid size-12 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg lg:size-9" aria-label="Acciones del gasto">
             <EllipsisVertical aria-hidden className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>

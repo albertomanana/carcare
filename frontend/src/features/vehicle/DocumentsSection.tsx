@@ -445,7 +445,7 @@ function DocumentRow({
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="grid size-11 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg md:size-9"
+          className="grid size-12 shrink-0 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg lg:size-9"
           aria-label={`Acciones de «${doc.title}»`}
         >
           <EllipsisVertical aria-hidden className="size-4" />

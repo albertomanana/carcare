@@ -25,7 +25,7 @@ export interface Figure {
 
 export function Figures({ items, label }: { items: [Figure] | [Figure, Figure] | [Figure, Figure, Figure]; label: string }) {
   return (
-    <section aria-label={label} className="hud-panel grid grid-cols-2 overflow-hidden sm:grid-cols-3 [&>*+*]:border-l [&>*+*]:border-line">
+    <section aria-label={label} className="hud-panel grid overflow-hidden sm:grid-cols-3 [&>*+*]:border-line max-sm:[&>*+*]:border-t sm:[&>*+*]:border-l">
       {items.map((item) => (
         <StatTile key={item.label} label={item.label} value={item.value} note={item.hint} />
       ))}
@@ -58,7 +58,7 @@ export function MonthlyChart({ data, label, valueHeader }: { data: { month: Year
     <div>
       <MonthlyBars data={data} label={label} highlightMonth={currentMonthKey()} srTable={false} height={200} />
       <details className="group mt-3 border-t border-line pt-1">
-        <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-control text-sm text-fg-muted hover:text-fg md:min-h-9 [&::-webkit-details-marker]:hidden">
+        <summary className="inline-flex min-h-12 cursor-pointer list-none items-center gap-1.5 rounded-control text-sm text-fg-muted hover:text-fg lg:min-h-9 [&::-webkit-details-marker]:hidden">
           <ChevronRight aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-open:rotate-90" />
           Ver los datos en una tabla
         </summary>

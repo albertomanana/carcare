@@ -159,7 +159,7 @@ export default function OrdersPage() {
             disabled={!user}
             onClick={() => chooseAssignee(assignee.mine ? 'all' : 'mine')}
             icon={assignee.mine ? <Check aria-hidden /> : <UserRound aria-hidden />}
-            className={cn('h-11 md:order-3 md:ml-auto md:h-10', assignee.mine && 'border-accent/60 bg-accent-soft text-fg')}
+            className={cn('h-12 md:order-3 md:ml-auto lg:h-10', assignee.mine && 'border-accent/60 bg-accent-soft text-fg')}
           >
             Mis órdenes
           </Button>
@@ -201,7 +201,7 @@ export default function OrdersPage() {
               aria-pressed={onlyLate}
               onClick={() => setLate(onlyLate ? null : '1')}
               icon={<TriangleAlert aria-hidden />}
-              className={cn('h-11 md:order-5 md:h-10', onlyLate && 'border-danger/60 bg-danger-soft text-fg')}
+              className={cn('h-12 md:order-5 lg:h-10', onlyLate && 'border-danger/60 bg-danger-soft text-fg')}
             >
               Solo tarde{lateCount ? <span className="tabular text-fg-muted">({lateCount})</span> : null}
             </Button>

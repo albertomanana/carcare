@@ -267,7 +267,7 @@ function OrderSheet({
         <span className="text-fg-subtle">Sin cliente</span>
       ),
     },
-    { label: 'Elevador', value: order.bay ? <span className="tabular">Elevador {order.bay}</span> : <span className="text-fg-muted">Sin elevador</span> },
+    { label: 'Elevador', value: order.bay ? <span>Elevador <span className="tabular">{order.bay}</span></span> : <span className="text-fg-muted">Sin elevador</span> },
     { label: 'Mecánico', value: order.assigned_to?.name ?? <span className="text-fg-subtle">Sin asignar</span> },
     {
       label: 'Prioridad',
@@ -323,7 +323,7 @@ function OrderSheet({
             <Link to={`${ctx.base}/vehiculos/${v.id}`} className="block truncate font-medium text-fg hover:underline">
               {v.display_name}
             </Link>
-            {v.plate ? <Plate value={v.plate} className="tag-label" /> : <span className="text-xs text-fg-subtle">Sin matrícula</span>}
+            {v.plate ? <Plate value={v.plate} className="tabular text-xs" /> : <span className="text-xs text-fg-subtle">Sin matrícula</span>}
           </p>
         </div>
 

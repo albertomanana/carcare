@@ -266,7 +266,7 @@ function Contact({ request: r }: { request: RepairRequest }) {
       <p className="font-medium text-fg">{r.requester.name}</p>
       <ul className="mt-1 space-y-1 text-sm">
         <li>
-          <a href={mailHref(r.requester.email)} className="inline-flex min-h-11 items-center gap-2 break-all text-fg-muted hover:text-fg hover:underline md:min-h-0">
+          <a href={mailHref(r.requester.email)} className="inline-flex min-h-12 items-center gap-2 break-all text-fg-muted hover:text-fg hover:underline lg:min-h-0">
             <Mail aria-hidden className="size-4 shrink-0" />
             <span className="sr-only">Escribir a </span>
             {r.requester.email}
@@ -274,7 +274,7 @@ function Contact({ request: r }: { request: RepairRequest }) {
         </li>
         <li>
           {r.contact_phone ? (
-            <a href={telHref(r.contact_phone)} className="inline-flex min-h-11 items-center gap-2 text-fg-muted tabular hover:text-fg hover:underline md:min-h-0">
+            <a href={telHref(r.contact_phone)} className="inline-flex min-h-12 items-center gap-2 text-fg-muted tabular hover:text-fg hover:underline lg:min-h-0">
               <Phone aria-hidden className="size-4 shrink-0" />
               <span className="sr-only">Llamar al </span>
               {r.contact_phone}

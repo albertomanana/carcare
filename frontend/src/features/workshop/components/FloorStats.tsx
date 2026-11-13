@@ -58,19 +58,19 @@ export function FloorStats({
             disabled={missing}
             onClick={() => onFilter(active ? 'all' : c.key)}
             className={cn(
-              'hud-panel pop-in relative flex min-h-[4.5rem] min-w-[7.25rem] flex-1 snap-start flex-col justify-between gap-1 px-3.5 py-2.5 text-left',
-              'transition-[translate,box-shadow,background-color] duration-200 ease-out-soft disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:min-w-[6.5rem] xl:min-h-[5.25rem] xl:px-4',
+              'hud-panel pop-in relative flex min-h-[4.5rem] min-w-max flex-1 snap-start flex-col justify-between gap-1 px-3.5 py-2.5 text-left',
+              'transition-[translate,box-shadow,background-color] duration-200 ease-out-soft disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] xl:min-h-[5.25rem] xl:px-4',
               'pointer-fine:hover:-translate-y-0.5',
-              active && 'bg-accent-soft ring-2 ring-accent',
+              active && 'border-accent bg-accent-soft',
             )}
             style={{ '--i': cells.indexOf(c) } as CSSProperties}
           >
             <span aria-hidden className={cn('absolute inset-x-4 bottom-1.5 h-[3px] rounded-full bg-accent transition-opacity duration-150', active ? 'opacity-100' : 'opacity-0')} />
-            <span className={cn('tag-label inline-flex items-center gap-1.5', late ? 'text-danger' : active ? 'text-accent-ink' : 'text-fg-muted')}>
+            <span className={cn('tag-label inline-flex items-center gap-1.5 whitespace-nowrap', late ? 'text-danger' : active ? 'text-accent-ink' : 'text-fg-muted')}>
               <Icon aria-hidden className="size-3.5 shrink-0" />
               {FILTER_LABEL[c.key]}
             </span>
-            <span className="flex items-baseline justify-end gap-1 pb-1">
+            <span className="flex items-baseline gap-1.5 pb-1">
               {loading && !missing ? (
                 <Skeleton className="h-8 w-12" />
               ) : missing || c.value === null ? (
@@ -82,8 +82,12 @@ export function FloorStats({
                 </>
               ) : (
                 <>
-                  <span className={cn('tabular whitespace-nowrap font-display text-[1.75rem] font-extrabold leading-8', late ? 'text-danger' : 'text-fg-warm')}>{c.value}</span>
-                  {c.total !== undefined && <span className="tabular whitespace-nowrap text-sm text-fg-muted">de {c.total}</span>}
+                  <span className={cn('tabular whitespace-nowrap text-[1.75rem] font-bold leading-8', late ? 'text-danger' : 'text-fg-warm')}>{c.value}</span>
+                  {c.total !== undefined && (
+                    <span className="whitespace-nowrap text-sm text-fg-muted">
+                      de <span className="tabular">{c.total}</span>
+                    </span>
+                  )}
                 </>
               )}
             </span>

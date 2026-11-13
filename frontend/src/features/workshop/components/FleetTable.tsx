@@ -125,7 +125,7 @@ export function FleetTable({
             <th scope="col" className="hidden w-[16%] @[62rem]:table-cell">
               <span className="tag-label text-fg-muted">Mecánico</span>
             </th>
-            <th scope="col" className="hidden w-[9.5rem] text-right @[28rem]:table-cell">
+            <th scope="col" className="hidden w-[12rem] text-right @[28rem]:table-cell">
               <span className="tag-label text-fg-muted">Entrega</span>
             </th>
           </tr>
@@ -163,7 +163,7 @@ export function FleetTable({
           aria-expanded={open}
           aria-controls={BODY_ID}
           onClick={() => onOpenChange(!open)}
-          className="-mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm font-bold text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg md:min-h-9"
+          className="-mr-2 inline-flex min-h-12 items-center gap-1.5 rounded-control px-2 text-sm font-bold text-fg-muted transition-colors hover:bg-accent-soft hover:text-fg lg:min-h-9"
         >
           {open ? 'Ocultar lista' : 'Mostrar lista'}
           <ChevronDown aria-hidden className={cn('size-4 transition-transform duration-200 ease-out-soft motion-reduce:transition-none', open && 'rotate-180')} />
@@ -189,7 +189,7 @@ function FleetRow({ order: o, selected, onSelect }: { order: WorkOrder; selected
       )}
     >
       <td className="hidden @[44rem]:table-cell">
-        <Plate value={o.vehicle.plate} className="tag-label text-fg-muted" />
+        <Plate value={o.vehicle.plate} className="tabular text-xs text-fg-muted" />
         {!o.vehicle.plate && <span className="text-fg-subtle">Sin matrícula</span>}
       </td>
       <td className="min-w-0">
@@ -229,9 +229,17 @@ function FleetRow({ order: o, selected, onSelect }: { order: WorkOrder; selected
           </span>
         )}
       </td>
-      <td className="tabular hidden whitespace-nowrap @[36rem]:table-cell">{o.bay ? `Elevador ${o.bay}` : <span className="text-fg-muted">Sin elevador</span>}</td>
+      <td className="hidden whitespace-nowrap @[36rem]:table-cell">
+        {o.bay ? (
+          <>
+            Elevador <span className="tabular">{o.bay}</span>
+          </>
+        ) : (
+          <span className="text-fg-muted">Sin elevador</span>
+        )}
+      </td>
       <td className="hidden truncate @[62rem]:table-cell">{o.assigned_to?.name ?? <span className="text-fg-subtle">Sin asignar</span>}</td>
-      <td className="hidden text-right @[28rem]:table-cell">{o.promised_at ? <PromisedAt order={o} className="justify-end" /> : <span className="text-fg-subtle">Sin fecha</span>}</td>
+      <td className="hidden whitespace-nowrap text-right @[28rem]:table-cell">{o.promised_at ? <PromisedAt order={o} className="justify-end" /> : <span className="text-fg-subtle">Sin fecha</span>}</td>
     </tr>
   )
 }

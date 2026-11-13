@@ -114,7 +114,7 @@ function WorkspaceRow({
         {workshop && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="grid size-11 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg md:size-9"
+              className="grid size-12 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg lg:size-9"
               aria-label={`Más acciones de ${workspaceName(w)}`}
             >
               <EllipsisVertical aria-hidden className="size-4" />

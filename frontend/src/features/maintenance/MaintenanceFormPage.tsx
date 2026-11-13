@@ -356,7 +356,7 @@ function WhatSection({ form, onQuick }: { form: UseFormReturn<Values>; onQuick: 
               aria-pressed={pressed}
               onClick={() => onQuick(q)}
               className={cn(
-                'inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 md:min-h-10',
+                'inline-flex min-h-12 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 lg:min-h-10',
                 pressed ? 'border-accent bg-accent-soft text-fg' : 'border-line bg-surface-2 text-fg-muted hover:border-line-strong hover:text-fg',
               )}
             >

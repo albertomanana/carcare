@@ -90,7 +90,7 @@ export function HeroVisual({ stage, className }: HeroVisualProps) {
       </div>
       {painted && webgl === null && <WebGLProbe onResult={setWebgl} />}
       {/* Alto reservado para el botón, que aparece tras comprobar WebGL: así no empuja el texto de debajo */}
-      <div className="mt-2 flex min-h-11 flex-wrap items-center gap-2 md:min-h-9 lg:absolute lg:inset-x-4 lg:bottom-4 lg:mt-0 lg:min-h-0">
+      <div className="mt-2 flex min-h-12 flex-wrap items-center gap-2 lg:min-h-9 lg:absolute lg:inset-x-4 lg:bottom-4 lg:mt-0 lg:min-h-0">
         {mode !== 'none' && canvas !== 'failed' && (
           <Button
             size="sm"

@@ -30,7 +30,6 @@ export interface OrderCardProps {
  */
 export function OrderCard({ order, to, onRequest, busy, dragging, ghost, onPointerDown }: OrderCardProps) {
   const v = order.vehicle
-  const vehicle = [v.display_name, v.plate ? formatPlate(v.plate) : null].filter(Boolean).join(' · ')
   return (
     <article
       onPointerDown={onPointerDown}
@@ -40,7 +39,7 @@ export function OrderCard({ order, to, onRequest, busy, dragging, ghost, onPoint
       data-ghost={ghost || undefined}
       className={cn(
         'order-card group flex select-none flex-col gap-1 px-3 py-2.5',
-        'has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent pointer-fine:cursor-grab',
+        'has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent-ink pointer-fine:cursor-grab',
         dragging && 'opacity-40',
         ghost && 'cursor-grabbing',
       )}
@@ -56,35 +55,45 @@ export function OrderCard({ order, to, onRequest, busy, dragging, ghost, onPoint
         </div>
       </div>
 
-      {vehicle && <p className="truncate text-xs text-fg-muted">{vehicle}</p>}
-
-      <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-muted">
-        <span
-          data-drag-handle
-          aria-hidden
-          className="-ml-1.5 hidden size-7 shrink-0 touch-none place-items-center rounded-control text-fg-subtle pointer-coarse:grid"
-        >
-          <GripVertical className="size-4" />
-        </span>
-        {order.is_late && <LateBadge />}
-        {order.priority === 'urgent' && <PriorityBadge priority="urgent" />}
+      {/* Cada fila: a la izquierda lo que puede recortarse; a la derecha, el dato que debe leerse entero */}
+      <p className="flex min-w-0 items-baseline justify-between gap-3 text-xs text-fg-muted">
         <span className="min-w-0 truncate">
-          <span className="sr-only">Mecánico: </span>
-          {order.assigned_to ? order.assigned_to.name.split(' ')[0] : 'Sin asignar'}
-          {order.promised_at && (
-            <>
-              {' · '}
-              <span className="sr-only">prometida para </span>
-              <span className="tabular">{formatWhenInline(order.promised_at)}</span>
-            </>
-          )}
+          {v.display_name}
+          {v.plate && <span className="tabular"> · {formatPlate(v.plate)}</span>}
         </span>
-        <span className="ml-auto flex shrink-0 items-center gap-1 pl-1 text-fg-subtle tabular">
+        <span className="tabular flex shrink-0 items-center gap-1 text-fg-subtle">
           {busy && <Spinner className="size-3.5" label="Guardando…" />}
           <span aria-hidden>{shortOrderNumber(order.number)}</span>
           <span className="sr-only">{order.number}</span>
         </span>
-      </div>
+      </p>
+
+      {(order.is_late || order.priority === 'urgent') && (
+        <p className="flex flex-wrap items-center gap-1.5">
+          {order.is_late && <LateBadge />}
+          {order.priority === 'urgent' && <PriorityBadge priority="urgent" />}
+        </p>
+      )}
+
+      <p className="flex min-w-0 items-baseline justify-between gap-3 text-xs text-fg-muted">
+        <span
+          data-drag-handle
+          aria-hidden
+          className="-ml-1.5 hidden size-7 shrink-0 touch-none place-items-center self-center rounded-control text-fg-subtle pointer-coarse:grid"
+        >
+          <GripVertical className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          <span className="sr-only">Mecánico: </span>
+          {order.assigned_to ? order.assigned_to.name.split(' ')[0] : 'Sin asignar'}
+        </span>
+        {order.promised_at && (
+          <span className={cn('tabular shrink-0', order.is_late && 'text-danger')}>
+            <span className="sr-only">prometida para </span>
+            {formatWhenInline(order.promised_at)}
+          </span>
+        )}
+      </p>
     </article>
   )
 }

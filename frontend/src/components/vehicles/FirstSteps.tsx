@@ -113,7 +113,7 @@ export function FirstStepsGuide({
 }
 
 const linkClass =
-  "inline-flex min-h-11 items-center text-sm font-medium text-accent-ink underline-offset-4 hover:underline md:min-h-0";
+  "inline-flex min-h-12 items-center text-sm font-medium text-accent-ink underline-offset-4 hover:underline lg:min-h-0";
 
 /**
  * Inicio del particular: añadir el coche → anotar sus km → crear el primer recordatorio. Sin vehículo, es lo único de

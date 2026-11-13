@@ -18,7 +18,7 @@ import {
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useVehicles } from '@/api/hooks/vehicles'
-import { useTheme } from '@/app/theme-context'
+import { nextThemeMode, THEME_MODE_ACTION, useTheme } from '@/app/theme-context'
 import { useAuth } from '@/features/auth/auth-context'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useOptionalWorkspace } from '@/features/workspace/workspace-context'
@@ -41,7 +41,7 @@ const GROUP_ORDER: Command['group'][] = ['Acciones', 'Vehículos', 'Ir a', 'Espa
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const ctx = useOptionalWorkspace()
   const { workspaces } = useAuth()
-  const { toggleTheme, theme } = useTheme()
+  const { mode, cycleMode } = useTheme()
   const quick = useQuickActions()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
@@ -105,9 +105,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         perform: close(() => navigate(`/app/${w.id}`)),
       })
     }
-    list.push({ id: 'p-theme', group: 'Preferencias', label: theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro', icon: Moon, keywords: 'tema modo oscuro claro', perform: close(toggleTheme) })
+    list.push({ id: 'p-theme', group: 'Preferencias', label: THEME_MODE_ACTION[nextThemeMode(mode)], icon: Moon, keywords: 'tema modo oscuro claro sol automático', perform: close(cycleMode) })
     return list
-  }, [ctx, vehicles, workspaces, theme, toggleTheme, quick, navigate, onOpenChange])
+  }, [ctx, vehicles, workspaces, mode, cycleMode, quick, navigate, onOpenChange])
 
   const filtered = useMemo(() => {
     const q = normalizeSearch(query)

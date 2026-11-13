@@ -1,12 +1,13 @@
-import { BellPlus, ClipboardPlus, Ellipsis, FileText, Gauge, Moon, Plus, Receipt, Search, Sun, Wrench } from 'lucide-react'
+import { BellPlus, ClipboardPlus, Ellipsis, FileText, Gauge, Plus, Receipt, Search, Wrench } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Link, useLocation, useMatch, useNavigate } from 'react-router'
-import { useTheme } from '@/app/theme-context'
+import { nextThemeMode, THEME_MODE_ACTION, useTheme } from '@/app/theme-context'
 import { Dialog, DialogBody, DialogContent } from '@/components/ui/Dialog'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useOptionalWorkspace } from '@/features/workspace/workspace-context'
 import { cn } from '@/lib/cn'
 import { isNavItemActive, navGroups, type NavItem, SETTINGS_ITEM } from './nav'
+import { ThemeModeIcon } from './UserMenu'
 
 /** Fila de las hojas "Registrar" y "Más": icono pequeño sin baldosa (R7) y texto. */
 function SheetButton({
@@ -29,13 +30,13 @@ function SheetButton({
       onClick={onClick}
       aria-current={current ? 'page' : undefined}
       className={cn(
-        'flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left transition-[background-color,scale] duration-150 ease-out-soft hover:bg-accent-soft active:scale-[0.98] [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-fg-muted',
+        'flex min-h-14 w-full items-center gap-3 rounded-control px-3 text-left transition-[background-color,scale] duration-150 ease-out-soft hover:bg-accent-soft active:scale-[0.98] [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-fg-muted',
         current && 'bg-accent-soft',
       )}
     >
       {icon}
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold text-fg">{label}</span>
+        <span className="block text-sm font-semibold text-fg">{label}</span>
         {description && <span className="block text-xs text-fg-muted">{description}</span>}
       </span>
       {current && <span className="shrink-0 text-xs text-fg-muted">Estás aquí</span>}
@@ -44,14 +45,16 @@ function SheetButton({
 }
 
 /**
- * Navegación inferior en el móvil: 3 secciones + "Registrar" + "Más" (5.6).
+ * Barra de navegación inferior, fija, por debajo de 1024 px: 3 secciones + "Registrar" + "Más" (5.6). Cada destino mide
+ * 56 px de alto y ocupa un quinto del ancho.
  * "Registrar" solo se pinta con el acento si la pantalla no tiene ya su propia acción primaria (regla R1).
  */
 export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { items: NavItem[]; onOpenPalette: () => void; primaryTaken?: boolean }) {
   const ctx = useOptionalWorkspace()
   const quick = useQuickActions()
   const navigate = useNavigate()
-  const { theme, toggleTheme } = useTheme()
+  const { mode, cycleMode } = useTheme()
+  const nextMode = nextThemeMode(mode)
   const [addOpen, setAddOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const { pathname } = useLocation()
@@ -88,12 +91,12 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
         aria-current={isActive ? 'page' : undefined}
         aria-label={item.mobileLabel ? item.label : undefined}
         className={cn(
-          'flex min-h-14 flex-1 flex-col items-center justify-end gap-0.5 rounded-2xl pb-1.5 text-[11px] font-bold transition-[color,background-color,scale] duration-150 ease-out-soft active:scale-95',
-          isActive ? 'bg-accent-soft text-accent-ink' : 'text-fg-subtle',
+          'flex min-h-14 min-w-0 flex-1 flex-col items-center justify-end gap-1 rounded-control pb-2 text-xs font-semibold transition-[color,background-color,scale] duration-150 ease-out-soft active:scale-95',
+          isActive ? 'bg-accent-soft text-accent-ink' : 'text-fg-muted',
         )}
       >
-        <Icon aria-hidden className="size-5" strokeWidth={isActive ? 2.4 : 2} />
-        <span className="max-w-full truncate px-1">{item.mobileLabel ?? item.label}</span>
+        <Icon aria-hidden className="size-5 shrink-0" strokeWidth={isActive ? 2.4 : 2} />
+        <span className="max-w-full truncate px-1 leading-none">{item.mobileLabel ?? item.label}</span>
       </Link>
     )
   }
@@ -102,40 +105,36 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
     <>
       <nav
         aria-label="Navegación principal"
-        className="no-print fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 md:hidden"
+        className="no-print fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-0.5 border-t border-[var(--glass-edge)] bg-[color-mix(in_srgb,var(--surface)_94%,transparent)] px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-[16px] lg:hidden"
       >
-        <div className="hud-bar mx-auto flex max-w-md items-stretch gap-0.5 rounded-3xl p-1.5">
-          {primary.slice(0, 2).map(tab)}
-          <button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            disabled={!ctx}
-            className="group flex min-h-14 flex-1 flex-col items-center justify-end gap-0.5 pb-1.5 text-[11px] font-bold text-fg-subtle disabled:opacity-50"
+        {primary.slice(0, 2).map(tab)}
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          disabled={!ctx}
+          className="group flex min-h-14 min-w-0 flex-1 flex-col items-center justify-end gap-1 pb-2 text-xs font-semibold leading-none text-fg-muted disabled:opacity-50"
+        >
+          <span
+            aria-hidden
+            className={cn(
+              '-mt-5 grid size-12 place-items-center rounded-full transition-[background-color,scale] duration-150 ease-out-soft group-active:scale-90',
+              primaryTaken ? 'border border-line-strong/45 bg-surface-2 text-fg' : 'bg-accent text-on-accent shadow-[0_8px_18px_-8px_var(--accent)]',
+            )}
           >
-            <span
-              aria-hidden
-              className={cn(
-                '-mt-6 grid size-11 place-items-center rounded-full transition-[background-color,translate,scale,box-shadow] duration-150 ease-out-soft group-active:translate-y-0.5 group-active:scale-90',
-                primaryTaken
-                  ? 'border border-line bg-surface text-fg shadow-[0_3px_0_0_var(--neutral-edge),0_10px_14px_-6px_hsl(var(--shadow-color)/0.35)]'
-                  : 'bg-accent text-on-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.38),0_3px_0_0_var(--accent-edge),0_10px_14px_-6px_color-mix(in_srgb,var(--accent)_55%,transparent)]',
-              )}
-            >
-              <Plus className="size-6" strokeWidth={2.75} />
-            </span>
-            Registrar
-          </button>
-          {primary.slice(2).map(tab)}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            className={cn('flex min-h-14 flex-1 flex-col items-center justify-end gap-0.5 rounded-2xl pb-1.5 text-[11px] font-bold transition-[color,background-color,scale] duration-150 ease-out-soft active:scale-95', moreActive ? 'bg-accent-soft text-accent-ink' : 'text-fg-subtle')}
-            aria-label={moreActive ? 'Más secciones (estás en una de ellas)' : 'Más secciones'}
-          >
-            <Ellipsis aria-hidden className="size-5" strokeWidth={moreActive ? 2.4 : 2} />
-            Más
-          </button>
-        </div>
+            <Plus className="size-6" strokeWidth={2.75} />
+          </span>
+          Registrar
+        </button>
+        {primary.slice(2).map(tab)}
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          className={cn('flex min-h-14 min-w-0 flex-1 flex-col items-center justify-end gap-1 rounded-control pb-2 text-xs font-semibold leading-none transition-[color,background-color,scale] duration-150 ease-out-soft active:scale-95', moreActive ? 'bg-accent-soft text-accent-ink' : 'text-fg-muted')}
+          aria-label={moreActive ? 'Más secciones (estás en una de ellas)' : 'Más secciones'}
+        >
+          <Ellipsis aria-hidden className="size-5" strokeWidth={moreActive ? 2.4 : 2} />
+          Más
+        </button>
       </nav>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -188,7 +187,7 @@ export function MobileNav({ items, onOpenPalette, primaryTaken = false }: { item
                 })}
               </section>
             ))}
-            <SheetButton icon={theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />} label={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'} onClick={toggleTheme} />
+            <SheetButton icon={<ThemeModeIcon mode={nextMode} />} label={THEME_MODE_ACTION[nextMode]} onClick={cycleMode} />
           </DialogBody>
         </DialogContent>
       </Dialog>

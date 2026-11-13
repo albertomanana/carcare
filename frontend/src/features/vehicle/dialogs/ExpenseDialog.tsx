@@ -134,7 +134,7 @@ function ExpenseForm({ vehicle, expense, onDone }: { vehicle: Vehicle; expense: 
                   key={c}
                   className={cn(
                     'flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-control border px-1 py-2 text-center text-xs font-medium transition-colors',
-                    'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent',
+                    'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent-ink',
                     category === c ? 'border-accent bg-accent-soft text-fg' : 'border-line bg-surface-2 text-fg-muted hover:text-fg',
                   )}
                 >

@@ -15,7 +15,7 @@ export function VehicleSwitcher({ vehicles, value, onChange, label = 'Vehículo'
             key={v.id}
             className={cn(
               'flex min-h-14 shrink-0 cursor-pointer snap-start items-center gap-3 rounded-card border px-3 py-2 transition-colors duration-150',
-              'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
+              'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
               checked ? 'border-accent/60 bg-accent-soft' : 'border-line bg-surface hover:border-line-strong',
             )}
           >

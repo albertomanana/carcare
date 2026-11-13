@@ -74,7 +74,7 @@ export function ReminderItem({
       tabIndex={highlighted ? -1 : undefined}
       data-tone={mission && pending && state && state.tone !== 'neutral' ? state.tone : mission && reminder.status === 'done' ? 'ok' : undefined}
       className={cn(
-        '@container flex scroll-mt-32 items-start gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:gap-3',
+        '@container flex scroll-mt-32 items-start gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink sm:gap-3',
         mission ? 'mission' : 'py-3',
         highlighted && (mission ? 'ring-2 ring-accent' : 'rounded-control bg-surface-2 px-2'),
       )}
@@ -101,19 +101,19 @@ export function ReminderItem({
           )}
           <h3 className="min-w-0 break-words font-medium text-fg">{reminder.title}</h3>
         </div>
-        <p className="mt-0.5 text-sm text-fg-muted tabular">
+        <p className="mt-0.5 text-sm text-fg-muted">
           {vehicleLink && reminder.vehicle && (
             <>
               <Link to={vehicleLink} className="font-bold text-fg underline decoration-fg-subtle underline-offset-4 hover:decoration-fg">
                 {reminder.vehicle.display_name}
                 {/* espacios de no separación: la matrícula no se parte y cada «·» va pegado a lo que le sigue */}
-                {reminder.vehicle.plate ? ` · ${formatPlate(reminder.vehicle.plate).replace(' ', ' ')}` : ''}
+                {reminder.vehicle.plate && <span className="tabular">{` · ${formatPlate(reminder.vehicle.plate).replace(' ', ' ')}`}</span>}
               </Link>
             </>
           )}
           <span className={cn('@[32rem]:hidden', pending && reminder.state === 'overdue' && 'text-danger')}>
             {vehicleLink && reminder.vehicle ? ' · ' : ''}
-            {whenText}
+            <span className="tabular">{whenText}</span>
           </span>
         </p>
         {extra && <p className="mt-0.5 text-xs text-fg-subtle">{extra}</p>}
@@ -138,7 +138,7 @@ export function ReminderItem({
           {hasMenu && (
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="grid size-11 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg md:size-9"
+                className="grid size-12 place-items-center rounded-control text-fg-muted hover:bg-surface-2 hover:text-fg lg:size-9"
                 aria-label={`Más acciones de ${reminder.title}`}
               >
                 <EllipsisVertical aria-hidden className="size-4" />

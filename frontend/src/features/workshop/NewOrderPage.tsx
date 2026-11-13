@@ -183,7 +183,7 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
               aria-expanded={moreOpen}
               aria-controls="mas-opciones"
               onClick={() => setMoreOpen(!moreOpen)}
-              className="inline-flex min-h-11 items-center gap-2 rounded-control text-left hover:text-fg-warm md:min-h-9"
+              className="inline-flex min-h-12 items-center gap-2 rounded-control text-left hover:text-fg-warm lg:min-h-9"
             >
               <ChevronDown aria-hidden className={cn('size-4 shrink-0 text-fg-muted transition-transform duration-150 motion-reduce:transition-none', !moreOpen && '-rotate-90')} />
               Más opciones

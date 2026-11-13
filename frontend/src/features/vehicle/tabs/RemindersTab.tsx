@@ -146,7 +146,7 @@ function Group({ state, items, actions, hashId }: { state: ReminderState; items:
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             aria-controls={open ? listId : undefined}
-            className="inline-flex min-h-11 items-center gap-1 rounded-control text-left hover:text-fg md:min-h-9"
+            className="inline-flex min-h-12 items-center gap-1 rounded-control text-left hover:text-fg lg:min-h-9"
           >
             <ChevronRight aria-hidden className={cn('size-4 text-fg-subtle transition-transform duration-150 ease-out-soft motion-reduce:transition-none', open && 'rotate-90')} />
             {heading}

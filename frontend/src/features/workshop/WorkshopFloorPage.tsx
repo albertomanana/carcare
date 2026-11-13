@@ -32,7 +32,7 @@ type FocusInset = NonNullable<WorkshopSceneProps['focusInset']>
 /** Separación entre los paneles flotantes y ancho de la columna lateral (ficha, misiones o primeros pasos). */
 const GAP = 12
 const SLOT_WIDTH = 360
-/** Lo que reserva `.canvas-hud` en md+ (px): cabecera flotante (5,25 rem), margen derecho (1,5 rem) e inferior (2 rem). */
+/** Lo que reserva `.canvas-hud` desde 1024 px (px): cabecera flotante (5,25 rem), margen derecho (1,5 rem) e inferior (2 rem). */
 const HUD_PAD = { top: 84, right: 24, bottom: 32 }
 
 const LIST_KEY = 'carcare.taller.lista'
@@ -46,12 +46,13 @@ function readListOpen(): boolean {
 }
 
 /**
- * Portada del taller («Taller»): la maqueta isométrica a pantalla completa y, flotando encima como el HUD de un juego,
- * las cifras del taller (filtran la lista), la flota en el taller (plegable; es la alternativa HTML de la escena), la
- * ficha de lo elegido y, sin nada elegido, las «misiones» (lo que pide atención, con datos reales) o los primeros pasos
- * de un taller recién creado. La selección vive en la URL (`?elevador=` / `?orden=`) y la escena enfoca el coche
- * teniendo en cuenta lo que tapan los paneles (`focusInset`). Desde 768 px la maqueta va a sangre (a 768 la ficha es una
- * hoja inferior); por debajo, o sin WebGL, todo se apila bajo la escena. Se actualiza cada minuto.
+ * Portada del taller («Taller»). Desde 1024 px, la maqueta ocupa toda la ventana y el HUD se queda en los márgenes: arriba
+ * las cifras del taller (filtran la lista), abajo la flota en el taller (plegable; es la alternativa HTML de la escena) y
+ * a la derecha la ficha de lo elegido o, sin nada elegido, las «misiones» (lo que pide atención, con datos reales) o los
+ * primeros pasos de un taller recién creado. La selección vive en la URL (`?elevador=` / `?orden=`) y la escena enfoca el
+ * coche teniendo en cuenta lo que tapan los paneles (`focusInset`); entre 1024 y 1279 px la ficha es una hoja inferior.
+ * Por debajo de 1024 px, o sin WebGL, no hay escena: los elevadores son una rejilla de botones y todo se apila en una
+ * columna. Se actualiza cada minuto.
  */
 export default function WorkshopFloorPage() {
   const ctx = useWorkspace()
@@ -66,9 +67,9 @@ export default function WorkshopFloorPage() {
   const isMechanic = ctx.workspace.role === 'mechanic'
 
   const webgl = useWebGLAvailable()
-  const md = useMediaQuery('(min-width: 768px)')
+  const desktop = useMediaQuery('(min-width: 1024px)')
   const wide = useMediaQuery('(min-width: 1280px)')
-  const floating = md && webgl
+  const floating = desktop && webgl
 
   const [filter, setFilter] = useState<FloorFilter>('all')
   const [listOpen, setListOpenState] = useState(readListOpen)
@@ -194,7 +195,7 @@ export default function WorkshopFloorPage() {
   const header = (
     <div className={cn('hud-bar pointer-events-auto min-w-0 px-4 py-3', !floating && 'w-full')}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 className="font-display text-xl font-bold text-fg-warm md:text-2xl">Taller</h1>
+        <h1 className="font-display text-xl font-bold text-fg-warm lg:text-2xl">Taller</h1>
         <div className="flex flex-wrap items-center gap-2">
           <ButtonLink to={`${ctx.base}/ordenes`} size="sm" icon={<SquareKanban aria-hidden />}>
             Tablero
@@ -230,7 +231,7 @@ export default function WorkshopFloorPage() {
       filter={activeFilter}
       onFilter={applyFilter}
       floating={floating}
-      className={cn('pointer-events-auto', floating && 'min-w-0 flex-1 basis-[30rem] md:max-w-max')}
+      className={cn('pointer-events-auto', floating && 'min-w-0 max-w-max flex-1 basis-[30rem]')}
     />
   )
 
@@ -320,7 +321,7 @@ export default function WorkshopFloorPage() {
         {header}
         {stats}
         {guide && <div className="hud-panel p-4">{firstSteps}</div>}
-        <div className="relative -mx-4 h-[45dvh] min-h-[260px] overflow-hidden bg-canvas sm:-mx-6">{sceneNode}</div>
+        {bays.isPending ? <Skeleton className="h-48 rounded-card" /> : <WorkshopScene {...sceneProps} flat className="hud-panel" />}
         {!guide && showMissions && <div className="hud-panel p-4">{missionsPanel}</div>}
         {fleet}
         {slotPanel}

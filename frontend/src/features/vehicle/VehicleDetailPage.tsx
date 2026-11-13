@@ -242,21 +242,17 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-bold text-fg-warm text-balance md:text-3xl">
             {vehicle.display_name}
-            {vehicle.plate && <span className="tag-label ml-3 align-middle text-sm text-fg-muted md:text-base">{formatPlate(vehicle.plate)}</span>}
+            {vehicle.plate && <span className="tabular ml-3 whitespace-nowrap align-middle text-sm font-medium text-fg-muted md:text-base">{formatPlate(vehicle.plate)}</span>}
           </h1>
           {details && <p className="mt-1 text-sm text-fg-muted">{details}</p>}
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <span className="font-medium text-fg tabular">{formatKm(vehicle.current_mileage, { empty: 'Sin kilometraje' })}</span>
-            {vehicle.mileage_updated_at && <span className="text-fg-subtle">· leído {formatRelativeDate(vehicle.mileage_updated_at)}</span>}
+          {/* Sin puntos separadores: al partirse la línea quedaban colgando; la separación la da el hueco */}
+          <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+            <span className="tabular font-medium text-fg">{formatKm(vehicle.current_mileage, { empty: 'Sin kilometraje' })}</span>
+            {vehicle.mileage_updated_at && <span className="text-fg-subtle">leído {formatRelativeDate(vehicle.mileage_updated_at)}</span>}
             {canOperate && !archived && (
-              <>
-                <span aria-hidden className="text-fg-subtle">
-                  ·
-                </span>
-                <button type="button" onClick={() => quick.run('mileage', vehicle.id)} className="font-medium text-accent-ink underline-offset-4 hover:underline">
-                  Anotar km
-                </button>
-              </>
+              <button type="button" onClick={() => quick.run('mileage', vehicle.id)} className="font-semibold text-accent-ink underline-offset-4 hover:underline">
+                Anotar km
+              </button>
             )}
           </p>
           {(ctx.isWorkshop || order || overdue > 0) && (
@@ -271,7 +267,7 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
                 ))}
               {order && (
                 <Link to={`${ctx.base}/ordenes/${order.id}`} className="underline-offset-4 hover:text-fg hover:underline">
-                  {order.number} · {WORK_ORDER_STATUS[order.status].label}
+                  <span className="tabular">{order.number}</span> · {WORK_ORDER_STATUS[order.status].label}
                   {order.bay ? ` · Elevador ${order.bay}` : ''}
                 </Link>
               )}
@@ -326,7 +322,7 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
             </DropdownMenu>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger className="grid size-11 place-items-center rounded-control border border-line bg-surface-2 text-fg-muted hover:text-fg md:size-10" aria-label="Más acciones del vehículo">
+            <DropdownMenuTrigger className="grid size-12 place-items-center rounded-control border border-line bg-surface-2 text-fg-muted hover:text-fg lg:size-10" aria-label="Más acciones del vehículo">
               <EllipsisVertical aria-hidden className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

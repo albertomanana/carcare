@@ -302,7 +302,7 @@ function MemberRow({
 function RolesGuide() {
   return (
     <details className="group mt-4 text-sm">
-      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-control font-medium text-fg-muted hover:text-fg md:min-h-9 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-12 cursor-pointer list-none items-center gap-1.5 rounded-control font-medium text-fg-muted hover:text-fg lg:min-h-9 [&::-webkit-details-marker]:hidden">
         <ChevronRight aria-hidden className="size-4 shrink-0 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" />
         ¿Qué puede hacer cada rol?
       </summary>
@@ -535,7 +535,7 @@ function AddMemberForm({ onDone }: { onDone: () => void }) {
                 <label
                   key={r}
                   className={cn(
-                    'flex cursor-pointer items-start gap-3 rounded-card border p-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
+                    'flex cursor-pointer items-start gap-3 rounded-card border p-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
                     checked ? 'border-accent bg-accent-soft' : 'border-line hover:border-line-strong',
                   )}
                 >

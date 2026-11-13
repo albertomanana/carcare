@@ -108,7 +108,7 @@ export default function RegisterPage() {
                   key={value}
                   className={cn(
                     'relative flex cursor-pointer items-start gap-3 rounded-control border p-3.5 transition-colors duration-150',
-                    'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
+                    'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink',
                     checked ? 'border-accent-ink bg-surface-2' : 'border-line bg-surface hover:border-line-strong',
                   )}
                 >

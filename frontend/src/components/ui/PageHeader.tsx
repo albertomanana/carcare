@@ -26,7 +26,7 @@ export function PageHeader({ title, description, eyebrow, actions, back, crumbs,
       {crumbs ? (
         <Breadcrumbs items={crumbs} className="-mb-1" />
       ) : back && (
-        <Link to={back.to} className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm text-fg-muted hover:text-fg md:min-h-0">
+        <Link to={back.to} className="inline-flex min-h-12 w-fit items-center gap-1.5 text-sm text-fg-muted hover:text-fg lg:min-h-0">
           <ArrowLeft aria-hidden className="size-4" />
           {back.label}
         </Link>

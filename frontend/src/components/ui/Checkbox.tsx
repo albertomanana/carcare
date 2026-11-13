@@ -17,7 +17,7 @@ export function Checkbox({ label, description, className, id: idProp, ...props }
         <input
           id={id}
           type="checkbox"
-          className="peer size-5 cursor-pointer appearance-none rounded-lg border-2 border-line-strong bg-surface-2 transition-colors checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="peer size-5 cursor-pointer appearance-none rounded-lg border-2 border-line-strong bg-surface-2 transition-colors checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
           {...props}
         />
         <Check aria-hidden className="pointer-events-none absolute size-3.5 text-on-accent opacity-0 peer-checked:opacity-100" strokeWidth={3} />

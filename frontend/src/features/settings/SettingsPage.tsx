@@ -1,4 +1,4 @@
-import { Moon, Sun, Trash2 } from 'lucide-react'
+import { Moon, Sun, SunMoon, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -91,20 +91,25 @@ export default function SettingsPage() {
 }
 
 function AppearanceCard() {
-  const { theme, setTheme } = useTheme()
+  const { mode, setMode } = useTheme()
   return (
     <Card id="apariencia" className="scroll-mt-24">
       <CardHeader title="Apariencia" description="El tema se guarda en este navegador." />
       <CardBody className="space-y-4">
         <SegmentedControl
           label="Tema"
-          value={theme}
-          onValueChange={setTheme}
+          value={mode}
+          onValueChange={setMode}
           options={[
-            { value: 'dark', label: 'Oscuro', icon: <Moon aria-hidden /> },
+            { value: 'sun', label: 'Según el sol', icon: <SunMoon aria-hidden /> },
             { value: 'light', label: 'Claro', icon: <Sun aria-hidden /> },
+            { value: 'dark', label: 'Oscuro', icon: <Moon aria-hidden /> },
           ]}
         />
+        <p className="text-sm text-fg-muted">
+          Según el sol: claro de día, oscuro de noche y un tono más cálido al amanecer y al atardecer. Se calcula con la hora y la zona horaria de este
+          dispositivo, sin pedir tu ubicación.
+        </p>
         <p className="text-sm text-fg-muted">Si tu sistema pide reducir el movimiento, CarCare acorta las animaciones y no gira el modelo 3D.</p>
       </CardBody>
     </Card>

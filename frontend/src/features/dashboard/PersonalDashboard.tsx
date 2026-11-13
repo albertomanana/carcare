@@ -28,14 +28,21 @@ import { INTERVAL_DISCLAIMER } from '@/lib/reminders'
 import { plural } from '@/lib/text'
 import { CarThumbnail, GarageScene, useWebGLAvailable } from '@/three'
 
+/**
+ * Px del lienzo que tapa el HUD en escritorio: la barra de estado y la de Inicio arriba, la barra del vehículo abajo y
+ * la columna de misiones a la derecha. El garaje se encuadra en lo que queda libre, en el centro.
+ */
+const SCENE_INSET = { top: 156, right: 420, bottom: 184 }
+
 /** Misiones de recordatorio que caben en Inicio. */
 const REMINDER_MISSIONS = 4
 
 /**
- * Inicio del particular (mundo «Diorama»): el garaje en 3D a sangre detrás de todo y, flotando encima, la cabecera con el
- * estado, la ficha del vehículo elegido, las misiones (recordatorios vencidos o próximos y kilometraje por actualizar,
- * todo con datos de la API), las cifras del mes y la lista de vehículos. Sin WebGL, la lista de vehículos (con su
- * miniatura y un selector) hace de alternativa 2D del lienzo.
+ * Inicio del particular. Desde 1024 px, el garaje en 3D ocupa toda la ventana y el HUD se queda en los márgenes: arriba
+ * a la izquierda el estado, abajo a la izquierda el vehículo elegido y a la derecha las misiones (recordatorios vencidos o
+ * próximos y kilometraje por actualizar, todo con datos de la API); al bajar aparecen las cifras del mes y la lista de
+ * vehículos. Por debajo de 1024 px, o sin WebGL, no hay escena: la misma información en una columna de paneles y botones,
+ * con la miniatura del vehículo y el selector como alternativa 2D.
  */
 export default function PersonalHome() {
   const ctx = useWorkspace()
@@ -83,7 +90,7 @@ function RegisterMenu({ vehicles }: { vehicles: Vehicle[] }) {
   const only = vehicles.length === 1 ? vehicles[0].id : undefined
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={buttonClasses({ variant: 'primary', className: 'max-md:hidden' })}>
+      <DropdownMenuTrigger className={buttonClasses({ variant: 'primary', className: 'max-lg:hidden' })}>
         <Plus aria-hidden />
         Registrar
         <ChevronDown aria-hidden />
@@ -116,51 +123,63 @@ function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide
   const canOperate = ctx.can('operate')
   const wide = useMediaQuery('(min-width: 1024px)')
   const webgl = useWebGLAvailable()
+  // La escena solo en escritorio: en el móvil y la tableta se navega con botones, sin depender del 3D
+  const show3d = webgl && wide
   const active = data.vehicles.filter((v) => !v.archived_at)
   const [focusId, setFocusId] = useState<Vehicle['id'] | null>(null)
   const vehicle = active.find((v) => v.id === focusId) ?? active[0]
 
-  const scene = webgl ? (
+  const scene = show3d ? (
     // El «cargando» de la escena no pinta una caja gris a pantalla completa: el lienzo es el de la página
-    <div className="size-full [&_[aria-busy=true]]:!bg-transparent">
+    <div className="absolute inset-y-0 left-[var(--shell-left)] right-0 [&_[aria-busy=true]]:!bg-transparent">
       <GarageScene
         className="h-full w-full"
         vehicles={active.map((v) => ({ id: v.id, name: v.display_name, plate: v.plate, color: v.color_hex, body: v.body_type }))}
         selectedId={vehicle ? focusId : null}
         onSelect={setFocusId}
-        focusInset={wide ? { top: 80, right: 420, bottom: 200 } : { top: 260, bottom: Math.round(window.innerHeight * 0.45) }}
+        focusInset={SCENE_INSET}
       />
     </div>
   ) : null
 
-  return (
-    <CanvasBleed scene={scene} hudClassName="flex flex-col gap-4 xl:mx-auto xl:max-w-[88rem]">
+  const statusChips = (
+    <>
+      {data.reminders.overdue > 0 && (
+        <Chip tone="danger" icon={<OctagonAlert aria-hidden />}>
+          {plural(data.reminders.overdue, 'vencido', 'vencidos')}
+        </Chip>
+      )}
+      {data.reminders.soon > 0 && (
+        <Chip tone="warning" icon={<Clock aria-hidden />}>
+          {plural(data.reminders.soon, 'próximo', 'próximos')}
+        </Chip>
+      )}
+      <Chip icon={<CarFront aria-hidden />}>{plural(active.length, 'vehículo', 'vehículos')}</Chip>
+    </>
+  )
+
+  const panels = (
+    <>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
-        <div className={cn('flex min-w-0 flex-col gap-4', webgl && 'lg:min-h-[calc(100dvh-8.5rem)]')}>
-          <HudHeader
-            className="mb-0"
-            title="Inicio"
-            description={statusLine(data)}
-            actions={canOperate && !guide ? <RegisterMenu vehicles={data.vehicles} /> : undefined}
-            chips={
-              <>
-                {data.reminders.overdue > 0 && (
-                  <Chip tone="danger" icon={<OctagonAlert aria-hidden />}>
-                    {plural(data.reminders.overdue, 'vencido', 'vencidos')}
-                  </Chip>
-                )}
-                {data.reminders.soon > 0 && (
-                  <Chip tone="warning" icon={<Clock aria-hidden />}>
-                    {plural(data.reminders.soon, 'próximo', 'próximos')}
-                  </Chip>
-                )}
-                <Chip icon={<CarFront aria-hidden />}>{plural(active.length, 'vehículo', 'vehículos')}</Chip>
-              </>
-            }
-          />
+        <div className={cn('flex min-w-0 flex-col gap-4', show3d && 'min-h-[calc(100dvh-8.5rem)]')}>
+          {show3d ? (
+            <header className="hud-bar flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
+              <h1 className="mr-1 font-display text-xl font-bold text-fg-warm">Inicio</h1>
+              {/* Las insignias ya dicen lo vencido y lo próximo; la frase queda para el lector de pantalla */}
+              <p className="sr-only">{statusLine(data)}</p>
+              {statusChips}
+              {canOperate && !guide && (
+                <span className="ml-auto">
+                  <RegisterMenu vehicles={data.vehicles} />
+                </span>
+              )}
+            </header>
+          ) : (
+            <HudHeader className="mb-0" title="Inicio" description={statusLine(data)} actions={canOperate && !guide ? <RegisterMenu vehicles={data.vehicles} /> : undefined} chips={statusChips} />
+          )}
           {/* hueco por el que se ve el garaje (el puntero atraviesa a la escena) */}
-          <div aria-hidden className={webgl ? 'h-[30dvh] min-h-40 lg:h-auto lg:flex-1' : 'hidden'} />
-          {vehicle && <VehicleSpot vehicle={vehicle} vehicles={active} onPick={setFocusId} webgl={webgl} canOperate={canOperate} />}
+          {show3d && <span aria-hidden className="flex-1" />}
+          {vehicle && <VehicleSpot vehicle={vehicle} vehicles={active} onPick={setFocusId} bar={show3d} canOperate={canOperate} />}
         </div>
         <div className="min-w-0">
           {guide ? <HomeFirstSteps vehicle={guide.vehicle} steps={guide.steps} onHide={onHideGuide} className="hud-panel p-4 sm:p-5" /> : <Missions data={data} canOperate={canOperate} />}
@@ -180,40 +199,53 @@ function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide
           </div>
         )}
       </div>
+    </>
+  )
+
+  if (!show3d) return <div className="flex flex-col gap-4">{panels}</div>
+  return (
+    <CanvasBleed scene={scene} hudClassName="flex flex-col gap-4 xl:mx-auto xl:max-w-[88rem]">
+      {panels}
     </CanvasBleed>
   )
 }
 
-/** Ficha del vehículo elegido: su pintura, el kilometraje, el selector de vehículo y las dos acciones. */
-function VehicleSpot({ vehicle, vehicles, onPick, webgl, canOperate }: { vehicle: Vehicle; vehicles: Vehicle[]; onPick: (id: Vehicle['id']) => void; webgl: boolean; canOperate: boolean }) {
+/**
+ * El vehículo elegido: su pintura, la matrícula, el kilometraje, las dos acciones y el selector de vehículo (la alternativa
+ * de teclado a pulsar un coche de la escena). `bar`: una sola fila en el margen inferior de la escena 3D; sin `bar`,
+ * tarjeta apilada con la miniatura estática del coche.
+ */
+function VehicleSpot({ vehicle, vehicles, onPick, bar, canOperate }: { vehicle: Vehicle; vehicles: Vehicle[]; onPick: (id: Vehicle['id']) => void; bar: boolean; canOperate: boolean }) {
   const ctx = useWorkspace()
   const quick = useQuickActions()
   const sub = [vehicle.nickname ? `${vehicle.make} ${vehicle.model}` : vehicle.version, vehicle.year].filter(Boolean).join(' · ')
   return (
-    <section aria-label="Vehículo elegido" className="hud-panel p-3 sm:p-4">
-      {!webgl && (
-        <div className="mb-3 overflow-hidden rounded-xl bg-surface-2">
-          <CarThumbnail appearance={{ bodyType: vehicle.body_type, colorHex: vehicle.color_hex }} alt={`Ilustración de ${vehicle.display_name}`} className="mx-auto h-36 w-full object-contain p-2" />
-        </div>
+    <section aria-label="Vehículo elegido" className={cn(bar ? 'hud-bar flex flex-wrap items-center gap-x-4 gap-y-2.5 px-3 py-2.5' : 'hud-panel flex flex-col gap-3 p-3 sm:p-4')}>
+      {!bar && (
+        <CarThumbnail
+          appearance={{ bodyType: vehicle.body_type, colorHex: vehicle.color_hex }}
+          alt={`Ilustración de ${vehicle.display_name}`}
+          className="mx-auto h-36 w-full rounded-control bg-surface-2 object-contain p-2"
+        />
       )}
-      <div className="flex items-center gap-3">
-        <PaintToken color={vehicle.color_hex} size="lg">
+      <div className="flex min-w-0 items-center gap-3">
+        <PaintToken color={vehicle.color_hex} size={bar ? 'md' : 'lg'}>
           <CarFront />
         </PaintToken>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-lg font-bold text-fg-warm">{vehicle.display_name}</p>
+          <p className="truncate font-display text-lg font-bold leading-tight text-fg-warm">{vehicle.display_name}</p>
           <p className="truncate text-sm text-fg-muted">
-            {vehicle.plate ? <span className="tag-label text-fg-muted">{formatPlate(vehicle.plate)}</span> : 'Sin matrícula'}
+            {vehicle.plate ? <span className="tabular">{formatPlate(vehicle.plate)}</span> : 'Sin matrícula'}
             {sub && <span> · {sub}</span>}
           </p>
-          <p className="tabular text-sm font-bold text-fg">
-            {formatKm(vehicle.current_mileage, { empty: 'Sin km anotados' })}
-            {vehicle.mileage_updated_at && <span className="font-normal text-fg-subtle"> · {formatRelativeDate(vehicle.mileage_updated_at)}</span>}
+          <p className="flex items-baseline gap-3 text-sm">
+            <span className="tabular shrink-0 font-semibold text-fg">{formatKm(vehicle.current_mileage, { empty: 'Sin km anotados' })}</span>
+            {vehicle.mileage_updated_at && <span className="min-w-0 truncate text-fg-subtle">leído {formatRelativeDate(vehicle.mileage_updated_at)}</span>}
           </p>
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <ButtonLink to={`${ctx.base}/vehiculos/${vehicle.id}`} size="sm">
+      <div className={cn('flex flex-wrap items-center gap-2', bar && 'ml-auto')}>
+        <ButtonLink to={`${ctx.base}/vehiculos/${vehicle.id}`} size="sm" variant={bar ? 'outline' : 'secondary'}>
           Abrir ficha
         </ButtonLink>
         {canOperate && (
@@ -223,7 +255,7 @@ function VehicleSpot({ vehicle, vehicles, onPick, webgl, canOperate }: { vehicle
         )}
       </div>
       {vehicles.length > 1 && (
-        <div role="group" aria-label="Elegir vehículo" className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+        <div role="group" aria-label="Elegir vehículo" className={cn('flex flex-wrap gap-1.5', bar ? 'w-full' : 'border-t border-line pt-3')}>
           {vehicles.map((v) => (
             <button key={v.id} type="button" className="chip" aria-pressed={v.id === vehicle.id} onClick={() => onPick(v.id)}>
               {v.display_name}
@@ -359,7 +391,7 @@ function VehiclesPanel({ vehicles, canOperate, focusId, onFocus }: { vehicles: V
                   <Link to={`${ctx.base}/vehiculos/${v.id}`} className="font-bold text-fg underline-offset-4 hover:underline">
                     {v.display_name}
                   </Link>
-                  {v.plate && <span className="tag-label text-fg-muted">{formatPlate(v.plate)}</span>}
+                  {v.plate && <span className="tabular text-xs text-fg-muted">{formatPlate(v.plate)}</span>}
                 </p>
                 {details && <p className="truncate text-sm text-fg-muted">{details}</p>}
                 <p className="mt-1 flex flex-wrap items-center gap-1.5">

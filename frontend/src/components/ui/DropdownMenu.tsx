@@ -27,7 +27,7 @@ export function DropdownMenuContent({ className, align = 'end', sideOffset = 6, 
 }
 
 const itemClasses =
-  'relative flex min-h-11 cursor-pointer select-none items-center gap-2.5 rounded-control px-2.5 text-sm font-semibold text-fg outline-none transition-colors duration-100 md:min-h-9 ' +
+  'relative flex min-h-12 cursor-pointer select-none items-center gap-2.5 rounded-control px-2.5 text-sm font-semibold text-fg outline-none transition-colors duration-100 lg:min-h-9 ' +
   'data-[highlighted]:bg-accent-soft data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-muted'
 
 export function DropdownMenuItem({ className, icon, danger, children, ...props }: ComponentProps<typeof DM.Item> & { icon?: ReactNode; danger?: boolean }) {

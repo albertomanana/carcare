@@ -8,7 +8,6 @@ import { PageSpinner } from '@/components/ui/Spinner'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { QuickActionsProvider } from '@/features/quick-actions/QuickActionsProvider'
 import { useOptionalWorkspace } from '@/features/workspace/workspace-context'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/cn'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { CanvasContext } from './canvas-context'
@@ -20,13 +19,14 @@ import { NotificationBell } from './NotificationBell'
 import { SkipLink } from './SkipLink'
 import { UserMenu } from './UserMenu'
 import { VehicleDock } from './VehicleDock'
+import { VehiclePills } from './VehiclePills'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
 /** Muelle del indicador de sección activa: se desliza de una sección a otra con un rebote corto. */
 const NAV_SPRING = { type: 'spring', duration: 0.32, bounce: 0.18 } as const
 
 /**
- * Pestaña del dock flotante. Estrecho (76 px): solo el icono, con el nombre para lectores de pantalla y un tooltip con
+ * Pestaña del carril de navegación. Estrecho (76 px): solo el icono, con el nombre para lectores de pantalla y un tooltip con
  * el nombre y qué hay dentro (también al llegar con el teclado). Activo también en sus rutas `also`: la ficha de un
  * vehículo marca "Garaje". El estado activo lleva color, grosor y `aria-current` (no solo color).
  */
@@ -39,7 +39,7 @@ function DockLink({ item, narrow }: { item: NavItem; narrow: boolean }) {
       to={item.to}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-[color,background-color,scale] duration-150 ease-out-soft active:scale-[0.97]',
+        'relative flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold transition-[color,background-color,scale] duration-150 ease-out-soft active:scale-[0.97]',
         active ? 'text-accent-ink' : 'text-fg-muted hover:bg-accent-soft hover:text-fg',
         narrow ? 'justify-center' : 'justify-start',
       )}
@@ -49,10 +49,10 @@ function DockLink({ item, narrow }: { item: NavItem; narrow: boolean }) {
           layoutId="dock-pill"
           aria-hidden
           transition={NAV_SPRING}
-          className="absolute inset-0 rounded-xl bg-accent-soft shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--accent)_28%,transparent),0_2px_0_0_color-mix(in_srgb,var(--accent)_22%,transparent)]"
+          className="absolute inset-0 rounded-control bg-accent-soft shadow-[inset_2px_0_0_0_var(--accent)]"
         />
       )}
-      <Icon aria-hidden className="relative size-5 shrink-0" strokeWidth={active ? 2.5 : 2.1} />
+      <Icon aria-hidden className="relative size-5 shrink-0" strokeWidth={active ? 2.3 : 2} />
       <span className={cn('relative', narrow && 'sr-only')}>{item.label}</span>
     </Link>
   )
@@ -115,7 +115,7 @@ function SearchButtons({ onOpen }: { onOpen: () => void }) {
         type="button"
         onClick={onOpen}
         aria-keyshortcuts="Control+K Meta+K"
-        className="hidden h-10 w-44 shrink-0 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5 text-sm font-semibold text-fg-subtle shadow-[inset_0_2px_3px_hsl(var(--shadow-color)/0.06)] transition-[border-color,color,scale] duration-150 hover:border-line-strong hover:text-fg-muted active:scale-[0.98] lg:flex xl:w-52"
+        className="hidden h-10 w-44 shrink-0 items-center gap-2 rounded-control border border-line-strong/45 bg-surface-2 px-3.5 text-sm font-medium text-fg-subtle transition-[border-color,color,scale] duration-150 hover:border-line-strong hover:text-fg-muted active:scale-[0.98] lg:flex xl:w-52"
       >
         <Search aria-hidden className="size-4" />
         <span className="flex-1 text-left">Buscar…</span>
@@ -128,31 +128,26 @@ function SearchButtons({ onOpen }: { onOpen: () => void }) {
 }
 
 /**
- * Estructura de la app (mundo «Diorama», 11/11/2026): sobre el lienzo azul pastel flotan
- *  - el dock de navegación (76 px con iconos en tableta, 240 px en escritorio, plegable) con las fichas de vehículo,
- *  - la barra de estado (HUD) con el espacio, la búsqueda, los avisos y la cuenta,
- *  - en el móvil, un dock inferior flotante con 3 secciones, «Registrar» y «Más».
+ * Estructura de la app («Apex Telemetry», 13/11/2026). El corte entre móvil y escritorio está en 1024 px:
+ *  - Desde 1024 px: un carril de navegación a la izquierda (76 px con iconos; se puede desplegar a 240 px) con las fichas
+ *    de vehículo, y la barra de estado arriba con el espacio, la búsqueda, los avisos y la cuenta. En las pantallas con
+ *    escena 3D (`<CanvasBleed>`), carril y barra flotan en los márgenes y la escena ocupa toda la ventana.
+ *  - Por debajo: barra de navegación inferior fija (3 secciones, «Registrar» y «Más») y, en el particular, una fila de
+ *    píldoras con sus vehículos. Nada depende del 3D para navegar.
  * Una sola acción primaria a la vista (R1): ver `primary-action.ts`.
- *
- * El contenido puede ir sobre un lienzo a sangre (`<CanvasBleed>` / `useCanvasBleed`): sin márgenes, con la cabecera
- * flotando sobre la escena. `data-canvas` del `<main>` vale `page` (normal), `bleed` (escena a sangre) o `flush`
- * (heredado: sin márgenes pero con la cabecera en el flujo; solo lo usa la ruta `/taller` antigua).
+ * `data-canvas` del `<main>` vale `page` (pantalla normal) o `bleed` (escena a sangre, cabecera flotando encima).
  */
 export function AppShell() {
   const ctx = useOptionalWorkspace()
   const location = useLocation()
-  const [collapsed, setCollapsed] = useState(() => readStorage(STORAGE_KEYS.sidebarCollapsed) === '1')
+  // Recogido por defecto: el carril es periférico. Solo se despliega si se pidió (y se recuerda).
+  const [collapsed, setCollapsed] = useState(() => readStorage(STORAGE_KEYS.sidebarCollapsed) !== '0')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [claims, setClaims] = useState(0)
   const [bleedClaims, setBleedClaims] = useState(0)
   const groups = navGroups(ctx)
   const items = groups.flatMap((g) => g.items)
-  // Solo iconos con el dock plegado y en tableta (76 px de 768 a 1023 px)
-  const wide = useMediaQuery('(min-width: 1024px)')
-  const narrow = collapsed || !wide
-  const sidebar = !!ctx?.isWorkshop
   const bleed = bleedClaims > 0
-  const flush = !bleed && /\/taller\/?$/.test(location.pathname)
   const home = ctx ? ctx.base : '/app'
 
   const primaryAction = useMemo(
@@ -200,98 +195,79 @@ export function AppShell() {
     window.scrollTo({ top: 0 })
   }, [location.pathname])
 
-  const content = (
-    <Suspense fallback={<PageSpinner />}>
-      <div className="stagger contents">
-        <Outlet />
-      </div>
-    </Suspense>
-  )
-
-  const maxWidth = sidebar ? 'max-w-[1440px]' : 'max-w-[1240px]'
+  const maxWidth = ctx?.isWorkshop ? 'max-w-[1440px]' : 'max-w-[1240px]'
 
   return (
     <QuickActionsProvider>
       <PrimaryActionContext.Provider value={primaryAction}>
         <CanvasContext.Provider value={canvas}>
-          {/* --shell-left: el hueco que ocupa el dock a la izquierda (lo usan el contenido y la capa de paneles del lienzo) */}
-          <div className={cn('min-h-dvh [--shell-left:0px] md:[--shell-left:6.25rem]', collapsed ? 'lg:[--shell-left:6.25rem]' : 'lg:[--shell-left:16.5rem]')}>
+          {/* --shell-left: el hueco que ocupa el carril (lo usan el contenido y la capa de paneles del lienzo) */}
+          <div
+            className={cn(
+              'flex min-h-dvh flex-col [--shell-left:0px]',
+              collapsed ? 'lg:[--shell-left:6.25rem]' : 'lg:[--shell-left:16.5rem]',
+              !bleed && 'lg:pl-[var(--shell-left)]',
+            )}
+          >
             <SkipLink />
 
-            {/* Dock de navegación flotante (los dos modos): la marca, las secciones y, en el particular, las fichas de vehículo */}
-            <aside
-              className={cn('hud-panel fixed bottom-3 left-3 top-3 z-30 hidden flex-col md:flex', collapsed ? 'w-[4.75rem]' : 'w-[4.75rem] lg:w-60')}
-              aria-label="Navegación principal"
-            >
-              <div className={cn('flex h-16 shrink-0 items-center px-5', collapsed ? 'justify-center px-0' : 'max-lg:justify-center max-lg:px-0')}>
-                <Link to={home} className="rounded-xl" aria-label="CarCare: ir al inicio del espacio">
-                  <span className={cn(collapsed ? 'hidden' : 'hidden lg:inline-flex')}>
-                    <Logo />
-                  </span>
-                  <span className={cn(collapsed ? 'inline-flex' : 'inline-flex lg:hidden')}>
-                    <LogoMark />
-                  </span>
-                </Link>
-              </div>
+            <aside className={cn('hud-panel fixed bottom-3 left-3 top-3 z-30 hidden flex-col lg:flex', collapsed ? 'w-[4.75rem]' : 'w-60')} aria-label="Navegación principal">
+              <Link to={home} className={cn('flex h-16 shrink-0 items-center rounded-control', collapsed ? 'justify-center' : 'px-5')} aria-label="CarCare: ir al inicio del espacio">
+                {collapsed ? <LogoMark /> : <Logo />}
+              </Link>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                <DockGroups groups={groups} narrow={narrow} />
-                {ctx && !ctx.isWorkshop && (
-                  <div className="mt-3">
-                    <VehicleDock ctx={ctx} narrow={narrow} />
-                  </div>
-                )}
+                <DockGroups groups={groups} narrow={collapsed} />
+                {ctx && !ctx.isWorkshop && <VehicleDock ctx={ctx} narrow={collapsed} />}
               </div>
               <div className="flex flex-col gap-1 border-t border-line px-3 py-3">
-                <DockLink item={SETTINGS_ITEM} narrow={narrow} />
+                <DockLink item={SETTINGS_ITEM} narrow={collapsed} />
                 <button
                   type="button"
                   onClick={toggleCollapsed}
                   className={cn(
-                    'hidden min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-fg-muted transition-[color,background-color,scale] duration-150 hover:bg-accent-soft hover:text-fg active:scale-[0.97] lg:flex',
+                    'flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold text-fg-muted transition-[color,background-color,scale] duration-150 hover:bg-accent-soft hover:text-fg active:scale-[0.97]',
                     collapsed && 'justify-center',
                   )}
-                  aria-label={collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral'}
+                  aria-label={collapsed ? 'Desplegar la navegación' : 'Recoger la navegación'}
                   aria-expanded={!collapsed}
                 >
                   {collapsed ? <PanelLeftOpen aria-hidden className="size-5" /> : <PanelLeftClose aria-hidden className="size-5" />}
-                  {!collapsed && <span>Contraer</span>}
+                  {!collapsed && <span>Recoger</span>}
                 </button>
               </div>
             </aside>
 
-            <div className={cn('flex min-h-dvh flex-col', !bleed && 'md:pl-[var(--shell-left)]')}>
-              {/* Barra de estado (HUD). Mide 4 rem con su margen superior: las barras fijas de las pantallas cuelgan de top-16. */}
-              <header className={cn('no-print z-20', bleed ? 'pointer-events-none fixed inset-x-0 top-0' : 'sticky top-0')}>
-                <div className={cn('pt-2', bleed ? 'px-3 md:pl-[var(--shell-left)] md:pr-6' : cn('mx-auto w-full px-3 sm:px-6 lg:px-8', flush ? 'max-w-none' : maxWidth))}>
-                  <div className="hud-bar pointer-events-auto flex h-14 items-center gap-2 px-2 md:gap-3 md:px-3">
-                    <Link to={home} className="rounded-xl md:hidden" aria-label="CarCare: inicio">
-                      <LogoMark />
-                    </Link>
-                    <WorkspaceSwitcher />
-                    <div className="flex-1" />
-                    <SearchButtons onOpen={openPalette} />
-                    <NotificationBell />
-                    <UserMenu />
-                  </div>
-                </div>
-              </header>
+            {/* Barra de estado. Mide 4 rem con su margen superior: las barras fijas de las pantallas cuelgan de top-16. */}
+            <header
+              className={cn(
+                'no-print z-20 pt-2',
+                bleed ? 'pointer-events-none fixed inset-x-0 top-0 px-3 lg:pl-[var(--shell-left)] lg:pr-6' : cn('sticky top-0 mx-auto w-full px-3 sm:px-6 lg:px-8', maxWidth),
+              )}
+            >
+              <div className="hud-bar pointer-events-auto flex h-14 items-center gap-2 px-2 lg:gap-3 lg:px-3">
+                <Link to={home} className="rounded-control lg:hidden" aria-label="CarCare: inicio">
+                  <LogoMark />
+                </Link>
+                <WorkspaceSwitcher />
+                <span className="flex-1" />
+                <SearchButtons onOpen={openPalette} />
+                <NotificationBell />
+                <UserMenu />
+              </div>
+            </header>
 
-              <main
-                id="contenido"
-                tabIndex={-1}
-                data-canvas={bleed ? 'bleed' : flush ? 'flush' : 'page'}
-                className={cn(
-                  'flex-1 outline-none',
-                  bleed
-                    ? ''
-                    : flush
-                      ? 'pb-20 md:pb-0'
-                      : cn('mx-auto w-full px-4 pb-28 pt-5 sm:px-6 md:pb-14 md:pt-6 lg:px-8', maxWidth),
-                )}
-              >
-                {content}
-              </main>
-            </div>
+            {ctx && !ctx.isWorkshop && !bleed && <VehiclePills ctx={ctx} />}
+
+            <main
+              id="contenido"
+              tabIndex={-1}
+              data-canvas={bleed ? 'bleed' : 'page'}
+              className={cn('stagger flex-1 outline-none', !bleed && cn('mx-auto w-full px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-14 lg:pt-6', maxWidth))}
+            >
+              <Suspense fallback={<PageSpinner />}>
+                <Outlet />
+              </Suspense>
+            </main>
 
             <MobileNav items={items} onOpenPalette={openPalette} primaryTaken={claims > 0} />
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

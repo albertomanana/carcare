@@ -100,7 +100,7 @@ export function DialogContent({
             {headerAside}
             {!hideClose && (
               <RD.Close
-                className="-mr-2 -mt-1 grid size-11 place-items-center rounded-full text-fg-muted transition-[color,background-color,scale] duration-150 hover:bg-accent-soft hover:text-fg active:scale-90 md:size-9"
+                className="-mr-2 -mt-1 grid size-12 place-items-center rounded-full text-fg-muted transition-[color,background-color,scale] duration-150 hover:bg-accent-soft hover:text-fg active:scale-90 lg:size-9"
                 aria-label="Cerrar"
               >
                 <X aria-hidden className="size-5" />
