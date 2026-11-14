@@ -140,6 +140,17 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
   }
 }
 
+/** Radio en planta de la figura del mecánico (m). */
+export const MECHANIC_R = 0.24
+
+/**
+ * Dónde trabaja el mecánico de un elevador: al lado del coche que da a la cámara (+x), por delante de la columna (+z),
+ * mirando al coche. Queda fuera del ancho del coche más ancho y fuera de la base de la columna (se comprueba en los tests).
+ */
+export function mechanicSpot(bay: { x: number; z: number }): { x: number; z: number; heading: number } {
+  return { x: bay.x + CAR_MAX_W / 2 + MECHANIC_R + 0.08, z: bay.z + 1.3, heading: -Math.PI / 2 }
+}
+
 /** Obstáculos fijos por los que no puede pasar un coche: bases de las columnas de los elevadores y pilares del pórtico. */
 export function floorObstacles(L: FloorLayout): Box[] {
   const out: Box[] = []

@@ -75,7 +75,7 @@ export function StudioLights({ box, pal, small }: { box: { x0: number; x1: numbe
       <hemisphereLight args={[pal.hemiSky, pal.hemiGround, pal.hemi]} />
       <directionalLight
         ref={light}
-        color="#fff5e8"
+        color={pal.sunColor ?? '#fff5e8'}
         intensity={pal.sun}
         castShadow
         shadow-mapSize={[map, map]}

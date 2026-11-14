@@ -54,6 +54,9 @@ function order(id: number, status: WorkOrderStatus, bay: number | null = null, c
     promised_at: null,
     completed_at: null,
     delivered_at: null,
+    status_changed_at: '2026-11-10T08:30:00+01:00',
+    repair_seconds: 0,
+    estimated_minutes: null,
     items: [],
     subtotal: '0.00',
     tax_rate: '21.00',
@@ -333,5 +336,29 @@ describe('taller isométrico: color de arcilla', () => {
   it('las alturas de elevador son las del estado', () => {
     expect(LIFT_HEIGHT.in_progress).toBeGreaterThan(LIFT_HEIGHT.diagnosing)
     expect(LIFT_HEIGHT.ready).toBe(0)
+  })
+})
+
+describe('mecánico del elevador', () => {
+  it('trabaja junto al coche sin pisarlo, fuera de la base de las columnas y dentro de su plaza', async () => {
+    const { computeFloorLayout, floorObstacles, mechanicSpot, MECHANIC_R, CAR_MAX_W, BAY_W, BAY_D } = await import('./layout')
+    for (const n of [1, 3, 4, 8, 12]) {
+      const L = computeFloorLayout(Array.from({ length: n }, (_, i) => i + 1))
+      const posts = floorObstacles(L)
+      for (const b of L.bays) {
+        const m = mechanicSpot(b)
+        // fuera del coche más ancho (centrado en el elevador)
+        expect(m.x - MECHANIC_R).toBeGreaterThan(b.x + CAR_MAX_W / 2)
+        // dentro de la plaza
+        expect(m.x + MECHANIC_R).toBeLessThan(b.x + BAY_W / 2)
+        expect(Math.abs(m.z - b.z) + MECHANIC_R).toBeLessThan(BAY_D / 2)
+        // sin tocar ninguna base de columna ni pilar
+        for (const o of posts) {
+          const dx = Math.max(0, Math.abs(m.x - o.x) - o.hx)
+          const dz = Math.max(0, Math.abs(m.z - o.z) - o.hz)
+          expect(Math.hypot(dx, dz)).toBeGreaterThan(MECHANIC_R)
+        }
+      }
+    }
   })
 })

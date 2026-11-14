@@ -3,6 +3,9 @@
  * zona de espera o de entrega. El texto accesible describe siempre el elevador o la orden completos.
  */
 import type { Bay, WorkOrder } from '@/api/types'
+import { isBeingWorked, overallColor } from '@/lib/mechanic'
+import { LiveTimer } from '@/components/orders/OrderTimer'
+import { orderTiming, timingSentence, useNow } from '@/lib/orderTiming'
 import { LATE, TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
@@ -16,10 +19,74 @@ export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selec
   const st = o ? WORK_ORDER_STATUS[o.status] : null
   const tone = st ? TONE_CLASSES[st.tone] : null
   const Icon = st?.icon
+  // El texto accesible se renueva cada medio minuto (el cronómetro visible, cada segundo y sin anunciarse)
+  const now = useNow(30_000)
+  const working = !!o && isBeingWorked(o.status)
+  const who = o?.assigned_to ?? null
   const aria = o
-    ? `Elevador ${bay.number}: orden ${o.number}, ${vehicleText(o)}, ${st!.label}${o.is_late ? ', fuera de plazo' : ''}`
+    ? `Elevador ${bay.number}: orden ${o.number}, ${vehicleText(o)}, ${st!.label}${o.is_late ? ', fuera de plazo' : ''}; ` +
+      `${who ? `${working ? 'trabaja' : 'asignada a'} ${who.name}` : 'sin mecánico asignado'}, ${o.title}; ${timingSentence(orderTiming(o, now))}`
     : `Elevador ${bay.number}: libre`
   const full = !compact || selected
+  if (o && st && tone)
+    return (
+      <div className="flex flex-col items-center">
+        <button
+          type="button"
+          aria-pressed={selected}
+          aria-label={aria}
+          title={aria}
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect(selected ? null : bay.number)
+          }}
+          className={cx(
+            'flex cursor-pointer flex-col items-stretch gap-1 rounded-card border px-2.5 py-1.5 text-left text-xs shadow-lg backdrop-blur-md',
+            'transition-[background-color,box-shadow,border-color] duration-200 motion-reduce:transition-none',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
+            full && 'w-60',
+            selected ? 'border-accent bg-surface text-fg ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 text-fg hover:bg-surface',
+          )}
+        >
+          <span className="flex items-center justify-between gap-2 whitespace-nowrap">
+            <span className="flex items-baseline gap-1.5">
+              <span className="font-display text-xs font-semibold text-fg-subtle">{full ? `Elevador ${bay.number}` : `E${bay.number}`}</span>
+              {full && <span className="tabular font-medium">{o.number.split('-').pop()}</span>}
+            </span>
+            <span className="flex items-center gap-1">
+              {full && Icon ? (
+                <span className={cx('inline-flex items-center gap-1 rounded-[5px] px-1.5 py-px text-[11px] font-medium', tone.soft)}>
+                  <Icon className="size-3" aria-hidden strokeWidth={2.4} />
+                  {st.label}
+                </span>
+              ) : (
+                <span className={cx('size-2 rounded-full', tone.dot)} aria-hidden />
+              )}
+              {o.is_late && <LATE.icon className="size-3.5 text-danger" aria-hidden strokeWidth={2.4} />}
+            </span>
+          </span>
+          {full ? (
+            <>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className={cx('size-2.5 shrink-0 rounded-full', !who && 'border border-dashed border-fg-subtle', working && who && 'motion-safe:animate-pulse')}
+                  style={who ? { backgroundColor: overallColor(who.id) } : undefined}
+                />
+                <span className="min-w-0 truncate">
+                  <span className="font-medium text-fg">{who ? who.name.split(' ')[0] : 'Sin asignar'}</span>
+                  <span className="text-fg-muted"> · {o.title}</span>
+                </span>
+              </span>
+              <LiveTimer order={o} />
+            </>
+          ) : (
+            <LiveTimer order={o} bar={false} short />
+          )}
+        </button>
+        <span className="h-3 w-px bg-fg-subtle/70" aria-hidden />
+      </div>
+    )
   return (
     <div className="flex flex-col items-center">
       <button

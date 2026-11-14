@@ -30,6 +30,8 @@ export interface DioramaPalette {
   hemiGround: string
   hemi: number
   sun: number
+  /** Color de la luz principal; por defecto, blanco cálido. */
+  sunColor?: string
   shadowOpacity: number
 }
 

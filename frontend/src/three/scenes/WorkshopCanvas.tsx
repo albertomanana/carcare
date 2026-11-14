@@ -11,11 +11,12 @@
  *  - Rótulos HTML accesibles (un botón por elevador y por coche aparcado) proyectados sobre la escena.
  * Un único <Canvas>, `frameloop="demand"` (no pinta nada en reposo) y sombras que solo se recalculan cuando algo se mueve.
  */
-import { useCursor } from '@react-three/drei'
+import { MeshReflectorMaterial, useCursor } from '@react-three/drei'
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { Bay, WorkOrder, WorkOrderStatus } from '@/api/types'
+import { isBeingWorked, overallColor } from '@/lib/mechanic'
 import { TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
 import type { WorkshopSceneProps } from '../types'
 import { resolveBody } from '../car/specs'
@@ -27,11 +28,13 @@ import { OverlayItem, OverlayLayer, OverlayProjector, type OverlayAnchor } from 
 import { useOverlayStore, type OverlayStore } from './overlayStore'
 import { useCanvasLabel } from './useCanvasLabel'
 import { carDims, getClayModel } from './workshop/clayReal'
-import { buildDecals, buildMarkings, buildStatic, dioramaPalette, liftCarriage, selectionOutline, type DioramaPalette } from './workshop/diorama'
+import { buildDecals, selectionOutline } from './workshop/diorama'
 import { boxPoints, CAM_DIST, focusFrom, ISO_DIR, useCompileGate, useDevHook, useEscape, useRedraw, useSize, useTrafficController, type CamFocus } from './workshop/iso'
 import { clayVertex } from './workshop/clayCar'
 import { CarMesh, IsoRig, StudioLights } from './workshop/IsoParts'
+import { buildFloorPaint, buildGlow, buildWorkshopStatic, haloTexture, poolTexture, workshopCarriage, workshopPalette, type WorkshopPalette } from './workshop/kit'
 import { BayLabel, CarLabel } from './workshop/labels'
+import { Mechanic } from './workshop/Mechanic'
 import {
   assignSpots,
   BAY_D,
@@ -40,6 +43,7 @@ import {
   computeFloorLayout,
   entrancePose,
   floorObstacles,
+  mechanicSpot,
   planRoute,
   POST_H,
   POST_X,
@@ -195,7 +199,7 @@ export default function WorkshopCanvas({
         onPointerMissed={(e) => {
           if (e.type === 'click' && (hasSelection || userMoved)) deselect()
         }}
-        style={{ touchAction: 'none', cursor: 'grab' }}
+        style={{ touchAction: 'none', cursor: 'grab', filter: 'saturate(1.12) contrast(1.04)' }}
       >
         <ResumeOnVisible visible={inView} />
         {focus && overview && (
@@ -220,6 +224,10 @@ export default function WorkshopCanvas({
           />
         )}
       </Canvas>
+
+      {/* Desenfoque de maqueta (tilt-shift): se difuminan el fondo y el primer plano, el centro queda nítido */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[24%] backdrop-blur-[2.5px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[22%] backdrop-blur-[3px] [mask-image:linear-gradient(to_top,black,transparent)]" />
 
       <OverlayLayer store={overlay} ids={ids} label="Elevadores y coches del taller">
         {sorted.map((b) => (
@@ -350,7 +358,7 @@ function WorkshopWorld({
   inset,
 }: WorldProps) {
   useCanvasLabel(label)
-  const pal = useMemo(() => dioramaPalette(tokens), [tokens])
+  const pal = useMemo(() => workshopPalette(tokens), [tokens])
   const gl = useThree((s) => s.gl)
   const markShadows = useRedraw()
 
@@ -448,6 +456,28 @@ function WorkshopWorld({
 
   const selStallPose = focusStall ? spotPose(layout, focusStall, 'received') : null
   const selBayPos = focusBay != null ? layout.bays.find((b) => b.number === focusBay) : null
+
+  // Realce al pasar el puntero: el contorno de la plaza de lo que se señala (coche, mecánico, elevador), salvo si ya está elegido
+  const hoverSpot = useMemo<Spot | null>(() => {
+    if (!hover) return null
+    const [kind, raw] = hover.split('-')
+    const n = Number(raw)
+    if (kind === 'bay') return { kind: 'bay', bay: n }
+    return cars.find((c) => c.order.id === n)?.spot ?? null
+  }, [hover, cars])
+  const hoverBay = hoverSpot?.kind === 'bay' && hoverSpot.bay !== focusBay ? layout.bays.find((b) => b.number === hoverSpot.bay) : null
+  const hoverStall = hoverSpot && hoverSpot.kind !== 'bay' && !sameSpot(hoverSpot, focusStall) ? spotPose(layout, hoverSpot, 'received') : null
+
+  // Mecánicos: una figura por elevador cuya orden tiene persona asignada y está en diagnóstico o en reparación
+  const crew = useMemo(
+    () =>
+      layout.bays.flatMap((b) => {
+        const o = bays.find((x) => x.number === b.number)?.work_order
+        if (!o || !o.assigned_to || !isBeingWorked(o.status)) return []
+        return [{ bay: b, orderId: o.id, userId: o.assigned_to.id, task: o.status === 'in_progress' ? ('repair' as const) : ('diagnose' as const) }]
+      }),
+    [layout, bays],
+  )
   const lightBox = useMemo(
     () => ({ x0: layout.minX - 2, x1: layout.apronX + 3, z0: layout.backZ - 3, z1: layout.frontZ + 1, y0: -SLAB_H, y1: WALL_H + 1.6 }),
     [layout],
@@ -490,6 +520,25 @@ function WorkshopWorld({
           onHover={(on) => setHover(on ? `car-${c.order.id}` : null)}
         />
       ))}
+      <BayLights layout={layout} bays={bays} pal={pal} />
+      {crew.map((m) => (
+        <Mechanic
+          key={m.orderId}
+          {...mechanicSpot(m.bay)}
+          color={overallColor(m.userId)}
+          task={m.task}
+          reduced={reduced}
+          hovered={hover === `mech-${m.orderId}`}
+          ready={() => {
+            const o = handles.get(m.orderId)?.root
+            return !!o && o.visible && Math.abs(o.position.x - m.bay.x) < 0.08 && Math.abs(o.position.z - m.bay.z) < 0.08
+          }}
+          onSelect={() => onSelectOrder(selectedOrderId === m.orderId ? null : m.orderId)}
+          onHover={(on) => setHover(on ? `mech-${m.orderId}` : null)}
+        />
+      ))}
+      {hoverBay && <SelectionOutline kind="bay" x={hoverBay.x} z={hoverBay.z} color="#ffffff" opacity={0.5} />}
+      {hoverStall && <SelectionOutline kind="stall" x={hoverStall.x} z={hoverStall.z} color="#ffffff" opacity={0.5} />}
       {selBayPos && <SelectionOutline kind="bay" x={selBayPos.x} z={selBayPos.z} color={tokens.accent} />}
       {selStallPose && <SelectionOutline kind="stall" x={selStallPose.x} z={selStallPose.z} color={tokens.accent} />}
       <IsoRig focus={focus} overview={overview} selKey={selKey} reduced={reduced} bounds={bounds} onUserMove={onUserMove} />
@@ -501,9 +550,62 @@ function WorkshopWorld({
 
 // ───────────────────────── Nave ─────────────────────────
 
-function Diorama({ layout, pal }: { layout: FloorLayout; pal: DioramaPalette }) {
-  const statics = useMemo(() => buildStatic(layout, pal), [layout, pal])
-  const marks = useMemo(() => buildMarkings(layout, pal), [layout, pal])
+/** Luces de puesto reales (las demás plazas solo llevan el charco de luz): acota el coste por píxel. */
+const MAX_BAY_LIGHTS = 6
+
+const poolGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)
+
+/**
+ * Luz cálida de cada puesto: un charco de luz en el suelo y, en los primeros elevadores, un punto de luz real que
+ * saca brillo al epoxi y al coche. Plena si hay alguien trabajando, tenue si el coche solo espera y apagada si el
+ * elevador está libre. Las luces existen siempre (apagadas valen 0) para no recompilar sombreadores al cambiar.
+ */
+function BayLights({ layout, bays, pal }: { layout: FloorLayout; bays: Bay[]; pal: WorkshopPalette }) {
+  const poolMat = useMemo(() => {
+    const map = poolTexture()
+    return map ? new THREE.MeshBasicMaterial({ map, color: pal.pool, transparent: true, opacity: pal.poolOpacity, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }) : null
+  }, [pal.pool, pal.poolOpacity])
+  const dimMat = useMemo(() => {
+    const map = poolTexture()
+    return map ? new THREE.MeshBasicMaterial({ map, color: pal.pool, transparent: true, opacity: pal.poolOpacity * 0.4, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }) : null
+  }, [pal.pool, pal.poolOpacity])
+  useEffect(() => () => poolMat?.dispose(), [poolMat])
+  useEffect(() => () => dimMat?.dispose(), [dimMat])
+  return (
+    <>
+      {layout.bays.map((b, i) => {
+        const o = bays.find((x) => x.number === b.number)?.work_order
+        const level = !o ? 0 : isBeingWorked(o.status) ? 1 : 0.4
+        const mat = level === 1 ? poolMat : dimMat
+        return (
+          <group key={b.number}>
+            {level > 0 && mat && <mesh geometry={poolGeo} material={mat} position={[b.x, 0.011, b.z + 0.2]} scale={[BAY_W + 2.4, 1, BAY_D + 2]} renderOrder={1} />}
+            {i < MAX_BAY_LIGHTS && <pointLight position={[b.x + 0.4, POST_H + 1.1, b.z + 1.4]} color={pal.lampColor} intensity={pal.lampIntensity * level} distance={11} decay={2} />}
+          </group>
+        )
+      })}
+    </>
+  )
+}
+
+function Diorama({ layout, pal }: { layout: FloorLayout; pal: WorkshopPalette }) {
+  const statics = useMemo(() => buildWorkshopStatic(layout, pal), [layout, pal])
+  const marks = useMemo(() => buildFloorPaint(layout, pal), [layout, pal])
+  const glow = useMemo(() => buildGlow(layout, pal), [layout, pal])
+  const glowMat = useMemo(() => new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
+  const haloMat = useMemo(() => {
+    const map = haloTexture()
+    return map ? new THREE.MeshBasicMaterial({ map, vertexColors: true, transparent: true, opacity: pal.halo, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }) : null
+  }, [pal.halo])
+  useEffect(
+    () => () => {
+      glow.core.dispose()
+      glow.halo.dispose()
+    },
+    [glow],
+  )
+  useEffect(() => () => glowMat.dispose(), [glowMat])
+  useEffect(() => () => haloMat?.dispose(), [haloMat])
   const [fontTick, setFontTick] = useState(0)
   useEffect(() => {
     const fonts = typeof document !== 'undefined' ? document.fonts : undefined
@@ -544,7 +646,24 @@ function Diorama({ layout, pal }: { layout: FloorLayout; pal: DioramaPalette }) 
         <planeGeometry args={[w + 30, d + 30]} />
       </mesh>
       <mesh geometry={statics} material={clayVertex()} castShadow receiveShadow />
+      {/* Suelo epoxi: un plano brillante sobre la losa que refleja coches, elevadores y luces */}
+      <mesh rotation-x={-Math.PI / 2} position={[(layout.minX - WALL_T + layout.apronX) / 2, 0.001, (layout.backZ - WALL_T + layout.frontZ) / 2]} receiveShadow>
+        <planeGeometry args={[w + WALL_T + 0.3, d + WALL_T + 0.3]} />
+        <MeshReflectorMaterial
+          color={pal.floor}
+          roughness={pal.floorRoughness}
+          metalness={0.05}
+          mirror={pal.mirror}
+          mixStrength={pal.mirror * 1.6}
+          mixBlur={0.85}
+          blur={[220, 70]}
+          resolution={512}
+          depthScale={0}
+        />
+      </mesh>
       <mesh geometry={marks} material={clayVertex()} receiveShadow />
+      {haloMat && <mesh geometry={glow.halo} material={haloMat} renderOrder={1} />}
+      <mesh geometry={glow.core} material={glowMat} renderOrder={2} />
       {decals && decalMat && <mesh geometry={decals.geometry} material={decalMat} receiveShadow renderOrder={1} />}
     </group>
   )
@@ -578,13 +697,13 @@ function Lift({
   number: number
   x: number
   z: number
-  pal: DioramaPalette
+  pal: WorkshopPalette
   lamp: string
   register: (o: THREE.Object3D | null) => void
   onSelect: () => void
   onHover: (on: boolean) => void
 }) {
-  const carriage = liftCarriage(pal)
+  const carriage = workshopCarriage(pal)
   return (
     <group>
       <mesh ref={register} name={`elevador-${number}`} geometry={carriage} material={clayVertex()} position={[x, 0, z]} castShadow receiveShadow />
@@ -612,9 +731,9 @@ function Lift({
 }
 
 const outlineGeos: Partial<Record<'bay' | 'stall', THREE.BufferGeometry>> = {}
-function SelectionOutline({ kind, x, z, color }: { kind: 'bay' | 'stall'; x: number; z: number; color: string }) {
+function SelectionOutline({ kind, x, z, color, opacity = 0.95 }: { kind: 'bay' | 'stall'; x: number; z: number; color: string; opacity?: number }) {
   const geo = (outlineGeos[kind] ??= selectionOutline(kind))
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 0.95, depthWrite: false }), [color])
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity, depthWrite: false }), [color, opacity])
   useEffect(() => () => mat.dispose(), [mat])
-  return <mesh geometry={geo} material={mat} position={[x, 0, z]} renderOrder={2} />
+  return <mesh geometry={geo} material={mat} position={[x, 0.004, z]} renderOrder={3} />
 }
