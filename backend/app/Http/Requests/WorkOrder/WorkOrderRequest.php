@@ -55,6 +55,8 @@ class WorkOrderRequest extends ApiRequest
             ],
             'mileage_in' => ['sometimes', 'nullable', ...self::km()],
             'promised_at' => ['sometimes', 'nullable', 'date'],
+            // Tiempo de mano de obra que estima el taller, en minutos (hasta 100 h). Sin él no hay barra de progreso.
+            'estimated_minutes' => ['sometimes', 'nullable', 'integer', 'min:5', 'max:6000'],
             'tax_rate' => ['sometimes', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
             ...self::itemRules(),
         ];
@@ -72,6 +74,8 @@ class WorkOrderRequest extends ApiRequest
             'items.max' => 'Una orden admite como máximo 50 líneas.',
             'items.*.quantity.gt' => 'La cantidad de cada línea debe ser mayor que 0.',
             'tax_rate.max' => 'El IVA debe estar entre 0 y 100.',
+            'estimated_minutes.min' => 'El tiempo estimado debe ser de al menos 5 minutos.',
+            'estimated_minutes.max' => 'El tiempo estimado no puede pasar de 100 horas.',
         ];
     }
 

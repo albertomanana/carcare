@@ -23,6 +23,7 @@ class WorkOrderService
 {
     private const FIELDS = [
         'title', 'complaint', 'diagnosis', 'priority', 'bay', 'assigned_to', 'mileage_in', 'promised_at', 'tax_rate',
+        'estimated_minutes',
     ];
 
     public function __construct(
@@ -80,6 +81,7 @@ class WorkOrderService
                 'status' => WorkOrderStatus::Received,
                 'priority' => $data['priority'] ?? Priority::Normal->value,
                 'received_at' => now(),
+                'status_changed_at' => now(),
                 'tax_rate' => Money::normalize($data['tax_rate'] ?? $workspace->taxRate()),
             ]);
 
@@ -169,6 +171,13 @@ class WorkOrderService
             $order->bay = $newBay;
 
             if ($status !== $previous) {
+                // Tiempos (§3.11.1): al salir de «En reparación» se acumula ese tramo; el reloj del estado empieza de nuevo.
+                $since = $order->status_changed_at ?? $order->received_at;
+                if ($previous === WorkOrderStatus::InProgress) {
+                    $order->repair_seconds += max(0, (int) $since->diffInSeconds(now(), true));
+                }
+                $order->status_changed_at = now();
+
                 match ($status) {
                     WorkOrderStatus::Ready => $order->completed_at = now(),
                     WorkOrderStatus::Delivered => $order->completed_at ??= now(),

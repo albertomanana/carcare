@@ -311,3 +311,49 @@ it('filtra órdenes por vehículo, cliente y persona asignada, y clientes por te
     $this->getJson("/api/v1/workspaces/{$this->ws->id}/vehicles?customer_id={$otherCustomer->id}")->assertJsonCount(1, 'data')->assertJsonPath('data.0.plate', '4444DDD');
     $this->getJson("/api/v1/workspaces/{$this->ws->id}/vehicles?search=Otra Clienta")->assertJsonCount(1, 'data');
 });
+
+it('lleva la cuenta de los tiempos: reloj del estado, acumulado en reparación y tiempo estimado', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-13 09:00:00'));
+    $created = $this->postJson($this->base, order($this->vehicle->id, ['estimated_minutes' => 90]))->assertCreated();
+    $id = $created->json('data.id');
+    $status = "/api/v1/work-orders/{$id}/status";
+
+    $created->assertJsonPath('data.estimated_minutes', 90)->assertJsonPath('data.repair_seconds', 0);
+    expect($created->json('data.status_changed_at'))->toBe($created->json('data.received_at'));
+
+    // Entra en reparación a las 10:00: el reloj del estado empieza ahí y todavía no hay nada acumulado.
+    $this->travelTo(CarbonImmutable::parse('2026-11-13 10:00:00'));
+    $started = $this->postJson($status, ['status' => 'in_progress'])->assertOk();
+    $startedAt = $started->json('data.status_changed_at');
+    expect(CarbonImmutable::parse($startedAt)->equalTo(now()))->toBeTrue();
+    $started->assertJsonPath('data.repair_seconds', 0);
+
+    // Editar la orden o cambiarla de elevador no mueve el reloj.
+    $this->travelTo(CarbonImmutable::parse('2026-11-13 10:20:00'));
+    $this->patchJson("/api/v1/work-orders/{$id}", ['estimated_minutes' => 120])->assertOk()
+        ->assertJsonPath('data.estimated_minutes', 120)
+        ->assertJsonPath('data.status_changed_at', $startedAt);
+    $this->postJson($status, ['status' => 'in_progress', 'bay' => 2])->assertOk()
+        ->assertJsonPath('data.status_changed_at', $startedAt);
+
+    // A las 10:45 se queda esperando piezas: se acumulan los 45 minutos.
+    $this->travelTo(CarbonImmutable::parse('2026-11-13 10:45:00'));
+    $this->postJson($status, ['status' => 'waiting_parts'])->assertOk()->assertJsonPath('data.repair_seconds', 2700);
+
+    // La espera no cuenta; al volver a reparación y terminar a los 15 minutos, el acumulado es de una hora.
+    $this->travelTo(CarbonImmutable::parse('2026-11-13 12:00:00'));
+    $this->postJson($status, ['status' => 'in_progress'])->assertOk()->assertJsonPath('data.repair_seconds', 2700);
+    $this->travelTo(CarbonImmutable::parse('2026-11-13 12:15:00'));
+    $this->postJson($status, ['status' => 'ready'])->assertOk()->assertJsonPath('data.repair_seconds', 3600);
+});
+
+it('valida el tiempo estimado y permite quitarlo', function () {
+    $this->postJson($this->base, order($this->vehicle->id, ['estimated_minutes' => 2]))
+        ->assertUnprocessable()->assertJsonValidationErrors('estimated_minutes');
+    $this->postJson($this->base, order($this->vehicle->id, ['estimated_minutes' => 7000]))
+        ->assertUnprocessable()->assertJsonValidationErrors('estimated_minutes');
+
+    $id = $this->postJson($this->base, order($this->vehicle->id, ['estimated_minutes' => 60]))->assertCreated()->json('data.id');
+    $this->patchJson("/api/v1/work-orders/{$id}", ['estimated_minutes' => null])->assertOk()
+        ->assertJsonPath('data.estimated_minutes', null);
+});

@@ -22,7 +22,7 @@ class WorkOrder extends Model
     protected $fillable = [
         'workspace_id', 'vehicle_id', 'customer_id', 'number', 'year', 'sequence', 'title', 'complaint',
         'diagnosis', 'status', 'priority', 'bay', 'assigned_to', 'mileage_in', 'received_at', 'promised_at',
-        'completed_at', 'delivered_at', 'subtotal', 'tax_rate', 'tax_amount', 'total', 'maintenance_record_id',
+        'completed_at', 'delivered_at', 'status_changed_at', 'repair_seconds', 'estimated_minutes', 'subtotal', 'tax_rate', 'tax_amount', 'total', 'maintenance_record_id',
     ];
 
     protected function casts(): array
@@ -38,6 +38,9 @@ class WorkOrder extends Model
             'promised_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
             'delivered_at' => 'immutable_datetime',
+            'status_changed_at' => 'immutable_datetime',
+            'repair_seconds' => 'integer',
+            'estimated_minutes' => 'integer',
             'subtotal' => 'decimal:2',
             'tax_rate' => 'decimal:2',
             'tax_amount' => 'decimal:2',

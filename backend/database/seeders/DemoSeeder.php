@@ -1360,6 +1360,25 @@ class DemoSeeder extends Seeder
             $mileageIn = $this->fleetKm($entry, $receivedAt->startOfDay());
             $updatedAt = $deliveredAt ?? $completedAt ?? $receivedAt->addHours(2)->min($now);
 
+            // Tiempos (§3.11.1). El estimado sale de las horas de mano de obra de la propia orden; el reloj del estado
+            // se coloca en la jornada de hoy para las órdenes que se están trabajando.
+            $laborHours = array_sum(array_map(
+                fn (array $row) => $row['kind'] === 'labor' ? (float) $row['quantity'] : 0.0,
+                $rows,
+            ));
+            $estimatedMinutes = $laborHours > 0 ? (int) round($laborHours * 60) : null;
+            $statusChangedAt = match ($status) {
+                WorkOrderStatus::Delivered => $deliveredAt,
+                WorkOrderStatus::Ready => $completedAt,
+                WorkOrderStatus::InProgress => $now->subMinutes(mt_rand(20, 150))->max($receivedAt),
+                WorkOrderStatus::Diagnosing => $now->subMinutes(mt_rand(8, 55))->max($receivedAt),
+                WorkOrderStatus::WaitingParts => $receivedAt->addHours(5)->min($now),
+                default => $receivedAt,
+            };
+            $repairSeconds = in_array($status, [WorkOrderStatus::Delivered, WorkOrderStatus::Ready], true) && $estimatedMinutes
+                ? (int) round($estimatedMinutes * 60 * mt_rand(85, 120) / 100)
+                : 0;
+
             $order = WorkOrder::create([
                 'workspace_id' => $ws->id, 'vehicle_id' => $vehicle->id, 'customer_id' => $vehicle->customer_id,
                 'number' => $number, 'year' => $year, 'sequence' => $sequences[$year],
@@ -1368,6 +1387,8 @@ class DemoSeeder extends Seeder
                 'status' => $status, 'priority' => $priority, 'bay' => $bay, 'assigned_to' => $assignee?->id,
                 'mileage_in' => $mileageIn, 'received_at' => $receivedAt, 'promised_at' => $promisedAt,
                 'completed_at' => $completedAt, 'delivered_at' => $deliveredAt,
+                'status_changed_at' => $statusChangedAt, 'repair_seconds' => $repairSeconds,
+                'estimated_minutes' => $estimatedMinutes,
                 'subtotal' => Money::format($subtotal), 'tax_rate' => '21.00', 'tax_amount' => Money::format($tax),
                 'total' => Money::format($subtotal + $tax),
                 'created_at' => $receivedAt, 'updated_at' => $updatedAt,
