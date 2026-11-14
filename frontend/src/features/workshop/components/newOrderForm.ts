@@ -126,6 +126,7 @@ export const NEW_ORDER_FIELD_NAMES = [
   'assigned_to',
   'mileage_in',
   'promised_at',
+  'estimated_minutes',
   'items',
   'vehicle_id',
   'customer_id',

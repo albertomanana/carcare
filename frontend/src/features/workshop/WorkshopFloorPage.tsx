@@ -35,13 +35,15 @@ const SLOT_WIDTH = 360
 /** Lo que reserva `.canvas-hud` desde 1024 px (px): cabecera flotante (5,25 rem), margen derecho (1,5 rem) e inferior (2 rem). */
 const HUD_PAD = { top: 84, right: 24, bottom: 32 }
 
-const LIST_KEY = 'carcare.taller.lista'
+const LIST_KEY = 'carcare.taller.lista.v2'
 
-function readListOpen(): boolean {
+/** Lo que eligió la persona; null si aún no ha tocado la lista (entonces: plegada con maqueta, abierta apilada). */
+function readListOpen(): boolean | null {
   try {
-    return window.localStorage.getItem(LIST_KEY) !== 'cerrada'
+    const v = window.localStorage.getItem(LIST_KEY)
+    return v === 'abierta' ? true : v === 'cerrada' ? false : null
   } catch {
-    return true
+    return null
   }
 }
 
@@ -72,7 +74,8 @@ export default function WorkshopFloorPage() {
   const floating = desktop && webgl
 
   const [filter, setFilter] = useState<FloorFilter>('all')
-  const [listOpen, setListOpenState] = useState(readListOpen)
+  const [listChoice, setListOpenState] = useState(readListOpen)
+  const listOpen = listChoice ?? !floating
   const setListOpen = useCallback((v: boolean) => {
     setListOpenState(v)
     try {

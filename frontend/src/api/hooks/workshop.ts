@@ -143,6 +143,16 @@ export function useSaveWorkOrder(ws: ID, orderId?: ID) {
   })
 }
 
+/** Fija el tiempo estimado de mano de obra de una orden (PATCH parcial) desde cualquier pantalla. */
+export function useSetOrderEstimate(ws: ID) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, minutes }: { id: ID; minutes: number | null }) =>
+      (await api.patch<Resource<WorkOrder>>(`/work-orders/${id}`, { estimated_minutes: minutes })).data,
+    onSuccess: (order) => afterOrderChange(qc, ws, order),
+  })
+}
+
 export function useDeleteWorkOrder(ws: ID) {
   const qc = useQueryClient()
   return useMutation({
@@ -169,7 +179,13 @@ export function nextBay(order: Pick<WorkOrder, 'status' | 'bay'>, input: WorkOrd
 
 function patchOrder(o: WorkOrder, input: WorkOrderStatusInput): WorkOrder {
   const releases = RELEASES_BAY.includes(input.status)
-  return { ...o, status: input.status, bay: nextBay(o, input), is_late: releases ? false : o.is_late }
+  const next = { ...o, status: input.status, bay: nextBay(o, input), is_late: releases ? false : o.is_late }
+  if (input.status === o.status) return next
+  // Tiempos (§3.11.1), como el servidor: al salir de «En reparación» se acumula el tramo y el reloj del estado empieza de nuevo
+  const now = Date.now()
+  const since = Date.parse(o.status_changed_at)
+  const stint = o.status === 'in_progress' && Number.isFinite(since) ? Math.max(0, Math.floor((now - since) / 1000)) : 0
+  return { ...next, status_changed_at: new Date(now).toISOString(), repair_seconds: o.repair_seconds + stint }
 }
 
 type ListData = Paginated<WorkOrder> | InfiniteData<Paginated<WorkOrder>> | undefined

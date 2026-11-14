@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { errorMessage, isApiError } from '@/api/client'
-import { useChangeWorkOrderStatus } from '@/api/hooks/workshop'
+import { useChangeWorkOrderStatus, useSetOrderEstimate } from '@/api/hooks/workshop'
 import type { WorkOrder, WorkOrderStatus } from '@/api/types'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { formatMoney, toNumber } from '@/lib/format'
+import { formatDuration } from '@/lib/orderTiming'
 import { isFinalStatus, statusLabel } from './orderUtils'
 
 type Confirm = { kind: 'deliver' | 'cancel'; order: WorkOrder } | null
@@ -27,6 +28,7 @@ export function useOrderActions() {
   const ctx = useWorkspace()
   const navigate = useNavigate()
   const change = useChangeWorkOrderStatus(ctx.id)
+  const save = useSetOrderEstimate(ctx.id)
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const showPrices = ctx.can('manage')
@@ -69,6 +71,22 @@ export function useOrderActions() {
         opts.onError?.(message)
         toast.error(isApiError(err) && err.isConflict ? `No se pudo mover ${order.number}` : 'No se pudo cambiar el estado', { description: message })
         return null
+      })
+      .finally(() => setBusyId((id) => (id === order.id ? null : id)))
+  }
+
+  /** Fija el tiempo estimado de mano de obra (minutos) sin salir de la ficha. */
+  function estimate(order: WorkOrder, minutes: number, opts: Pick<MoveOptions, 'onError'> = {}): Promise<void> {
+    setBusyId(order.id)
+    return save
+      .mutateAsync({ id: order.id, minutes })
+      .then(() => {
+        toast.success(`Tiempo estimado de ${order.number}: ${formatDuration(minutes * 60)}`)
+      })
+      .catch((err: unknown) => {
+        const message = errorMessage(err)
+        opts.onError?.(message)
+        toast.error('No se pudo guardar el tiempo estimado', { description: message })
       })
       .finally(() => setBusyId((id) => (id === order.id ? null : id)))
   }
@@ -119,7 +137,7 @@ export function useOrderActions() {
     </>
   )
 
-  return { move, request, busyId, dialogs }
+  return { move, request, estimate, busyId, dialogs }
 }
 
 export type OrderActions = ReturnType<typeof useOrderActions>

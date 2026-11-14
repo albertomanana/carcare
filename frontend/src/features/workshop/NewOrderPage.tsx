@@ -39,6 +39,7 @@ import {
 } from './components/newOrderForm'
 import { VehicleSection } from './components/NewOrderVehicle'
 import { LiveOrderTotals } from './components/OrderTotals'
+import { EstimatedTimeField } from './components/EstimatedTimeField'
 import { PromisedAtField } from './components/PromisedAtField'
 
 type Form = UseFormReturn<NewOrderValues>
@@ -99,7 +100,7 @@ function NewOrderForm({ preset }: { preset: { vehicleId: string | null; customer
   const bay = useWatch({ control: form.control, name: 'bay' })
 
   // Un error en un campo plegado deja abierto «Más opciones» para que se vea junto a su campo
-  const hiddenError = !!(e.bay || e.assigned_to || e.mileage_in || e.promised_at || e.items)
+  const hiddenError = !!(e.bay || e.assigned_to || e.mileage_in || e.promised_at || e.estimated_minutes || e.items)
   const moreOpen = moreWanted || hiddenError
   // Los elevadores solo se piden al abrir «Más opciones» (R12)
   const bays = useBays(ctx.id, moreOpen, LIVE_REFRESH_MS)
@@ -338,6 +339,7 @@ function PlanningFields({ form }: { form: Form }) {
         <MileageInput {...register('mileage_in')} />
       </Field>
       <PromisedAtField form={form} />
+      <EstimatedTimeField form={form} />
     </>
   )
 }

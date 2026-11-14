@@ -36,6 +36,7 @@ import { ORDER_FIELD_NAMES, orderSchema, orderToValues, type OrderValues, values
 import { OrderLinesTable } from './components/OrderLinesTable'
 import { LiveOrderTotals, OrderTotals } from './components/OrderTotals'
 import { formatWhenInline, isDeletableStatus, isFinalStatus, nextStep } from './components/orderUtils'
+import { EstimatedTimeField } from './components/EstimatedTimeField'
 import { PromisedAtField } from './components/PromisedAtField'
 import { StatusStepper } from './components/StatusStepper'
 import { serverTotals } from './components/totals'
@@ -454,6 +455,7 @@ function PlanningSection({ form, order }: { form: UseFormReturn<OrderValues>; or
           <MileageInput {...register('mileage_in')} />
         </Field>
         <PromisedAtField form={form} />
+        <EstimatedTimeField form={form} />
       </div>
     </section>
   )

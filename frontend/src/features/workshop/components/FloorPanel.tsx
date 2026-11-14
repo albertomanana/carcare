@@ -1,14 +1,18 @@
-import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CircleAlert, ClipboardList, ExternalLink, Plus, TriangleAlert, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CircleAlert, ClipboardList, Cog, Droplet, ExternalLink, Plus, Shapes, Timer, TriangleAlert, Wrench, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import type { Bay, WorkOrder } from '@/api/types'
+import type { Bay, ItemKind, WorkOrder } from '@/api/types'
 import { Plate, StatusPill } from '@/components/ui/Badge'
+import { LiveTimer } from '@/components/orders/OrderTimer'
 import { Button, ButtonLink, IconButton } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { VehicleSwatch } from '@/components/vehicles/VehicleVisuals'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { cn } from '@/lib/cn'
-import { formatKm, formatMoney } from '@/lib/format'
+import { formatKm, formatMoney, formatNumber } from '@/lib/format'
+import { ITEM_KIND_LABEL } from '@/lib/labels'
+import { overallColor } from '@/lib/mechanic'
+import { formatDuration, orderTiming, timingSentence, useNow } from '@/lib/orderTiming'
 import { PRIORITY, WORK_ORDER_STATUS } from '@/lib/status'
 import { FLOOR_DETAIL_TITLE_ID, type FloorSelection, type ResolvedSelection, telHref } from './floor'
 import { MoveToMenu } from './MoveToMenu'
@@ -219,6 +223,96 @@ function FreeBaySheet({
   )
 }
 
+const QUICK_ESTIMATES = [30, 60, 90, 120, 180, 240] as const
+const ITEM_ICON: Record<ItemKind, typeof Cog> = { part: Cog, labor: Wrench, fluid: Droplet, other: Shapes }
+
+/**
+ * Tiempo de la orden (contrato §3.11.1): cuánto lleva en su estado y, en reparación, frente a lo estimado. Es tiempo
+ * en el estado, no horas trabajadas, y se dice. Sin tiempo estimado, quien puede operar lo pone con un toque.
+ */
+function OrderClock({ order, canOperate, busy, onEstimate }: { order: WorkOrder; canOperate: boolean; busy: boolean; onEstimate: (minutes: number) => void }) {
+  // La frase accesible se renueva cada medio minuto; el reloj visible, cada segundo y sin anunciarse
+  const now = useNow(30_000)
+  const repairing = order.status === 'in_progress'
+  const sentence = timingSentence(orderTiming(order, now))
+  return (
+    <section aria-label="Tiempo de la orden" className="rounded-control border border-line bg-surface-2/70 px-3 py-2.5">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+        <Timer aria-hidden className="size-3.5" />
+        {repairing ? 'Tiempo en reparación' : `Tiempo en «${WORK_ORDER_STATUS[order.status].label}»`}
+      </h3>
+      <LiveTimer order={order} size="lg" className="mt-1" />
+      <p className="sr-only">La orden {sentence}.</p>
+      {repairing && order.estimated_minutes == null && canOperate && (
+        <div className="mt-2">
+          <p id={`estimar-${order.id}`} className="text-xs text-fg-muted">
+            Pon el tiempo estimado para ver el avance:
+          </p>
+          <div role="group" aria-labelledby={`estimar-${order.id}`} className="mt-1.5 flex flex-wrap gap-1.5">
+            {QUICK_ESTIMATES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                disabled={busy}
+                onClick={() => onEstimate(m)}
+                className="min-h-9 rounded-full border border-line bg-surface px-2.5 text-xs font-medium text-fg-muted transition-colors duration-150 hover:border-line-strong hover:text-fg disabled:opacity-50"
+              >
+                <span className="tabular">{formatDuration(m * 60)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <p className="mt-1.5 text-[11px] text-fg-subtle">Cuenta el tiempo en este estado, no las horas trabajadas.</p>
+    </section>
+  )
+}
+
+/** Piezas y trabajos de la orden: las primeras líneas con su cantidad (y su importe si el rol lo permite). */
+function OrderLines({ order, canSeeMoney, href }: { order: WorkOrder; canSeeMoney: boolean; href: string }) {
+  const MAX = 5
+  if (order.items.length === 0)
+    return (
+      <div>
+        <SubTitle>Piezas y trabajos</SubTitle>
+        <p className="text-sm text-fg-muted">
+          Aún no hay líneas.{' '}
+          <Link to={href} className="font-medium text-accent-ink hover:underline">
+            Añadir en la orden
+          </Link>
+        </p>
+      </div>
+    )
+  return (
+    <div>
+      <SubTitle>Piezas y trabajos</SubTitle>
+      <ul className="border-t border-line text-sm">
+        {order.items.slice(0, MAX).map((it, i) => {
+          const KindIcon = ITEM_ICON[it.kind]
+          return (
+            <li key={it.id ?? `${i}-${it.name}`} className="flex items-baseline justify-between gap-3 border-b border-line/70 py-1.5">
+              <span className="flex min-w-0 items-baseline gap-1.5">
+                <KindIcon aria-hidden className="size-3.5 shrink-0 translate-y-0.5 text-fg-subtle" />
+                <span className="sr-only">{ITEM_KIND_LABEL[it.kind]}: </span>
+                <span className="min-w-0 truncate text-fg">{it.name}</span>
+              </span>
+              <span className="shrink-0 whitespace-nowrap text-fg-muted">
+                <span className="tabular">× {formatNumber(it.quantity, 2)}</span>
+                {canSeeMoney && it.total != null && <span className="ml-2 tabular text-fg">{formatMoney(it.total)}</span>}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      {order.items.length > MAX && (
+        <Link to={href} className="mt-1.5 inline-block text-xs font-medium text-accent-ink hover:underline">
+          Ver las {order.items.length} líneas en la orden
+        </Link>
+      )}
+    </div>
+  )
+}
+
 function OrderSheet({
   order,
   bays,
@@ -268,7 +362,17 @@ function OrderSheet({
       ),
     },
     { label: 'Elevador', value: order.bay ? <span>Elevador <span className="tabular">{order.bay}</span></span> : <span className="text-fg-muted">Sin elevador</span> },
-    { label: 'Mecánico', value: order.assigned_to?.name ?? <span className="text-fg-subtle">Sin asignar</span> },
+    {
+      label: 'Mecánico',
+      value: order.assigned_to ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: overallColor(order.assigned_to.id) }} />
+          {order.assigned_to.name}
+        </span>
+      ) : (
+        <span className="text-fg-subtle">Sin asignar</span>
+      ),
+    },
     {
       label: 'Prioridad',
       value: (
@@ -327,6 +431,8 @@ function OrderSheet({
           </p>
         </div>
 
+        <OrderClock order={order} canOperate={canOperate} busy={busy} onEstimate={(m) => void actions.estimate(order, m, { onError })} />
+
         <dl className="rounded-control bg-surface-2/70 px-3 text-sm">
           {details.map((d) => (
             <div key={d.label} className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 last:border-b-0">
@@ -335,6 +441,8 @@ function OrderSheet({
             </div>
           ))}
         </dl>
+
+        <OrderLines order={order} canSeeMoney={canSeeMoney} href={orderHref} />
 
         <InlineError message={error} />
 

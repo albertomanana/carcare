@@ -22,6 +22,8 @@ export const orderFields = {
     if (e) ctx.addIssue({ code: z.ZodIssueCode.custom, message: e })
   }),
   promised_at: z.string().refine((v) => !v || fromDateTimeLocal(v) !== null, 'Fecha y hora no válidas.'),
+  /** Minutos de mano de obra estimados, como texto ('' = sin estimar). */
+  estimated_minutes: z.string().refine((v) => !v || (/^\d+$/.test(v) && Number(v) >= 5 && Number(v) <= 6000), 'El tiempo estimado debe estar entre 5 minutos y 100 horas.'),
   items: z.array(lineItemSchema).max(50, 'Una orden admite como máximo 50 líneas.'),
 }
 
@@ -29,7 +31,7 @@ export const orderSchema = z.object(orderFields)
 export type OrderValues = z.infer<typeof orderSchema>
 
 /** Campos que el servidor puede devolver con error 422 y que existen en el formulario. */
-export const ORDER_FIELD_NAMES = ['title', 'complaint', 'diagnosis', 'priority', 'assigned_to', 'mileage_in', 'promised_at', 'items'] as const
+export const ORDER_FIELD_NAMES = ['title', 'complaint', 'diagnosis', 'priority', 'assigned_to', 'mileage_in', 'promised_at', 'estimated_minutes', 'items'] as const
 
 export function orderToValues(order: WorkOrder | null): OrderValues {
   return {
@@ -40,6 +42,7 @@ export function orderToValues(order: WorkOrder | null): OrderValues {
     assigned_to: order?.assigned_to ? String(order.assigned_to.id) : '',
     mileage_in: order?.mileage_in != null ? formatNumber(order.mileage_in) : '',
     promised_at: toDateTimeLocal(order?.promised_at),
+    estimated_minutes: order?.estimated_minutes != null ? String(order.estimated_minutes) : '',
     items: order?.items.map(lineToForm) ?? [],
   }
 }
@@ -53,6 +56,7 @@ export function valuesToInput(v: OrderValues): Omit<WorkOrderInput, 'vehicle_id'
     assigned_to: v.assigned_to ? Number(v.assigned_to) : null,
     mileage_in: parseIntegerInput(v.mileage_in),
     promised_at: fromDateTimeLocal(v.promised_at),
+    estimated_minutes: v.estimated_minutes ? Number(v.estimated_minutes) : null,
     items: v.items.map(formToLine),
   }
 }

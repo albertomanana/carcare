@@ -243,6 +243,19 @@ Esquinas contenidas, de instrumento: controles 10 px, superficies 14 px, piezas 
 - **Cifras** (`<StatTile>`, `FloorStats`): etiqueta arriba y cifra debajo, alineadas a la izquierda; todas las cifras de una fila comparten línea base.
 - **Ficha de pintura** (`.clay`): el color real del vehículo.
 - **Marca**: placa naranja con la trazada de una curva y su vértice.
+- **Cronómetro de orden** (`LiveTimer`, `components/orders/OrderTimer.tsx`): reloj `HH:MM:SS` en la tipografía de datos, con lo estimado al lado y una barra fina de avance. Naranja mientras va dentro de lo estimado; rojo de estado, con «+ tiempo», al pasarse. Siempre acompañado de la frase «cuenta el tiempo en este estado, no las horas trabajadas» o de su equivalente accesible.
+
+### Taller 3D (`three/scenes/workshop/kit.ts`)
+
+La nave es una maqueta con color, no una caja gris:
+
+- **Suelo epoxi** que refleja coches y luces (más de noche que de día).
+- **Líneas luminosas por zona**: naranja de acento en los elevadores, ámbar en la espera, esmeralda en la entrega. Es el mismo código de color que los estados.
+- **Luz cálida por puesto**: un charco de luz bajo cada elevador ocupado; plena si hay alguien trabajando, tenue si el coche solo espera.
+- **Atrezo con color**: carros de herramientas rojos y naranjas, estantería de neumáticos, bidones azul y esmeralda, compresor ámbar, banco de madera y conos en la entrada.
+- **Mecánicos** (`Mechanic.tsx`): una figura junto al coche solo si la orden tiene persona asignada y está en diagnóstico o en reparación. El color del mono sale del id de la persona (`lib/mechanic.ts`) y se repite en su rótulo y en la ficha. No es decoración: es la orden dibujada.
+- **Desenfoque de maqueta**: el fondo y el primer plano se difuminan un poco; el centro queda nítido.
+- **Todo se puede pulsar**: coche, mecánico, elevador y plaza se realzan con un contorno blanco al pasar el puntero y, al pulsarlos, la cámara se acerca y se abre la ficha.
 
 ## Motion
 
