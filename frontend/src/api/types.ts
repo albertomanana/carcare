@@ -693,6 +693,15 @@ export interface WorkOrder {
   promised_at: ISODateTime | null
   completed_at: ISODateTime | null
   delivered_at: ISODateTime | null
+  /** Desde cuándo está la orden en su estado actual (al crearla, la recepción). No cambia al editarla ni al moverla de elevador. */
+  status_changed_at: ISODateTime
+  /**
+   * Segundos acumulados en «En reparación» en tramos ya cerrados. Si la orden está ahora `in_progress`, el tiempo en
+   * reparación es `repair_seconds + (ahora − status_changed_at)`. Es tiempo en ese estado, no trabajo medido.
+   */
+  repair_seconds: number
+  /** Minutos de mano de obra que estimó el taller (5…6000); null si no lo indicó. */
+  estimated_minutes: number | null
   items: LineItem[]
   subtotal: Money
   tax_rate: string
@@ -715,6 +724,8 @@ export interface WorkOrderInput {
   assigned_to?: ID | null
   mileage_in?: number | null
   promised_at?: ISODateTime | null
+  /** Minutos de mano de obra estimados (5…6000) o null. */
+  estimated_minutes?: number | null
   tax_rate?: string
   items?: LineItemInput[]
 }
