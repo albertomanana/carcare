@@ -18,6 +18,7 @@ import { useWorkspace } from "@/features/workspace/workspace-context";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useSearchParam } from "@/hooks/useSearchParam";
+import { useWorkshopVisits } from "@/hooks/useWorkshopVisits";
 
 const SORTS = [
   { value: "recent", label: "Recientes" },
@@ -53,6 +54,8 @@ export default function GaragePage() {
   const total = totalFromPages(query.data);
   const canOperate = ctx.can("operate");
   const filtering = !!q;
+  // Particular: los coches que ahora mismo tienen una orden abierta en un taller
+  const visits = useWorkshopVisits();
 
   // Particular: buscador y orden solo con 7 o más vehículos (5.5); el taller los tiene siempre
   const showTools = ctx.isWorkshop || filtering || (total ?? 0) > 6;
@@ -210,6 +213,7 @@ export default function GaragePage() {
                   vehicle={v}
                   to={`${ctx.base}/vehiculos/${v.id}`}
                   showCustomer={ctx.isWorkshop}
+                  visit={visits.get(v.id)}
                 />
               </li>
             ))}

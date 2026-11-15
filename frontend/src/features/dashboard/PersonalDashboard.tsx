@@ -1,5 +1,5 @@
-import { BellPlus, CarFront, ChevronDown, CircleCheck, Clock, Gauge, OctagonAlert, Plus, Receipt, Target, Wallet, Wrench, History } from 'lucide-react'
-import { useState } from 'react'
+import { BellPlus, CarFront, ChevronDown, CircleCheck, Clock, Gauge, OctagonAlert, Plus, Radar, Receipt, Target, Wallet, Wrench, History } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useVehicleSummary } from '@/api/hooks/vehicles'
 import { useDashboard } from '@/api/hooks/workspaces'
@@ -14,6 +14,8 @@ import { ErrorState } from '@/components/ui/States'
 import { buttonClasses } from '@/components/ui/variants'
 import { HomeFirstSteps } from '@/components/vehicles/FirstSteps'
 import { ReminderItem, ReminderList } from '@/components/vehicles/ReminderItem'
+import { TelemetryCard, TelemetryList, useVehicleTelemetry } from '@/components/vehicles/VehicleTelemetry'
+import { WorkshopVisitStrip } from '@/components/vehicles/WorkshopVisit'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useReminderActions } from '@/features/vehicle/useReminderActions'
 import { useWorkspace } from '@/features/workspace/workspace-context'
@@ -21,11 +23,14 @@ import { cn } from '@/lib/cn'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useHiddenGuide } from '@/hooks/useHiddenGuide'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useWorkshopVisits } from '@/hooks/useWorkshopVisits'
 import { dashboardFirstSteps } from '@/lib/firstSteps'
 import { formatDate, formatDateTime, formatKm, formatMoney, formatPlate, formatRelativeDate, formatRelativeTime } from '@/lib/format'
 import { mileageMissions } from '@/lib/missions'
 import { INTERVAL_DISCLAIMER } from '@/lib/reminders'
 import { plural } from '@/lib/text'
+import type { TelemetryDatum } from '@/lib/vehicleTelemetry'
+import type { WorkshopVisit } from '@/lib/workshopVisit'
 import { CarThumbnail, GarageScene, useWebGLAvailable } from '@/three'
 
 /**
@@ -33,6 +38,8 @@ import { CarThumbnail, GarageScene, useWebGLAvailable } from '@/three'
  * la columna de misiones a la derecha. El garaje se encuadra en lo que queda libre, en el centro.
  */
 const SCENE_INSET = { top: 156, right: 420, bottom: 184 }
+/** Con el aviso de «En el taller», la barra del vehículo crece hacia arriba. */
+const SCENE_INSET_VISIT = { ...SCENE_INSET, bottom: 256 }
 
 /** Misiones de recordatorio que caben en Inicio. */
 const REMINDER_MISSIONS = 4
@@ -41,7 +48,9 @@ const REMINDER_MISSIONS = 4
  * Inicio del particular. Desde 1024 px, el garaje en 3D ocupa toda la ventana y el HUD se queda en los márgenes: arriba
  * a la izquierda el estado, abajo a la izquierda el vehículo elegido y a la derecha las misiones (recordatorios vencidos o
  * próximos y kilometraje por actualizar, todo con datos de la API); al bajar aparecen las cifras del mes y la lista de
- * vehículos. Por debajo de 1024 px, o sin WebGL, no hay escena: la misma información en una columna de paneles y botones,
+ * vehículos. Al elegir un coche, la cámara se acerca, el coche gira y sus datos clave lo rodean en tarjetas unidas por
+ * líneas guía (telemetría radial: nunca encima del coche); un coche con una orden abierta en un taller lleva la luz ámbar
+ * de «En el taller» y enlaza al seguimiento. Por debajo de 1024 px, o sin WebGL, no hay escena: la misma información en una columna de paneles y botones,
  * con la miniatura del vehículo y el selector como alternativa 2D.
  */
 export default function PersonalHome() {
@@ -128,16 +137,22 @@ function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide
   const active = data.vehicles.filter((v) => !v.archived_at)
   const [focusId, setFocusId] = useState<Vehicle['id'] | null>(null)
   const vehicle = active.find((v) => v.id === focusId) ?? active[0]
+  const visits = useWorkshopVisits()
+  const visit = vehicle ? visits.get(vehicle.id) : undefined
+  const telemetry = useVehicleTelemetry(vehicle, visit)
+  // El anillo solo acompaña a un coche elegido a propósito (pulsado en la escena o en el selector)
+  const ring = useMemo(() => (focusId != null ? telemetry.map((d) => ({ id: d.id, node: <TelemetryCard datum={d} /> })) : undefined), [focusId, telemetry])
 
   const scene = show3d ? (
     // El «cargando» de la escena no pinta una caja gris a pantalla completa: el lienzo es el de la página
     <div className="absolute inset-y-0 left-[var(--shell-left)] right-0 [&_[aria-busy=true]]:!bg-transparent">
       <GarageScene
         className="h-full w-full"
-        vehicles={active.map((v) => ({ id: v.id, name: v.display_name, plate: v.plate, color: v.color_hex, body: v.body_type }))}
+        vehicles={active.map((v) => ({ id: v.id, name: v.display_name, plate: v.plate, color: v.color_hex, body: v.body_type, inWorkshop: visits.has(v.id) }))}
         selectedId={vehicle ? focusId : null}
         onSelect={setFocusId}
-        focusInset={SCENE_INSET}
+        focusInset={visit ? SCENE_INSET_VISIT : SCENE_INSET}
+        telemetry={ring}
       />
     </div>
   ) : null
@@ -179,7 +194,7 @@ function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide
           )}
           {/* hueco por el que se ve el garaje (el puntero atraviesa a la escena) */}
           {show3d && <span aria-hidden className="flex-1" />}
-          {vehicle && <VehicleSpot vehicle={vehicle} vehicles={active} onPick={setFocusId} bar={show3d} canOperate={canOperate} />}
+          {vehicle && <VehicleSpot vehicle={vehicle} vehicles={active} onPick={setFocusId} bar={show3d} canOperate={canOperate} visit={visit} />}
         </div>
         <div className="min-w-0">
           {guide ? <HomeFirstSteps vehicle={guide.vehicle} steps={guide.steps} onHide={onHideGuide} className="hud-panel p-4 sm:p-5" /> : <Missions data={data} canOperate={canOperate} />}
@@ -187,6 +202,7 @@ function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide
       </div>
 
       {vehicle && <MonthFigures vehicle={vehicle} canOperate={canOperate} />}
+      {vehicle && <TelemetryPanel vehicle={vehicle} data={telemetry} />}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <VehiclesPanel vehicles={data.vehicles} canOperate={canOperate} focusId={vehicle?.id ?? null} onFocus={setFocusId} />
@@ -213,14 +229,15 @@ function Home({ data, guide, onHideGuide }: { data: PersonalDashboardData; guide
 /**
  * El vehículo elegido: su pintura, la matrícula, el kilometraje, las dos acciones y el selector de vehículo (la alternativa
  * de teclado a pulsar un coche de la escena). `bar`: una sola fila en el margen inferior de la escena 3D; sin `bar`,
- * tarjeta apilada con la miniatura estática del coche.
+ * tarjeta apilada con la miniatura estática del coche. Si el coche está en un taller, lo dice arriba con el seguimiento.
  */
-function VehicleSpot({ vehicle, vehicles, onPick, bar, canOperate }: { vehicle: Vehicle; vehicles: Vehicle[]; onPick: (id: Vehicle['id']) => void; bar: boolean; canOperate: boolean }) {
+function VehicleSpot({ vehicle, vehicles, onPick, bar, canOperate, visit }: { vehicle: Vehicle; vehicles: Vehicle[]; onPick: (id: Vehicle['id']) => void; bar: boolean; canOperate: boolean; visit?: WorkshopVisit }) {
   const ctx = useWorkspace()
   const quick = useQuickActions()
   const sub = [vehicle.nickname ? `${vehicle.make} ${vehicle.model}` : vehicle.version, vehicle.year].filter(Boolean).join(' · ')
   return (
     <section aria-label="Vehículo elegido" className={cn(bar ? 'hud-bar flex flex-wrap items-center gap-x-4 gap-y-2.5 px-3 py-2.5' : 'hud-panel flex flex-col gap-3 p-3 sm:p-4')}>
+      {visit && <WorkshopVisitStrip visit={visit} to={`${ctx.base}/solicitudes/${visit.requestId}`} className="w-full" />}
       {!bar && (
         <CarThumbnail
           appearance={{ bodyType: vehicle.body_type, colorHex: vehicle.color_hex }}
@@ -264,6 +281,16 @@ function VehicleSpot({ vehicle, vehicles, onPick, bar, canOperate }: { vehicle: 
         </div>
       )}
     </section>
+  )
+}
+
+/** Los datos clave del vehículo elegido en HTML: lo mismo que rodea al coche en la escena, para móvil, sin WebGL y lectores. */
+function TelemetryPanel({ vehicle, data }: { vehicle: Vehicle; data: TelemetryDatum[] }) {
+  const ctx = useWorkspace()
+  return (
+    <GamePanel title={`${vehicle.display_name} de un vistazo`} icon={<Radar />} description={`${INTERVAL_DISCLAIMER}.`} action={<PanelLink to={`${ctx.base}/vehiculos/${vehicle.id}`}>Abrir ficha</PanelLink>}>
+      <TelemetryList data={data} />
+    </GamePanel>
   )
 }
 

@@ -13,6 +13,7 @@ import { Disclosure } from '@/components/ui/Disclosure'
 import { Field } from '@/components/ui/Field'
 import { Textarea } from '@/components/ui/inputs'
 import { EmptyBoard, HudHeader } from '@/components/game/kit'
+import { LiveTimer } from '@/components/orders/OrderTimer'
 import { Section } from '@/components/ui/Section'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
@@ -21,10 +22,13 @@ import { useAuth } from '@/features/auth/auth-context'
 import { telHref } from '@/features/workshop/components/floor'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { cn } from '@/lib/cn'
 import { formatDate, formatKm, formatMoney } from '@/lib/format'
 import { ZONE_LABEL } from '@/lib/labels'
+import { orderTiming, timingSentence, useNow } from '@/lib/orderTiming'
 import { TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
 import { plural } from '@/lib/text'
+import { isVisitOpen, visitPlace, visitSteps } from '@/lib/workshopVisit'
 import { QuoteCard } from './components/QuoteCard'
 import { RequestStatusLabel } from './components/RequestStatusLabel'
 import { SharedHistoryList } from './components/SharedHistoryList'
@@ -190,6 +194,8 @@ function OrderTracking({ request: r }: { request: RepairRequest }) {
   const date = (value: string | null) => (value ? <span className="tabular">{formatDate(value)}</span> : cancelled ? 'No aplica' : 'Pendiente')
   // Solo se avisa al pasar a `ready` (§3.13.6): una vez lista, entregada o cancelada ya no hay nada que prometer
   const willNotify = !cancelled && wo.status !== 'ready' && wo.status !== 'delivered'
+  const open: boolean = isVisitOpen(wo)
+  const steps = visitSteps(wo.status)
   return (
     <Section id="orden" title="Seguimiento de la orden" description={`Aceptaste el presupuesto y ${r.workshop.name} abrió una orden con sus líneas.`}>
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -199,16 +205,52 @@ function OrderTracking({ request: r }: { request: RepairRequest }) {
           {status.label}
         </span>
       </p>
+      {steps.length > 0 && (
+        <ol aria-label="Recorrido de la orden" className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
+          {steps.map((s, i) => (
+            <li key={s.status} aria-current={s.state === 'current' ? 'step' : undefined} className="flex items-center gap-1.5">
+              {i > 0 && <span aria-hidden className={cn('h-px w-4 sm:w-6', s.state === 'todo' ? 'bg-line-strong' : 'bg-accent')} />}
+              <span
+                className={cn(
+                  'inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold',
+                  s.state === 'current' && (wo.status === 'ready' || wo.status === 'delivered' ? 'border-ok/50 bg-ok-soft text-ok' : 'border-[#f59e0b]/55 bg-warning-soft text-warning'),
+                  s.state === 'done' && 'border-line text-fg',
+                  s.state === 'todo' && 'border-dashed border-line-strong text-fg-muted',
+                )}
+              >
+                {s.label}
+                <span className="sr-only">{s.state === 'done' ? ' (anterior)' : s.state === 'current' ? ' (ahora)' : ' (pendiente)'}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {open && <OrderLive order={wo} />}
       <DataList
-        className="mt-2 max-w-md"
+        className="mt-3 max-w-md"
         items={[
+          ...(open ? [{ label: 'Dónde está', value: visitPlace(wo) }, { label: 'Lo lleva', value: wo.mechanic_name ?? 'Sin asignar todavía', empty: !wo.mechanic_name }] : []),
+          ...(open || wo.promised_at ? [{ label: 'Entrega prevista', value: wo.promised_at ? <span className="tabular">{formatDate(wo.promised_at)}</span> : 'El taller no ha dado fecha', empty: !wo.promised_at }] : []),
           { label: 'Recibido', value: date(wo.received_at) },
           { label: 'Terminado', value: date(wo.completed_at), empty: !wo.completed_at },
           { label: 'Entregado', value: date(wo.delivered_at), empty: !wo.delivered_at },
         ]}
       />
-      <p className="mt-2 text-xs text-fg-subtle">El estado lo cambia el taller.{willNotify && ' Te avisaremos cuando esté listo.'}</p>
+      <p className="mt-2 text-xs text-fg-subtle">El estado lo cambia el taller y aquí se actualiza solo.{willNotify && ' Te avisaremos cuando esté listo.'}</p>
     </Section>
+  )
+}
+
+/** Reloj en vivo de la orden abierta: lo que lleva en el estado actual (o en reparación frente a lo estimado). */
+function OrderLive({ order }: { order: NonNullable<RepairRequest['work_order']> }) {
+  const now = useNow(30_000)
+  if (order.status === 'ready') return null
+  return (
+    <div className="mt-3 max-w-md rounded-control border border-[#f59e0b]/45 bg-warning-soft px-3.5 py-3">
+      <LiveTimer order={order} size="lg" />
+      <p className="sr-only">El coche {timingSentence(orderTiming(order, now))}.</p>
+      <p className="mt-1.5 text-xs text-fg-muted">Cuenta el tiempo en este estado según lo anota el taller, no las horas trabajadas.</p>
+    </div>
   )
 }
 

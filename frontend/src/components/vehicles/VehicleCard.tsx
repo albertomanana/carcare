@@ -8,15 +8,19 @@ import { paintVars } from '@/lib/colors'
 import { formatKm, formatPlate, formatRelativeDate } from '@/lib/format'
 import { WORK_ORDER_STATUS } from '@/lib/status'
 import { plural } from '@/lib/text'
+import type { WorkshopVisit } from '@/lib/workshopVisit'
 import { BrandLogo } from './BrandLogo'
 import { VehicleThumb } from './VehicleVisuals'
+import { InWorkshopChip, WorkshopVisitStrip } from './WorkshopVisit'
 
 /**
  * Tarjeta del garaje / flota: sube al pasar el ratón. Arriba, la ficha de pintura con el nombre y la matrícula; en medio,
  * la miniatura estática del coche (nunca un WebGL por tarjeta); abajo, en dos filas de alto fijo para que todas las
  * tarjetas cuadren, los km con su fecha y lo vencido o próximo con icono y texto. Toda la tarjeta es un enlace a la ficha.
+ * `visit`: el coche tiene una orden abierta en un taller (garaje del particular): insignia ámbar sobre la miniatura y, debajo,
+ * dónde está y cuánto lleva.
  */
-export function VehicleCard({ vehicle, to, showCustomer }: { vehicle: Vehicle; to: string; showCustomer?: boolean }) {
+export function VehicleCard({ vehicle, to, showCustomer, visit }: { vehicle: Vehicle; to: string; showCustomer?: boolean; visit?: WorkshopVisit }) {
   const { stats } = vehicle
   const subtitle = [vehicle.nickname ? `${vehicle.make} ${vehicle.model}` : vehicle.version, vehicle.year].filter(Boolean).join(' · ')
   const order = stats.open_work_order
@@ -38,8 +42,10 @@ export function VehicleCard({ vehicle, to, showCustomer }: { vehicle: Vehicle; t
       </div>
       <div className="relative mx-3 aspect-[16/8] overflow-hidden rounded-xl bg-[radial-gradient(90%_60%_at_50%_100%,color-mix(in_srgb,var(--accent)_10%,var(--surface-2)),var(--surface-2)_75%)] [&>*]:transition-transform [&>*]:duration-500 [&>*]:ease-out-soft group-hover:[&>*]:scale-[1.04]">
         <VehicleThumb vehicle={vehicle} className="absolute inset-0 h-full w-full min-h-0 rounded-none border-0 bg-transparent object-contain p-3" />
+        {visit && visit.order.status !== 'ready' && <InWorkshopChip className="absolute left-2 top-2 !scale-100 shadow-sm" />}
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-4 pt-3">
+        {visit && <WorkshopVisitStrip visit={visit} inert className="mb-1" />}
         {showCustomer && <p className="truncate text-sm text-fg-muted">{vehicle.customer?.name ?? 'Sin cliente asignado'}</p>}
         {showCustomer && order && (
           <p className="truncate text-sm text-fg-muted">

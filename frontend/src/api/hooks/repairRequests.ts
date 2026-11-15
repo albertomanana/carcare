@@ -20,6 +20,7 @@ import type {
   SharedHistoryEntry,
 } from '../types'
 import { useInfiniteList } from './shared'
+import { isVisitOpen } from '@/lib/workshopVisit'
 
 // ───────── Directorio ─────────
 
@@ -59,11 +60,28 @@ export function useRepairRequests(ws: ID, params: QueryParams = {}, enabled = tr
   return useInfiniteList<RepairRequest>(qk.repairRequests(ws, params), `/workspaces/${ws}/repair-requests`, params, enabled)
 }
 
+/**
+ * Solicitudes convertidas del garaje (las que tienen orden en un taller), para saber qué coches están ahora en el
+ * taller. Se refresca cada minuto: el estado, el elevador y los tiempos cambian mientras el taller trabaja.
+ * Devuelve las 50 más recientes; `lib/workshopVisit.ts` se queda con las de orden abierta.
+ */
+export function useConvertedRequests(ws: ID, enabled = true) {
+  const params = { status: 'converted', per_page: 50 }
+  return useQuery({
+    queryKey: [...qk.repairRequestsAll(ws), 'en-taller'] as const,
+    queryFn: async ({ signal }) => (await api.get<Paginated<RepairRequest>>(`/workspaces/${ws}/repair-requests`, params, { signal })).data,
+    enabled,
+    refetchInterval: 60_000,
+  })
+}
+
 export function useRepairRequest(id: ID | undefined) {
   return useQuery({
     queryKey: qk.repairRequest(id ?? 0),
     queryFn: async ({ signal }) => (await api.get<Resource<RepairRequest>>(`/repair-requests/${id}`, undefined, { signal })).data,
     enabled: !!id,
+    // Con una orden abierta en el taller, el seguimiento se refresca solo: el estado lo cambia el taller
+    refetchInterval: (q) => (isVisitOpen(q.state.data?.work_order) ? 60_000 : false),
   })
 }
 

@@ -12,10 +12,12 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/DropdownMenu'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/States'
+import { WorkshopVisitStrip } from '@/components/vehicles/WorkshopVisit'
 import { buttonClasses } from '@/components/ui/variants'
 import { useQuickActions } from '@/features/quick-actions/quick-actions-context'
 import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { useWorkshopVisits } from '@/hooks/useWorkshopVisits'
 import { cn } from '@/lib/cn'
 import { fitTabs } from '@/lib/tabs'
 import { formatDate, formatKm, formatPlate, formatRelativeDate } from '@/lib/format'
@@ -175,6 +177,7 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
   const archive = useArchiveVehicle()
   const remove = useDeleteVehicle()
   const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
+  const visit = useWorkshopVisits().get(vehicle.id)
   const base = `${ctx.base}/vehiculos/${vehicle.id}`
   const canOperate = ctx.can('operate')
   const canManage = ctx.can('manage')
@@ -234,6 +237,8 @@ function Header({ vehicle, section }: { vehicle: Vehicle; section: string }) {
           )}
         </div>
       )}
+
+      {visit && <WorkshopVisitStrip visit={visit} to={`${ctx.base}/solicitudes/${visit.requestId}`} className="mb-4" />}
 
       <div className="flex items-start justify-between gap-3">
         <PaintToken color={vehicle.color_hex} size="lg" className="max-sm:size-14">

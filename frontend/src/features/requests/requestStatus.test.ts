@@ -12,7 +12,7 @@ import {
   vehicleCopyFacts,
 } from './requestStatus'
 
-const WORK_ORDER = { id: 9, number: 'OT-2026-0031', status: 'received', received_at: '2026-10-30T10:00:00Z', completed_at: null, delivered_at: null } as const
+const WORK_ORDER = { id: 9, number: 'OT-2026-0031', status: 'received', received_at: '2026-10-30T10:00:00Z', promised_at: null, completed_at: null, delivered_at: null, bay: null, mechanic_name: null, status_changed_at: '2026-10-30T10:00:00Z', repair_seconds: 0, estimated_minutes: null } as const
 
 function req(status: RepairRequestStatus, perspective: RepairRequest['perspective'], work_order: RepairRequest['work_order'] = null) {
   return { status, perspective, work_order }
