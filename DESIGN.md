@@ -244,6 +244,20 @@ Esquinas contenidas, de instrumento: controles 10 px, superficies 14 px, piezas 
 - **Ficha de pintura** (`.clay`): el color real del vehículo.
 - **Marca**: placa naranja con la trazada de una curva y su vértice.
 - **Cronómetro de orden** (`LiveTimer`, `components/orders/OrderTimer.tsx`): reloj `HH:MM:SS` en la tipografía de datos, con lo estimado al lado y una barra fina de avance. Naranja mientras va dentro de lo estimado; rojo de estado, con «+ tiempo», al pasarse. Siempre acompañado de la frase «cuenta el tiempo en este estado, no las horas trabajadas» o de su equivalente accesible.
+- **En el taller** (`components/vehicles/WorkshopVisit.tsx`): cuando un coche del particular tiene una orden abierta en un taller que usa CarCare, se ve en ámbar `#F59E0B` allí donde aparezca el coche: luz que late junto al texto «En el taller», y un bloque con el taller, el lugar («Elevador 4»), el estado, el nombre de pila de quien lo lleva y el cronómetro en vivo, con «Ver progreso». Pasa a esmeralda cuando el taller lo marca como listo. El ámbar nunca va solo: siempre con texto. Solo sale de una orden real; si el taller no usa CarCare no se muestra nada.
+- **Recorrido de la orden** (detalle de la solicitud): píldoras en fila, la actual en ámbar (o esmeralda si está listo), las siguientes con borde discontinuo. Los pasos anteriores no llevan marca de «hecho»: el taller puede haberse saltado alguno.
+- **Telemetría del vehículo** (`components/vehicles/VehicleTelemetry.tsx`, `lib/vehicleTelemetry.ts`): tarjeta fija de 190 × 56 px con rótulo en versalitas, valor y nota, y una arista del color del estado. Las cifras van en la tipografía de datos; los valores que son solo texto, en la de lectura. Cada tarjeta enlaza a la pantalla del dato. Los mismos datos existen como lista (`TelemetryList`) en el panel «… de un vistazo».
+
+### Garaje 3D: telemetría radial (`three/scenes/garage/telemetry.ts`)
+
+Al elegir un coche, la cámara se acerca, el coche gira en su plataforma y sus datos clave lo rodean:
+
+- **Dos columnas, nunca encima**: las tarjetas van a izquierda y derecha de la elipse que barre el coche al girar, con un margen de 26 px. Como esa elipse no cambia con el giro, ninguna tarjeta pisa el coche en ningún ángulo; entre sí se apilan con 10 px de hueco. Está garantizado por construcción y probado (`telemetry.test.ts`).
+- **Líneas guía** en el acento, de la tarjeta a un punto del contorno del coche; en cada columna llevan el mismo orden que las tarjetas, así que no se cruzan.
+- **Prioridad**: en el taller (si lo está) · avisos · kilometraje · ITV · seguro · neumáticos · última revisión · motor · gasto del mes. Si no caben todas, se quedan fuera las últimas; si no cabe ninguna columna (ventana estrecha), no se dibuja nada y los datos siguen en el panel de debajo.
+- **Solo datos reales**: «Avisos» cuenta recordatorios vencidos y próximos (según tus intervalos, no medido); no hay nota de salud. Donde falta un dato se dice («Sin recordatorio», «Sin indicar») y la tarjeta lleva a donde se resuelve.
+- Con la telemetría abierta se ocultan los rótulos de los demás coches (caerían debajo de las tarjetas) y se respeta el hueco de los controles de la escena.
+- **Plaza de un coche en el taller**: marco ámbar encendido en el suelo y un resplandor ámbar, además del rótulo.
 
 ### Taller 3D (`three/scenes/workshop/kit.ts`)
 
