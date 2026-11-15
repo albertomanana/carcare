@@ -747,8 +747,14 @@ final class Contract
             'number' => 'string',
             'status' => self::enum(WorkOrderStatus::class),
             'received_at' => 'datetime',
+            'promised_at' => '?datetime',
             'completed_at' => '?datetime',
             'delivered_at' => '?datetime',
+            'bay' => '?int',
+            'mechanic_name' => '?string',
+            'status_changed_at' => 'datetime',
+            'repair_seconds' => 'int',
+            'estimated_minutes' => '?int',
         ];
     }
 

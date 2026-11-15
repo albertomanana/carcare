@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class RepairRequest extends Model
 {
     /** Relaciones que necesita RepairRequestResource. */
-    public const RESOURCE_RELATIONS = ['workshop.workshopProfile', 'requester', 'quotes', 'workOrder'];
+    public const RESOURCE_RELATIONS = ['workshop.workshopProfile', 'requester', 'quotes', 'workOrder.assignee'];
 
     protected $fillable = [
         'requester_workspace_id', 'requester_user_id', 'workshop_workspace_id', 'vehicle_id', 'status',

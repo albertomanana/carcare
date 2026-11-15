@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\DB;
  */
 class RepairRequestResource extends ApiResource
 {
+    /** Nombre de pila: lo único del mecánico que ve el particular. */
+    private static function firstName(string $name): string
+    {
+        return explode(' ', trim($name))[0];
+    }
+
     /** Clave de la caché por petición con los espacios de los que el usuario es owner. */
     private const OWNED_WORKSPACES = 'carcare.owned_workspaces';
 
@@ -57,8 +63,15 @@ class RepairRequestResource extends ApiResource
                 'number' => $order->number,
                 'status' => $order->status->value,
                 'received_at' => self::iso($order->received_at),
+                'promised_at' => self::iso($order->promised_at),
                 'completed_at' => self::iso($order->completed_at),
                 'delivered_at' => self::iso($order->delivered_at),
+                // Seguimiento en vivo (§3.13.6): dónde está el coche, quién lo lleva (solo el nombre de pila) y los tiempos.
+                'bay' => $order->bay,
+                'mechanic_name' => $order->assignee ? self::firstName($order->assignee->name) : null,
+                'status_changed_at' => self::iso($order->status_changed_at ?? $order->received_at),
+                'repair_seconds' => (int) $order->repair_seconds,
+                'estimated_minutes' => $order->estimated_minutes,
             ],
             'responded_at' => self::iso($r->responded_at),
             'closed_at' => self::iso($r->closed_at),

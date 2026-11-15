@@ -664,3 +664,34 @@ it('si falla la conversión no queda nada a medias (una sola transacción)', fun
         ->and(Vehicle::count())->toBe($vehicles)
         ->and(WorkOrder::count())->toBe(1);
 });
+
+it('el particular sigue su orden desde la solicitud: elevador, nombre de pila del mecánico y tiempos, sin importes', function () {
+    $w = e16World();
+    [$id, $quoteId] = quotedRequest($w);
+    $orderId = $this->postJson(rq($id, '/quote/accept'), ['quote_id' => $quoteId])->assertOk()->json('data.work_order.id');
+
+    // Recién convertida: sin elevador ni mecánico, y el reloj del estado es la recepción.
+    $fresh = $this->getJson(rq($id))->assertOk()->json('data.work_order');
+    expect($fresh['bay'])->toBeNull()->and($fresh['mechanic_name'])->toBeNull()
+        ->and($fresh['status_changed_at'])->toBe($fresh['received_at'])
+        ->and($fresh['repair_seconds'])->toBe(0)->and($fresh['estimated_minutes'])->toBeNull();
+
+    // El taller la sube al elevador 2, la asigna, estima 90 min y empieza a repararla.
+    loginAs($w->manager);
+    $this->patchJson("/api/v1/work-orders/{$orderId}", ['assigned_to' => $w->mechanic->id, 'estimated_minutes' => 90, 'promised_at' => now()->addDay()->toIso8601String()])->assertOk();
+    $this->postJson("/api/v1/work-orders/{$orderId}/status", ['status' => 'in_progress', 'bay' => 2])->assertOk();
+
+    loginAs($w->client);
+    $seen = $this->getJson(rq($id))->assertOk()->json('data.work_order');
+    expect($seen['status'])->toBe('in_progress')
+        ->and($seen['bay'])->toBe(2)
+        ->and($seen['mechanic_name'])->toBe('Andrés')
+        ->and($seen['estimated_minutes'])->toBe(90)
+        ->and($seen['promised_at'])->not->toBeNull()
+        ->and(array_keys($seen))->not->toContain('total', 'subtotal', 'items', 'diagnosis', 'assigned_to');
+    $this->getJson("/api/v1/work-orders/{$orderId}")->assertNotFound();
+
+    // También en el listado del garaje, que es de donde lo lee la portada.
+    $this->getJson("/api/v1/workspaces/{$w->pws->id}/repair-requests?status=converted")->assertOk()
+        ->assertJsonPath('data.0.work_order.bay', 2)->assertJsonPath('data.0.vehicle_id', $w->car->id);
+});
