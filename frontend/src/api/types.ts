@@ -931,8 +931,18 @@ export interface RepairRequestWorkOrder {
   number: string
   status: WorkOrderStatus
   received_at: ISODateTime
+  /** Cuándo prometió el taller tenerlo; null si no dio fecha. */
+  promised_at: ISODateTime | null
   completed_at: ISODateTime | null
   delivered_at: ISODateTime | null
+  /** Elevador en el que está el coche; null si espera fuera. */
+  bay: number | null
+  /** Nombre de pila de quien lleva la orden; null si no hay nadie asignado. */
+  mechanic_name: string | null
+  /** Tiempos de la orden (§3.11.1): tiempo en el estado, no trabajo medido. */
+  status_changed_at: ISODateTime
+  repair_seconds: number
+  estimated_minutes: number | null
 }
 
 /**
