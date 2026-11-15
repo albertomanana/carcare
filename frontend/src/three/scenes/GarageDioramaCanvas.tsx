@@ -21,6 +21,8 @@ import { ReleaseOnUnmount, ResumeOnVisible } from './common'
 import { canvasDpr } from './dpr'
 import { buildGarageDecals, buildGarageMarkings, buildGarageStatic, buildPad } from './garage/diorama'
 import { VehicleLabel } from './garage/labels'
+import { RING_CARD_W, RING_MARGIN, type RingStore } from './garage/telemetry'
+import { RingProjector, TelemetryRingLayer, useRingStore } from './garage/TelemetryRing'
 import {
   assignGarageSlots,
   computeGarageLayout,
@@ -29,6 +31,7 @@ import {
   garageRoute,
   MAX_SLOTS,
   PAD_H,
+  PAD_R,
   SLAB_H,
   SLOT_D,
   SLOT_PITCH,
@@ -49,29 +52,37 @@ import { carDims, getClayModel } from './workshop/clayReal'
 import { dioramaPalette, type DioramaPalette } from './workshop/diorama'
 import { boxPoints, CAM_DIST, focusFrom, ISO_DIR, useCompileGate, useDevHook, useEscape, useRedraw, useSize, useTrafficController, type CamFocus } from './workshop/iso'
 import { CarMesh, IsoRig, StudioLights } from './workshop/IsoParts'
+import { poolTexture } from './workshop/kit'
 import { clayColor } from './workshop/layout'
 import type { CarHandle, Desired, TrafficWorld } from './workshop/traffic'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
 /** Encuadre del vehículo elegido (o el general si no hay, o en la cabecera pequeña, donde no hay vuelos). */
-function garageFocus(layout: GarageLayout, selSlot: number | null, compact: boolean, overview: CamFocus, w: number, h: number, insetR: number, insetT: number, insetB: number): CamFocus {
+function garageFocus(layout: GarageLayout, selSlot: number | null, compact: boolean, overview: CamFocus, w: number, h: number, insetR: number, insetT: number, insetB: number, ring: boolean): CamFocus {
   if (compact || selSlot == null) return overview
   const s = slotPose(layout, selSlot)
   if (!s) return overview
   const pts = boxPoints(s.x - SLOT_PITCH / 2 - 1.8, s.x + SLOT_PITCH / 2 + 1.8, 0, 2.2, s.z - SLOT_D / 2 - 2.6, s.z + SLOT_D / 2 + 1.4)
   const f = focusFrom(pts, w, h, { right: insetR, top: insetT + 70, bottom: insetB + 30 }, 30)
-  return { ...f, zoom: Math.min(Math.max(f.zoom, overview.zoom * 1.3), overview.zoom * 3) }
+  let zoom = Math.min(Math.max(f.zoom, overview.zoom * 1.3), overview.zoom * 3)
+  // Con telemetría, el coche se queda lo bastante pequeño para que quepa una columna de tarjetas a cada lado
+  if (ring) zoom = Math.max(overview.zoom * 0.8, Math.min(zoom, ((w - insetR) / 2 - RING_CARD_W - RING_MARGIN - 16) / RING_RHO))
+  return { ...f, zoom }
 }
+
+/** Radio en planta (m) del cilindro que barre el coche más largo al girar sobre la plataforma. */
+const RING_RHO = Math.max(PAD_R, 2.95)
 
 // ───────────────────────── Componente público ─────────────────────────
 
-export default function GarageDioramaCanvas({ vehicles, selectedId = null, onSelect, focusInset, compact = false, className }: GarageSceneProps) {
+export default function GarageDioramaCanvas({ vehicles, selectedId = null, onSelect, focusInset, compact = false, telemetry, className }: GarageSceneProps) {
   const tokens = useThemeTokens()
   const reduced = usePrefersReducedMotion()
   const wrap = useRef<HTMLDivElement>(null)
   const inView = useInView(wrap)
   const overlay = useOverlayStore()
+  const ringStore = useRingStore()
   const size = useSize(wrap)
 
   // Plazas estables (cada vehículo conserva la suya; los nuevos, la libre más baja) y vehículos visibles
@@ -104,9 +115,11 @@ export default function GarageDioramaCanvas({ vehicles, selectedId = null, onSel
       : boxPoints(layout.minX - WALL_T, layout.apronX, -SLAB_H, WALL_H, layout.backZ - WALL_T, layout.frontZ)
     return focusFrom(pts, size.w, size.h, { right: insetR, top: insetT + padTop, bottom: insetB + padBottom }, compact || size.w < 520 ? 6 : 14)
   }, [layout, size.w, size.h, insetR, insetT, insetB, padTop, padBottom, compact])
+  const ring = !compact && selected != null && !!telemetry?.length ? telemetry : null
+  const hasRing = ring != null
   const focus = useMemo(
-    () => (overview ? garageFocus(layout, selSlot, compact, overview, size.w, size.h, insetR, insetT, insetB) : null),
-    [overview, layout, selSlot, compact, size.w, size.h, insetR, insetT, insetB],
+    () => (overview ? garageFocus(layout, selSlot, compact, overview, size.w, size.h, insetR, insetT, insetB, hasRing) : null),
+    [overview, layout, selSlot, compact, size.w, size.h, insetR, insetT, insetB, hasRing],
   )
   const selKey = `${selected ? selected.id : ''}|${recenter}`
 
@@ -131,7 +144,10 @@ export default function GarageDioramaCanvas({ vehicles, selectedId = null, onSel
     (assignment.hidden ? ` (se muestran ${MAX_SLOTS} de ${vehicles.length})` : '') +
     (selected ? `. Seleccionado: ${vehicleAria(selected)}` : '')
 
-  const labelIds = useMemo(() => shown.map((v) => `veh-${v.id}`), [shown])
+  // Con la telemetría abierta solo queda el rótulo del coche elegido: los demás caerían debajo de las tarjetas
+  // (los otros coches siguen pulsándose en la escena y la página tiene su selector de vehículo)
+  const labelled = useMemo(() => (hasRing && selected ? shown.filter((v) => v.id === selected.id) : shown), [hasRing, selected, shown])
+  const labelIds = useMemo(() => labelled.map((v) => `veh-${v.id}`), [labelled])
   const inset = useMemo(() => ({ right: insetR, top: insetT, bottom: insetB }), [insetR, insetT, insetB])
   const labelCompact = compact || (!!focus && focus.zoom * SLOT_PITCH * Math.SQRT1_2 < 150)
 
@@ -173,17 +189,21 @@ export default function GarageDioramaCanvas({ vehicles, selectedId = null, onSel
             inset={inset}
             compact={compact}
             palSource={tokens}
+            ringStore={ringStore}
+            ringCount={ring?.length ?? 0}
           />
         )}
       </Canvas>
 
       <OverlayLayer store={overlay} ids={labelIds} label="Vehículos del garaje">
-        {shown.map((v) => (
+        {labelled.map((v) => (
           <OverlayItem key={v.id} store={overlay} id={`veh-${v.id}`}>
             <VehicleLabel vehicle={v} slot={slotOf.get(v.id)!} selected={selected?.id === v.id} compact={labelCompact} onSelect={select} />
           </OverlayItem>
         ))}
       </OverlayLayer>
+
+      {ring && selected && <TelemetryRingLayer store={ringStore} items={ring} label={`Datos de ${selected.name}`} />}
 
       {!compact && (
         <div className="pointer-events-none absolute left-3 flex items-end gap-2" style={{ bottom: insetB + 8, right: insetR + 12 }}>
@@ -228,9 +248,11 @@ interface WorldProps {
   inset: { right: number; top: number; bottom: number }
   compact: boolean
   palSource: Parameters<typeof dioramaPalette>[0]
+  ringStore: RingStore
+  ringCount: number
 }
 
-function GarageWorld({ vehicles, slotOf, layout, reduced, selectedId, onSelect, label, overlay, focus, overview, selKey, onUserMove, inset, compact, palSource }: WorldProps) {
+function GarageWorld({ vehicles, slotOf, layout, reduced, selectedId, onSelect, label, overlay, focus, overview, selKey, onUserMove, inset, compact, palSource, ringStore, ringCount }: WorldProps) {
   useCanvasLabel(label)
   const pal = useMemo(() => dioramaPalette(palSource), [palSource])
   const gl = useThree((s) => s.gl)
@@ -335,6 +357,11 @@ function GarageWorld({ vehicles, slotOf, layout, reduced, selectedId, onSelect, 
           <SlotPad key={`pad-${v.id}`} x={s.x} z={s.z} carId={v.id} geometry={padGeo} selected={selectedId === v.id} reduced={reduced} spins={spins} redraw={markShadows} />
         )
       })}
+      {vehicles.map((v) => {
+        if (!v.inWorkshop) return null
+        const s = layout.slots[slotOf.get(v.id)!]
+        return <WorkshopMark key={`taller-${v.id}`} x={s.x} z={s.z} />
+      })}
       {vehicles.map((v) => (
         <CarMesh
           key={v.id}
@@ -349,6 +376,17 @@ function GarageWorld({ vehicles, slotOf, layout, reduced, selectedId, onSelect, 
       ))}
       <IsoRig focus={focus} overview={overview} selKey={selKey} reduced={reduced} bounds={bounds} interactive={!compact} onUserMove={onUserMove} />
       <OverlayProjector store={overlay} anchors={anchors} inset={inset} />
+      {ringCount > 0 && selectedId != null && (
+        <RingProjector
+          store={ringStore}
+          count={ringCount}
+          track={() => handles.get(selectedId)?.root}
+          rho={RING_RHO}
+          height={getClayModel(resolveBody(vehicles.find((v) => v.id === selectedId)?.body ?? null)).size.height}
+          base={PAD_H}
+          inset={inset}
+        />
+      )}
       <ReleaseOnUnmount />
     </>
   )
@@ -401,6 +439,43 @@ function GarageFloor({ layout, pal }: { layout: GarageLayout; pal: DioramaPalett
       <mesh geometry={statics} material={clayVertex()} castShadow receiveShadow />
       <mesh geometry={marks} material={clayVertex()} receiveShadow />
       {decals && decalMat && <mesh geometry={decals.geometry} material={decalMat} receiveShadow renderOrder={1} />}
+    </group>
+  )
+}
+
+// ───────────────────────── Coche en el taller ─────────────────────────
+
+const markGeo = (() => {
+  const w = SLOT_PITCH - 0.7
+  const d = SLOT_D - 0.4
+  const t = 0.09
+  const shape = new THREE.Shape()
+  shape.moveTo(-w / 2, -d / 2)
+  shape.lineTo(w / 2, -d / 2)
+  shape.lineTo(w / 2, d / 2)
+  shape.lineTo(-w / 2, d / 2)
+  shape.closePath()
+  const hole = new THREE.Path()
+  hole.moveTo(-w / 2 + t, -d / 2 + t)
+  hole.lineTo(-w / 2 + t, d / 2 - t)
+  hole.lineTo(w / 2 - t, d / 2 - t)
+  hole.lineTo(w / 2 - t, -d / 2 + t)
+  hole.closePath()
+  shape.holes.push(hole)
+  return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2).translate(0, 0.012, 0)
+})()
+const markMat = new THREE.MeshBasicMaterial({ color: '#f59e0b', toneMapped: false })
+const markPoolGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)
+let markPoolMat: THREE.MeshBasicMaterial | null = null
+
+/** Plaza de un coche que está en el taller: marco ámbar encendido y un resplandor ámbar en el suelo. */
+function WorkshopMark({ x, z }: { x: number; z: number }) {
+  const map = poolTexture()
+  if (map) markPoolMat ??= new THREE.MeshBasicMaterial({ map, color: '#f59e0b', transparent: true, opacity: 0.38, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending })
+  return (
+    <group position={[x, 0, z]}>
+      {markPoolMat && <mesh geometry={markPoolGeo} material={markPoolMat} position={[0, 0.01, 0]} scale={[SLOT_PITCH + 1.6, 1, SLOT_D + 1.4]} renderOrder={1} />}
+      <mesh geometry={markGeo} material={markMat} renderOrder={2} />
     </group>
   )
 }

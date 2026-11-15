@@ -20,7 +20,7 @@ export function VehicleLabel({
   compact: boolean
   onSelect: (id: number | null) => void
 }) {
-  const aria = `Plaza ${slot + 1}: ${vehicleAria(vehicle)}`
+  const aria = `Plaza ${slot + 1}: ${vehicleAria(vehicle)}${vehicle.inWorkshop ? ', en el taller' : ''}`
   const short = vehicle.plate ?? vehicle.name
   return (
     <div className="flex flex-col items-center">
@@ -39,9 +39,16 @@ export function VehicleLabel({
           selected ? 'border-accent bg-surface ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 hover:bg-surface',
         )}
       >
-        <span className="font-display text-xs font-semibold text-fg-subtle">{slot + 1}</span>
+        {vehicle.inWorkshop ? (
+          <span aria-hidden className="relative grid size-2.5 shrink-0 place-items-center">
+            <span className="absolute inset-0 rounded-full bg-[#f59e0b] opacity-60 motion-safe:animate-ping" />
+            <span className="relative size-2.5 rounded-full bg-[#f59e0b]" />
+          </span>
+        ) : (
+          <span className="font-display text-xs font-semibold text-fg-subtle">{slot + 1}</span>
+        )}
         <span className="truncate">{compact && !selected ? short : vehicle.name}</span>
-        {(!compact || selected) && vehicle.plate && <span className="truncate text-fg-muted">{vehicle.plate}</span>}
+        {vehicle.inWorkshop ? <span className="font-semibold text-warning">En el taller</span> : (!compact || selected) && vehicle.plate && <span className="truncate text-fg-muted">{vehicle.plate}</span>}
       </button>
       <span className="h-2.5 w-px bg-fg-subtle/70" aria-hidden />
     </div>

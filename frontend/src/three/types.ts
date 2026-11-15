@@ -3,6 +3,7 @@
  * El resto de la app solo importa desde '@/three' (index.ts) y solo usa estos props.
  * Cambiar esta interfaz requiere avisar al agente `frontend-react` y anotarlo en docs/equipo/TABLERO.md.
  */
+import type { ReactNode } from 'react'
 import type { Bay, BodyType, WorkOrder, Zone, ZoneStatus } from '@/api/types'
 
 export interface CarAppearance {
@@ -97,6 +98,14 @@ export interface GarageVehicle {
   color?: string | null
   /** `body_type` del vehículo. */
   body?: BodyType | null
+  /** true si el coche tiene una orden abierta en un taller: su plaza se marca con luz ámbar y el rótulo lo dice. */
+  inWorkshop?: boolean
+}
+
+/** Un dato de la telemetría del coche elegido: la página pinta la tarjeta (190 × 56 px) y la escena la coloca. */
+export interface GarageTelemetryItem {
+  id: string
+  node: ReactNode
 }
 
 export interface GarageSceneProps {
@@ -113,6 +122,12 @@ export interface GarageSceneProps {
    * rótulos cortos y sin leyenda. Sin `compact`: pantalla completa con paneo, zoom y foco.
    */
   compact?: boolean
+  /**
+   * Datos del vehículo elegido, por prioridad: se colocan en dos columnas a los lados del coche que gira, unidos por
+   * líneas guía, sin pisar el coche ni entre sí en ningún ángulo. Los que no caben no se dibujan (la página debe
+   * tenerlos también en HTML). Sin `selectedId` o con `compact`, no se muestran.
+   */
+  telemetry?: GarageTelemetryItem[]
   className?: string
 }
 
