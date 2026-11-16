@@ -42,6 +42,10 @@ Contrato: §3.5.1, §3.6.1 y §4.1 nuevos, y fila en el historial (15/11/2026). 
 - `components/charts/MonthSelectBars.tsx`: la gráfica nueva. Una sola serie, importe del mes elegido rotulado encima, el de los demás al pasar el puntero o enfocar; la tabla de datos sigue debajo.
 - Lógica pura con pruebas: `lib/expenseLinks.ts` y `niceMax` en `lib/analytics.ts`.
 
+### Portada
+- Las 7 capturas de la portada (`frontend/public/img/portada/`) eran del 3 de noviembre, con el aspecto anterior. Se rehicieron con «Apex Telemetry» (tema oscuro, 1280 × 800 a 1,5x, WebP de 1200 y 640 px) y se actualizaron los textos alternativos de las tres cuyo contenido cambió (zonas, gastos y taller 3D) en `features/landing/shots.ts`.
+- Se tomaron sobre una **demo recién sembrada en una base de datos aparte** (`carcare_shots`, creada y borrada en esta sesión), para no volver a tocar los datos de Alberto.
+
 ## Evidencias
 
 | Comando | Resultado |
@@ -56,6 +60,8 @@ Contrato: §3.5.1, §3.6.1 y §4.1 nuevos, y fila en el historial (15/11/2026). 
 - Detalle de octubre del particular: 717,17 €, +21 % respecto a septiembre, y entre los cargos «Revisión antes de un viaje largo · Orden OT‑2026‑0034 · Taller Demo · Piezas 51,70 € · Mano de obra 52,80 € · IVA 21,95 €».
 - Formulario de gasto: se comprobó **lo que envía** interceptando la petición (no se escribió nada): seguro anual ⇒ `recurrence_months: 12, next_due_date: 2027-11-16`; reparación con intervención ⇒ `record: {title, zone, workshop_name}`; combustible ⇒ sin campos de más. Sin nombre de intervención avisa y no envía.
 - Sin errores de consola salvo el `401` de la comprobación de sesión antes de entrar.
+
+**Siembra limpia** (`DB_DATABASE=carcare_shots php artisan migrate:fresh --seed`, MariaDB): termina sin errores con las migraciones nuevas; la orden entregada de la solicitud de demo genera sola su intervención (1 con `repair_request_id`) y los 2 seguros salen como anuales unidos a su recordatorio. La base `carcare` de Alberto no se tocó (se comprobó: sigue con sus 5 solicitudes).
 
 Capturas en [`2026-11-16-apex-telemetry-fase-4-capturas/`](2026-11-16-apex-telemetry-fase-4-capturas/).
 
@@ -75,8 +81,8 @@ Capturas en [`2026-11-16-apex-telemetry-fase-4-capturas/`](2026-11-16-apex-telem
 - **La póliza** no se adjunta desde el formulario: se indica dónde guardarla (Datos › Documentos).
 - **Sin E2E ni axe.** El formulario se probó en navegador interceptando el envío, no con un alta real desde la interfaz (los altas reales están cubiertas por las pruebas del backend).
 - **Demo recién sembrada**: no trae un coche «En el taller»; se consigue en dos pasos aceptando el presupuesto de «Chirrido al frenar» y moviendo la orden desde el taller (buen guion para la defensa).
-- Pendiente de fases anteriores: comprobar el 3D en una GPU real, rehacer las capturas de la portada y regenerar `.impeccable/design.json`.
+- Pendiente de fases anteriores: comprobar el 3D en una GPU real y regenerar `.impeccable/design.json`.
 
 ## Siguiente paso
 
-Cierre del rediseño: repaso en una GPU real con Alberto, capturas nuevas de la portada, y decidir si la demo sembrada debe traer ya una visita abierta al taller.
+Cierre del rediseño: repaso en una GPU real con Alberto y decidir si la demo sembrada debe traer ya una visita abierta al taller.
