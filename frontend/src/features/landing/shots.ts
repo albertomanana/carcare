@@ -1,16 +1,17 @@
 /**
  * Capturas reales de la app (cuentas demo del DemoSeeder, datos ficticios) en `public/img/portada/`, en WebP de 1200
  * y 640 px de ancho y proporción 16:10. Se generaron con Playwright contra la API (tema oscuro, 1280 px, a 1,5x) y se
- * codificaron en WebP con el propio Chromium: ver el informe 2026-10-29-frontend-react-portada.
+ * codificaron en WebP con el propio Chromium: ver el informe 2026-10-29-frontend-react-portada. Rehechas el 16/11/2026
+ * con el aspecto «Apex Telemetry», sobre una demo recién sembrada (informe 2026-11-16-…-fase-4, `portada.mjs`).
  */
 export const SHOTS = {
   zonas: {
     file: 'particular-zonas',
-    alt: 'Ficha de un Kia Sportage en CarCare: el coche en 3D con un punto en cada zona y, al lado, la lista de zonas con su estado; el motor sale como «Próximo» y la mayoría «Sin datos» o «Sin recordatorio».',
+    alt: 'Ficha de un Kia Sportage en CarCare: el coche en 3D con un punto en cada zona y, al lado, la lista de las diez zonas con su estado; el motor sale como «Próximo», la general «En plazo» y las demás «Sin datos» o «Sin recordatorio».',
   },
   gastos: {
     file: 'particular-gastos',
-    alt: 'Pestaña Gastos de la ficha: total del año, coste por km y consumo medio arriba; debajo, un gráfico de barras por mes y un anillo por categoría con combustible, seguro, mantenimiento y reparación.',
+    alt: 'Pestaña Gastos de la ficha: total del año, coste por km y consumo medio arriba; debajo, un gráfico de barras por mes y un anillo por categoría con combustible, mantenimiento, reparación, aparcamiento y limpieza.',
   },
   tablero: {
     file: 'taller-tablero',
@@ -18,7 +19,7 @@ export const SHOTS = {
   },
   taller3d: {
     file: 'taller-3d',
-    alt: 'Vista Taller 3D: la nave con cuatro elevadores, tres ocupados y uno libre, y la zona de espera con coches de colores numerados; a la derecha, la misma información en una lista de elevadores y espera.',
+    alt: 'Taller en 3D: una maqueta de la nave de noche con cuatro elevadores, tres ocupados con su cronómetro en marcha, y la zona de espera con coches de colores; arriba, cuántos coches hay en el taller, en elevador, esperando, listos y con retraso; a la derecha, las órdenes que piden atención ahora.',
   },
   directorio: {
     file: 'solicitudes-directorio',
