@@ -49,6 +49,15 @@ export function ordersWithoutCustomer(workshop: NonNullable<WorkspaceAnalytics['
 }
 
 /** 'YYYY-MM' del mes en curso (para resaltar su barra si está en el gráfico). */
+/** Tope «redondo» del eje de una gráfica: el primer paso (1, 1,5, 2, 2,5, 3, 4, 5, 6, 8 o 10 × 10ⁿ) que no queda por debajo del máximo. */
+export function niceMax(max: number): number {
+  if (!(max > 0)) return 1
+  const pow = 10 ** Math.floor(Math.log10(max))
+  const unit = max / pow
+  const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((s) => unit <= s) ?? 10
+  return step * pow
+}
+
 export function currentMonthKey(now: Date = new Date()): YearMonth {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }

@@ -532,6 +532,17 @@ function RecordRow({
                 Cuenta como gasto: verlo
               </Link>
             )}
+            {r.from_order &&
+              (r.from_order.repair_request_id ? (
+                <Link
+                  to={`${ctx.base}/solicitudes/${r.from_order.repair_request_id}`}
+                  className="font-medium text-accent-ink underline-offset-4 hover:underline"
+                >
+                  Orden {r.from_order.number} del taller: ver la solicitud
+                </Link>
+              ) : (
+                <span className="text-fg-subtle">Orden {r.from_order.number} del taller.</span>
+              ))}
             {r.work_order_id && ctx.isWorkshop && (
               <Link
                 to={`${ctx.base}/ordenes/${r.work_order_id}`}

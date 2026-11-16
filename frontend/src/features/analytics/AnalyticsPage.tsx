@@ -5,6 +5,7 @@
  *  - Taller: importe de las órdenes entregadas, cuántas, ticket medio, tiempo medio en el taller,
  *    por mes y por cliente. Nunca se llama «facturación»: CarCare no emite facturas (D12 = A).
  * Solo se muestran cifras que da la API; si falta un dato se dice y se ofrece la acción que lo resuelve.
+ * La gráfica mensual se pulsa: el mes elegido (`?mes=AAAA-MM`) abre su detalle con los cargos uno a uno (§4.1).
  */
 import { useId, useMemo } from 'react'
 import { Link } from 'react-router'
@@ -25,6 +26,7 @@ import { formatDate, formatMoney, formatMonth, formatNumber, formatPercent, form
 import { EXPENSE_CATEGORY_LABEL } from '@/lib/labels'
 import { PERIOD_LABEL } from '@/lib/period'
 import { plural } from '@/lib/text'
+import { MonthDetail } from './MonthDetail'
 import { Block, ContentSkeleton, ExpandableBars, Figures, MonthlyChart } from './parts'
 
 export default function AnalyticsPage() {
@@ -108,9 +110,17 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 // ───────── Particular ─────────
 
+/** Mes elegido en la gráfica, guardado en la URL. Si ya no está en el periodo que se ve, no cuenta. */
+function useSelectedMonth(data: WorkspaceAnalytics) {
+  const [param, setMonth] = useSearchParam('mes')
+  const month = data.by_month.some((m) => m.month === param) ? param : null
+  return [month, setMonth] as const
+}
+
 function PersonalAnalytics({ data }: { data: WorkspaceAnalytics }) {
   const ctx = useWorkspace()
   const quick = useQuickActions()
+  const [month, setMonth] = useSelectedMonth(data)
   const total = toNumber(data.total) ?? 0
   const peak = peakMonth(data.by_month)
   const canAdd = ctx.canExpenses && ctx.can('operate')
@@ -155,7 +165,9 @@ function PersonalAnalytics({ data }: { data: WorkspaceAnalytics }) {
       />
 
       <Block id="por-mes" title="Por mes">
-        <MonthlyChart data={data.by_month} label="Gasto por mes" valueHeader="Gasto" />
+        <MonthlyChart data={data.by_month} label="Gasto por mes" valueHeader="Gasto" selected={month} onSelect={setMonth}>
+          {month && <MonthDetail month={month} onClose={() => setMonth(null)} />}
+        </MonthlyChart>
       </Block>
 
       <Block id="por-categoria" title="Por categoría">
@@ -197,6 +209,7 @@ function PersonalAnalytics({ data }: { data: WorkspaceAnalytics }) {
 
 function WorkshopAnalytics({ data }: { data: WorkspaceAnalytics }) {
   const ctx = useWorkspace()
+  const [month, setMonth] = useSelectedMonth(data)
   const w = data.workshop
   if (!w || w.orders_delivered === 0) {
     return (
@@ -231,7 +244,9 @@ function WorkshopAnalytics({ data }: { data: WorkspaceAnalytics }) {
       )}
 
       <Block id="por-mes" title="Por mes" description="Según la fecha de entrega.">
-        <MonthlyChart data={data.by_month} label="Importe de las órdenes entregadas por mes" valueHeader="Importe" />
+        <MonthlyChart data={data.by_month} label="Importe de las órdenes entregadas por mes" valueHeader="Importe" selected={month} onSelect={setMonth}>
+          {month && <MonthDetail month={month} onClose={() => setMonth(null)} />}
+        </MonthlyChart>
       </Block>
 
       <Block

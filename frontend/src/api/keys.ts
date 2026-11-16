@@ -15,6 +15,7 @@ export const qk = {
   activity: (ws: ID, params: QueryParams = {}) => ['workspaces', ws, 'activity', params] as const,
   wsReminders: (ws: ID, params: QueryParams = {}) => ['workspaces', ws, 'reminders', params] as const,
   analytics: (ws: ID, params: QueryParams = {}) => ['workspaces', ws, 'analytics', params] as const,
+  analyticsMonth: (ws: ID, month: string) => ['workspaces', ws, 'analytics', 'month', month] as const,
   members: (ws: ID) => ['workspaces', ws, 'members'] as const,
   vehicles: (ws: ID, params: QueryParams = {}) => ['workspaces', ws, 'vehicles', params] as const,
   vehiclesAll: (ws: ID) => ['workspaces', ws, 'vehicles'] as const,

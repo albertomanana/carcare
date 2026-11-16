@@ -3,6 +3,7 @@ import { api, type QueryParams } from '../client'
 import { qk } from '../keys'
 import type {
   Activity,
+  AnalyticsMonth,
   ID,
   Member,
   Paginated,
@@ -13,6 +14,7 @@ import type {
   WorkspaceDashboard,
   WorkspaceRole,
   WorkspaceSettings,
+  YearMonth,
 } from '../types'
 import { useInfiniteList } from './shared'
 
@@ -56,6 +58,16 @@ export function useAllWorkspaceReminders(ws: ID) {
       }
       return { items, total: first.meta.total }
     },
+  })
+}
+
+/** Detalle de un mes de la analítica (contrato §4.1). Mientras llega otro mes se ve el anterior, atenuado. */
+export function useAnalyticsMonth(ws: ID, month: YearMonth | null) {
+  return useQuery({
+    queryKey: qk.analyticsMonth(ws, month ?? ''),
+    queryFn: async ({ signal }) => (await api.get<Resource<AnalyticsMonth>>(`/workspaces/${ws}/analytics/month`, { month: month ?? '' }, { signal })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!month,
   })
 }
 

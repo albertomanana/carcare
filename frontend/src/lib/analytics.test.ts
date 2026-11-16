@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { WorkspaceAnalytics } from '@/api/types'
-import { analyticsPeriod, currentMonthKey, expensesCount, ordersWithoutCustomer, parseAnalyticsPreset, peakMonth, shareOf } from './analytics'
+import { analyticsPeriod, currentMonthKey, expensesCount, ordersWithoutCustomer, parseAnalyticsPreset, peakMonth, shareOf, niceMax } from './analytics'
 
 describe('analítica: periodo', () => {
   it('acepta solo los periodos de la pantalla y por defecto usa los últimos 12 meses', () => {
@@ -55,5 +55,23 @@ describe('analítica: cifras derivadas de la API', () => {
     }
     expect(ordersWithoutCustomer(workshop)).toBe(2)
     expect(ordersWithoutCustomer({ ...workshop, orders_delivered: 13 })).toBe(0)
+  })
+})
+
+describe('niceMax', () => {
+  it('redondea el tope del eje hacia arriba a un paso redondo, sin dejar media gráfica vacía', () => {
+    expect(niceMax(0)).toBe(1)
+    expect(niceMax(87)).toBe(100)
+    expect(niceMax(145.2)).toBe(150)
+    expect(niceMax(230)).toBe(250)
+    expect(niceMax(420)).toBe(500)
+    expect(niceMax(1000)).toBe(1000)
+    expect(niceMax(1287.13)).toBe(1500)
+    expect(niceMax(6498.25)).toBe(8000)
+    // nunca por debajo del máximo ni más del doble
+    for (const v of [3, 17, 99, 101, 999, 12345]) {
+      expect(niceMax(v)).toBeGreaterThanOrEqual(v)
+      expect(niceMax(v)).toBeLessThanOrEqual(v * 2)
+    }
   })
 })

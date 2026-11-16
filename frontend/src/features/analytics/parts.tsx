@@ -6,11 +6,11 @@
 import { ChevronRight } from 'lucide-react'
 import { type ReactNode, useId, useState } from 'react'
 import type { Money, YearMonth } from '@/api/types'
-import { HBarList, MonthlyBars } from '@/components/charts/Charts'
+import { HBarList } from '@/components/charts/Charts'
+import { MonthSelectBars } from '@/components/charts/MonthSelectBars'
 import { Button } from '@/components/ui/Button'
 import { StatTile } from '@/components/game/kit'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { currentMonthKey } from '@/lib/analytics'
 import { formatMoney, formatMonth } from '@/lib/format'
 import { plural } from '@/lib/text'
 
@@ -50,13 +50,29 @@ export function Block({ id, title, description, children }: { id: string; title:
 // ───────── Gráfico mensual + tabla visible ─────────
 
 /**
- * Barras mensuales (Recharts, sin animación). La alternativa accesible es una tabla visible
- * dentro de «Ver los datos en una tabla», que sirve a todo el mundo y no solo a lectores de pantalla.
+ * Barras mensuales en las que cada mes se pulsa para ver su detalle (`children`, debajo). La alternativa accesible es
+ * doble: cada barra es un botón con su mes y su importe, y la tabla visible de «Ver los datos en una tabla».
  */
-export function MonthlyChart({ data, label, valueHeader }: { data: { month: YearMonth; total: Money }[]; label: string; valueHeader: string }) {
+export function MonthlyChart({
+  data,
+  label,
+  valueHeader,
+  selected,
+  onSelect,
+  children,
+}: {
+  data: { month: YearMonth; total: Money }[]
+  label: string
+  valueHeader: string
+  selected: YearMonth | null
+  onSelect: (month: YearMonth | null) => void
+  children?: ReactNode
+}) {
   return (
     <div>
-      <MonthlyBars data={data} label={label} highlightMonth={currentMonthKey()} srTable={false} height={200} />
+      <MonthSelectBars data={data} label={`${label}. Pulsa un mes para ver su detalle`} selected={selected} onSelect={onSelect} height={200} />
+      {!selected && <p className="mt-2 text-sm text-fg-muted">Pulsa un mes para ver su detalle.</p>}
+      {children}
       <details className="group mt-3 border-t border-line pt-1">
         <summary className="inline-flex min-h-12 cursor-pointer list-none items-center gap-1.5 rounded-control text-sm text-fg-muted hover:text-fg lg:min-h-9 [&::-webkit-details-marker]:hidden">
           <ChevronRight aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-open:rotate-90" />

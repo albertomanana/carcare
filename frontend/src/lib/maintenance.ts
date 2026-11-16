@@ -6,6 +6,7 @@ import { QUICK_SERVICES, type QuickService } from './quickServices'
 export function linkedExpenseCategory(type: RecordType): ExpenseCategory {
   if (type === 'repair' || type === 'breakdown' || type === 'bodywork') return 'repair'
   if (type === 'inspection') return 'inspection'
+  if (type === 'modification') return 'modification'
   return 'maintenance'
 }
 

@@ -118,6 +118,7 @@ export const RECORD_TYPE_LABEL: Record<RecordType, string> = {
   inspection: 'Inspección / ITV',
   tyres: 'Neumáticos',
   bodywork: 'Carrocería',
+  modification: 'Modificación',
   other: 'Otro',
 }
 
@@ -128,6 +129,7 @@ export const RECORD_TYPE_ICON: Record<RecordType, LucideIcon> = {
   inspection: ClipboardCheck,
   tyres: CircleDot,
   bodywork: PaintBucket,
+  modification: Sparkles,
   other: CircleEllipsis,
 }
 
@@ -194,6 +196,7 @@ export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   fuel: 'Combustible',
   maintenance: 'Mantenimiento',
   repair: 'Reparación',
+  modification: 'Modificaciones',
   insurance: 'Seguro',
   tax: 'Impuestos',
   inspection: 'ITV / Inspección',
@@ -208,6 +211,7 @@ export const EXPENSE_CATEGORY_ICON: Record<ExpenseCategory, LucideIcon> = {
   fuel: Fuel,
   maintenance: Wrench,
   repair: Hammer,
+  modification: Cog,
   insurance: ShieldCheck,
   tax: Landmark,
   inspection: ClipboardCheck,
@@ -222,6 +226,7 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'fuel',
   'maintenance',
   'repair',
+  'modification',
   'insurance',
   'tax',
   'inspection',

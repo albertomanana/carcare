@@ -23,6 +23,7 @@ import { useWorkspace } from '@/features/workspace/workspace-context'
 import { useHashTarget, useRevealHashTarget } from '@/hooks/useHashTarget'
 import { useSearchParam } from '@/hooks/useSearchParam'
 import { cn } from '@/lib/cn'
+import { originBreakdown, originLabel, renewalText } from '@/lib/expenseLinks'
 import { formatDate, formatDecimal, formatKm, formatMoney, formatMonth, toNumber } from '@/lib/format'
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL, FUEL_UNIT_SHORT } from '@/lib/labels'
 import { PERIOD_LABEL, presetPeriod } from '@/lib/period'
@@ -151,7 +152,7 @@ export default function ExpensesTab() {
           <>
             <ul className="list-panel">
               {expenses.map((e) => (
-                <ExpenseRow key={e.id} expense={e} highlighted={hashId === String(e.id)} canWrite={canWrite} historyHref={`${ctx.base}/vehiculos/${vehicle.id}/historial?ver=intervenciones#intervencion-${e.maintenance_record_id}`} onEdit={setEditing} onDelete={setDeleting} />
+                <ExpenseRow key={e.id} expense={e} highlighted={hashId === String(e.id)} canWrite={canWrite} base={ctx.base} historyHref={`${ctx.base}/vehiculos/${vehicle.id}/historial?ver=intervenciones#intervencion-${e.maintenance_record_id}`} onEdit={setEditing} onDelete={setDeleting} />
               ))}
             </ul>
             <LoadMore hasNextPage={!!list.hasNextPage} isFetchingNextPage={list.isFetchingNextPage} fetchNextPage={list.fetchNextPage} shown={expenses.length} total={totalFromPages(list.data)} what="gastos" />
@@ -266,6 +267,7 @@ function ExpenseRow({
   expense: e,
   highlighted,
   canWrite,
+  base,
   historyHref,
   onEdit,
   onDelete,
@@ -273,6 +275,7 @@ function ExpenseRow({
   expense: Expense
   highlighted: boolean
   canWrite: boolean
+  base: string
   historyHref: string
   onEdit: (e: Expense) => void
   onDelete: (e: Expense) => void
@@ -287,6 +290,9 @@ function ExpenseRow({
   ]
     .filter(Boolean)
     .join(' · ')
+  const o = e.origin
+  const breakdown = o ? originBreakdown(o) : null
+  const renewal = renewalText(e)
   return (
     <li
       id={`gasto-${e.id}`}
@@ -296,10 +302,36 @@ function ExpenseRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">{e.description || EXPENSE_CATEGORY_LABEL[e.category]}</p>
         <p className="text-sm text-fg-muted tabular">{meta}</p>
+        {o?.work_order_number && (
+          <p className="text-sm text-fg-muted">
+            {o.repair_request_id ? (
+              <Link to={`${base}/solicitudes/${o.repair_request_id}`} className="font-medium text-accent-ink underline-offset-4 hover:underline">
+                {originLabel(o)}
+              </Link>
+            ) : (
+              originLabel(o)
+            )}
+            : la entregó el taller y se anotó sola.
+          </p>
+        )}
+        {breakdown && <p className="tabular text-sm text-fg-muted">{breakdown}</p>}
         {e.is_linked && (
           <Link to={historyHref} className="text-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline">
             Viene de una intervención: se edita allí
           </Link>
+        )}
+        {renewal && (
+          <p className="text-sm text-fg-muted">
+            {renewal}
+            {e.renewal?.status === 'pending' && (
+              <>
+                {' · '}
+                <Link to={`${base}/vehiculos/${e.vehicle_id}/recordatorios`} className="underline-offset-4 hover:text-fg hover:underline">
+                  ver el recordatorio
+                </Link>
+              </>
+            )}
+          </p>
         )}
       </div>
       <p className="shrink-0 text-right font-medium text-fg tabular">{formatMoney(e.amount)}</p>
