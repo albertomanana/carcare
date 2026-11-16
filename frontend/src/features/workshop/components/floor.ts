@@ -1,6 +1,6 @@
 /**
  * Selección del taller (escena 3D ⇄ panel ⇄ lista HTML de elevadores), guardada en la URL:
- * `?elevador=2` o `?orden=31`. Así se puede compartir, sobrevive a recargas y el botón «atrás» no la pierde.
+ * `?elevador=2`, `?orden=31` o `?tecnico=7` (una persona del equipo). Así se puede compartir, sobrevive a recargas y el botón «atrás» no la pierde.
  */
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router'
@@ -9,6 +9,8 @@ import type { Activity, Bay, WorkOrder } from '@/api/types'
 export interface FloorSelectionState {
   bay: number | null
   orderId: number | null
+  /** Persona del equipo (id de usuario). */
+  memberId: number | null
 }
 
 function toId(value: string | null): number | null {
@@ -21,6 +23,7 @@ export function useFloorSelection() {
   const [params, setParams] = useSearchParams()
   const bay = toId(params.get('elevador'))
   const orderId = toId(params.get('orden'))
+  const memberId = toId(params.get('tecnico'))
 
   const select = useCallback(
     (next: Partial<FloorSelectionState> | null) => {
@@ -29,8 +32,10 @@ export function useFloorSelection() {
           const p = new URLSearchParams(prev)
           p.delete('elevador')
           p.delete('orden')
+          p.delete('tecnico')
           if (next?.orderId) p.set('orden', String(next.orderId))
           else if (next?.bay) p.set('elevador', String(next.bay))
+          else if (next?.memberId) p.set('tecnico', String(next.memberId))
           return p
         },
         { replace: true, preventScrollReset: true },
@@ -39,7 +44,7 @@ export function useFloorSelection() {
     [setParams],
   )
 
-  return { bay, orderId, select }
+  return { bay, orderId, memberId, select }
 }
 
 export type FloorSelection = ReturnType<typeof useFloorSelection>
@@ -54,7 +59,7 @@ export interface ResolvedSelection {
 }
 
 /** Resuelve la selección de la URL contra los datos actuales (la orden puede haberse movido o cerrado). */
-export function resolveSelection(sel: FloorSelectionState, bays: Bay[], orders: WorkOrder[]): ResolvedSelection {
+export function resolveSelection(sel: Omit<FloorSelectionState, 'memberId'> & { memberId?: number | null }, bays: Bay[], orders: WorkOrder[]): ResolvedSelection {
   if (sel.orderId) {
     const order = orders.find((o) => o.id === sel.orderId) ?? bays.find((b) => b.work_order?.id === sel.orderId)?.work_order ?? null
     if (order) return { bay: order.bay, order, freeBay: false }

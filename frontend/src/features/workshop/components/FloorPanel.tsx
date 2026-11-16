@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CircleAlert, ClipboardList, Cog, Droplet, ExternalLink, Plus, Shapes, Timer, TriangleAlert, Wrench, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CircleAlert, ClipboardList, Cog, Droplet, ExternalLink, PackageSearch, Plus, Shapes, Stethoscope, Timer, TriangleAlert, Wrench, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { Bay, ItemKind, WorkOrder } from '@/api/types'
@@ -14,6 +14,8 @@ import { ITEM_KIND_LABEL } from '@/lib/labels'
 import { overallColor } from '@/lib/mechanic'
 import { formatDuration, orderTiming, timingSentence, useNow } from '@/lib/orderTiming'
 import { PRIORITY, WORK_ORDER_STATUS } from '@/lib/status'
+import type { CrewAssignment } from '@/three'
+import { CrewSheet } from './CrewPanel'
 import { FLOOR_DETAIL_TITLE_ID, type FloorSelection, type ResolvedSelection, telHref } from './floor'
 import { MoveToMenu } from './MoveToMenu'
 import { LateBadge, PriorityBadge, PromisedAt } from './OrderBadges'
@@ -37,10 +39,12 @@ export interface FloorDetailProps {
   actions: OrderActions
   /** Cerrar la ficha (botón y Escape): la página quita la selección y devuelve el foco. */
   onClose: () => void
+  /** Equipo colocado (para la ficha de una persona, `?tecnico=`). */
+  crew?: CrewAssignment | null
 }
 
-export function FloorDetail({ bays, orders, ordersLoading, resolved, selection, actions, onClose }: FloorDetailProps) {
-  const key = `${selection.bay ?? ''}-${selection.orderId ?? ''}`
+export function FloorDetail({ bays, orders, ordersLoading, resolved, selection, actions, onClose, crew = null }: FloorDetailProps) {
+  const key = `${selection.bay ?? ''}-${selection.orderId ?? ''}-${selection.memberId ?? ''}`
   const [error, setError] = useState<{ key: string; message: string } | null>(null)
   const visibleError = error?.key === key ? error.message : null
 
@@ -54,6 +58,9 @@ export function FloorDetail({ bays, orders, ordersLoading, resolved, selection, 
 
   const onError = (message: string) => setError({ key, message })
 
+  const person = selection.memberId ? (crew?.people.find((p) => p.member.id === selection.memberId) ?? null) : null
+  if (person)
+    return <CrewSheet person={person} orders={orders} ordersLoading={ordersLoading} onSelectOrder={(id) => selection.select({ orderId: id })} onClose={onClose} />
   if (resolved.order)
     return <OrderSheet order={resolved.order} bays={bays} selection={selection} actions={actions} error={visibleError} onError={onError} onClose={onClose} />
   if (resolved.freeBay && resolved.bay)
@@ -313,6 +320,41 @@ function OrderLines({ order, canSeeMoney, href }: { order: WorkOrder; canSeeMone
   )
 }
 
+/**
+ * Lo que dijo el cliente y lo que se ha diagnosticado: los textos de la orden (no hay lectura OBD ni diagnóstico
+ * automático). Sin diagnóstico anotado se dice y se ofrece anotarlo en la orden.
+ */
+function OrderDiagnosis({ order, href }: { order: WorkOrder; href: string }) {
+  const complaint = order.complaint?.trim()
+  const diagnosis = order.diagnosis?.trim()
+  return (
+    <section aria-label="Avería y diagnóstico" className="space-y-2 text-sm">
+      {complaint && (
+        <div>
+          <h3 className="text-xs font-medium text-fg-muted">Lo que dice el cliente</h3>
+          <p className="mt-0.5 line-clamp-3 text-fg">{complaint}</p>
+        </div>
+      )}
+      <div>
+        <h3 className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+          <Stethoscope aria-hidden className="size-3.5" />
+          Diagnóstico
+        </h3>
+        {diagnosis ? (
+          <p className="mt-0.5 line-clamp-4 text-fg">{diagnosis}</p>
+        ) : (
+          <p className="mt-0.5 text-fg-muted">
+            Sin diagnóstico anotado.{' '}
+            <Link to={href} className="font-medium text-accent-ink hover:underline">
+              Anotarlo en la orden
+            </Link>
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function OrderSheet({
   order,
   bays,
@@ -365,10 +407,15 @@ function OrderSheet({
     {
       label: 'Mecánico',
       value: order.assigned_to ? (
-        <span className="inline-flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => order.assigned_to && selection.select({ memberId: order.assigned_to.id })}
+          className="inline-flex items-center gap-1.5 hover:underline"
+          aria-label={`${order.assigned_to.name}: ver su ficha`}
+        >
           <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: overallColor(order.assigned_to.id) }} />
           {order.assigned_to.name}
-        </span>
+        </button>
       ) : (
         <span className="text-fg-subtle">Sin asignar</span>
       ),
@@ -433,6 +480,8 @@ function OrderSheet({
 
         <OrderClock order={order} canOperate={canOperate} busy={busy} onEstimate={(m) => void actions.estimate(order, m, { onError })} />
 
+        <OrderDiagnosis order={order} href={orderHref} />
+
         <dl className="rounded-control bg-surface-2/70 px-3 text-sm">
           {details.map((d) => (
             <div key={d.label} className="flex items-baseline justify-between gap-3 border-b border-line/70 py-2 last:border-b-0">
@@ -457,6 +506,11 @@ function OrderSheet({
                   onClick={() => (next.status === 'delivered' ? actions.request(order, 'delivered') : void actions.move(order, next.status, undefined, { onError }))}
                 >
                   {next.label}
+                </Button>
+              )}
+              {(order.status === 'diagnosing' || order.status === 'in_progress') && (
+                <Button size="sm" variant="ghost" icon={<PackageSearch aria-hidden />} disabled={busy} onClick={() => void actions.move(order, 'waiting_parts', undefined, { onError })}>
+                  Esperar piezas
                 </Button>
               )}
               <MoveToMenu

@@ -1,6 +1,7 @@
 import { Plus, SquareKanban } from 'lucide-react'
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LIVE_REFRESH_MS, useBays, useOpenWorkOrders, useWorkshopDashboard } from '@/api/hooks/workshop'
+import { useMembers } from '@/api/hooks/workspaces'
 import { CanvasBleed } from '@/components/layout/CanvasBleed'
 import { ButtonLink } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -12,10 +13,13 @@ import { useHiddenGuide } from '@/hooks/useHiddenGuide'
 import { cn } from '@/lib/cn'
 import { workshopFirstSteps } from '@/lib/firstSteps'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
-import { useWebGLAvailable, WorkshopScene, type WorkshopSceneProps } from '@/three'
+import { assignCrew, crewStatusText, useWebGLAvailable, WorkshopScene, type WorkshopCrewMember, type WorkshopSceneProps, type WorkshopView } from '@/three'
+import { CrewList } from './components/CrewPanel'
 import { FleetTable } from './components/FleetTable'
 import { FloorDetail, FloorDetailSkeleton } from './components/FloorPanel'
+import { FloorKpis } from './components/FloorKpis'
 import { FloorStats } from './components/FloorStats'
+import { FloorViewBar } from './components/FloorViewBar'
 import { FLOOR_DETAIL_TITLE_ID, resolveSelection, selectionAnnouncement, useFloorSelection } from './components/floor'
 import { effectiveFilter, FLEET_TITLE_ID, fleetRowId, fleetRows, fleetSummary, floorCounts, type FloorFilter } from './components/floorFleet'
 import { MissionsPanel } from './components/MissionsPanel'
@@ -51,8 +55,10 @@ function readListOpen(): boolean | null {
  * Portada del taller («Taller»). Desde 1024 px, la maqueta ocupa toda la ventana y el HUD se queda en los márgenes: arriba
  * las cifras del taller (filtran la lista), abajo la flota en el taller (plegable; es la alternativa HTML de la escena) y
  * a la derecha la ficha de lo elegido o, sin nada elegido, las «misiones» (lo que pide atención, con datos reales) o los
- * primeros pasos de un taller recién creado. La selección vive en la URL (`?elevador=` / `?orden=`) y la escena enfoca el
- * coche teniendo en cuenta lo que tapan los paneles (`focusInset`); entre 1024 y 1279 px la ficha es una hoja inferior.
+ * primeros pasos de un taller recién creado. La selección vive en la URL (`?elevador=` / `?orden=` / `?tecnico=`) y la
+ * escena enfoca lo elegido teniendo en cuenta lo que tapan los paneles (`focusInset`); entre 1024 y 1279 px la ficha es
+ * una hoja inferior. El equipo (`GET /members`) se dibuja con una figura por persona; la barra de vistas cambia el
+ * encuadre (teclas 1-4) y «Sin orden en curso» resalta a quien no tiene una orden en marcha.
  * Por debajo de 1024 px, o sin WebGL, no hay escena: los elevadores son una rejilla de botones y todo se apila en una
  * columna. Se actualiza cada minuto.
  */
@@ -63,6 +69,7 @@ export default function WorkshopFloorPage() {
   const bays = useBays(ctx.id, ctx.isWorkshop, LIVE_REFRESH_MS)
   const open = useOpenWorkOrders(ctx.id, {}, LIVE_REFRESH_MS)
   const dashboard = useWorkshopDashboard(ctx.id)
+  const members = useMembers(ctx.id)
   const selection = useFloorSelection()
   const actions = useOrderActions()
   const canOperate = ctx.can('operate')
@@ -114,12 +121,37 @@ export default function WorkshopFloorPage() {
   const orders = useMemo(() => open.data?.data ?? [], [open.data])
   const bayList = useMemo(() => bays.data ?? [], [bays.data])
   const resolved = resolveSelection(selection, bayList, orders)
-  const detailOpen = !!resolved.order || (resolved.freeBay && !!resolved.bay)
   const counts = bays.data ? floorCounts(bayList, open.data ? orders : undefined) : null
   const activeFilter = counts ? effectiveFilter(filter, counts) : filter
-  const rows = fleetRows(orders, activeFilter)
+  const rows = useMemo(() => fleetRows(orders, activeFilter), [orders, activeFilter])
   const selectedOrderId = resolved.order?.id ?? null
-  const selectionKey = `${selection.bay ?? ''}-${selection.orderId ?? ''}`
+
+  // Equipo: una figura por persona (sin la lista de miembros, solo quien está en un elevador)
+  const crewMembers = useMemo<WorkshopCrewMember[] | null>(
+    () => members.data?.map((m) => ({ id: m.user.id, name: m.user.name, role: m.role })) ?? null,
+    [members.data],
+  )
+  const crew = useMemo(() => assignCrew(crewMembers, bayList, orders), [crewMembers, bayList, orders])
+  const person = selection.memberId ? (crew.people.find((p) => p.member.id === selection.memberId) ?? null) : null
+  const detailOpen = !!resolved.order || (resolved.freeBay && !!resolved.bay) || !!person
+  const idleIds = useMemo(() => crew.people.filter((p) => p.status === 'idle').map((p) => p.member.id), [crew])
+  const [idleOn, setIdleOn] = useState(false)
+  const selectionKey = `${selection.bay ?? ''}-${selection.orderId ?? ''}-${person?.member.id ?? ''}`
+
+  // Encuadre de la maqueta: al elegir algo, «lo elegido»; los botones de vista (o las teclas 1-4) lo cambian
+  const [view, setView] = useState<WorkshopView>('selected')
+  const [viewKey, setViewKey] = useState(selectionKey)
+  if (viewKey !== selectionKey) {
+    setViewKey(selectionKey)
+    setView('selected')
+  }
+
+  // Lo que no coincide con el filtro activo se atenúa en la maqueta
+  const highlight = useMemo<WorkshopSceneProps['highlight']>(() => {
+    if (idleOn) return { orders: [], members: idleIds }
+    if (activeFilter === 'all') return null
+    return { orders: rows.map((o) => o.id), members: rows.flatMap((o) => (o.assigned_to ? [o.assigned_to.id] : [])) }
+  }, [idleOn, idleIds, activeFilter, rows])
 
   const missions = useMemo(
     () => homeMissions({ orders: open.data ? orders : undefined, bays: bayList, dashboard: data, mechanicId: isMechanic && user ? user.id : null }),
@@ -131,13 +163,19 @@ export default function WorkshopFloorPage() {
   const { select } = selection
   const onSelectBay = useCallback((n: number | null) => select(n ? { bay: n } : null), [select])
   const onSelectOrder = useCallback((id: number) => select({ orderId: id }), [select])
+  const onSelectMember = useCallback((id: number) => select({ memberId: id }), [select])
   const applyFilter = useCallback(
     (f: FloorFilter) => {
       setFilter(f)
+      setIdleOn(false)
       setListOpen(true)
     },
     [setListOpen],
   )
+  const toggleIdle = useCallback((on: boolean) => {
+    setIdleOn(on)
+    if (on) setFilter('all')
+  }, [])
 
   // Cerrar la ficha: quita la selección y, si el foco estaba en la ficha, lo devuelve a la fila de la lista (o a su título).
   const closeDetail = useCallback(() => {
@@ -177,9 +215,18 @@ export default function WorkshopFloorPage() {
     detailRef.current?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
   }, [selectionKey, floating, detailOpen])
 
-  // Qué ocupa la columna lateral: la ficha (hoja inferior en tableta), los primeros pasos o las misiones (solo en escritorio).
+  // Qué ocupa la columna lateral: la ficha (hoja inferior en tableta), los primeros pasos, el equipo sin orden en curso
+  // (con ese filtro) o las misiones (solo en escritorio).
   const sheet = floating && !wide && detailOpen
-  const sideContent: 'detail' | 'guide' | 'missions' | null = detailOpen ? 'detail' : guide ? 'guide' : showMissions && wide ? 'missions' : null
+  const sideContent: 'detail' | 'guide' | 'crew' | 'missions' | null = detailOpen
+    ? 'detail'
+    : guide
+      ? 'guide'
+      : idleOn && floating
+        ? 'crew'
+        : showMissions && wide
+          ? 'missions'
+          : null
   const side = floating && sideContent !== null && !sheet
 
   const focusInset = useMemo<FocusInset | undefined>(() => {
@@ -215,6 +262,16 @@ export default function WorkshopFloorPage() {
         {summary}
       </p>
       <p className="mt-1 text-sm text-fg-muted">{counts ? 'Se actualiza cada minuto.' : 'Cargando elevadores…'}</p>
+      {floating && (
+        <FloorViewBar
+          view={view}
+          onView={setView}
+          hasSelection={!!resolved.order || resolved.bay != null || !!person}
+          idleCount={members.isPending ? null : idleIds.length}
+          idleOn={idleOn}
+          onIdle={toggleIdle}
+        />
+      )}
     </div>
   )
 
@@ -225,6 +282,16 @@ export default function WorkshopFloorPage() {
         <ErrorState error={bays.error} onRetry={() => void bays.refetch()} />
       </div>
     )
+
+  const kpis = (
+    <FloorKpis
+      orders={orders}
+      loading={open.isPending}
+      failed={open.isError}
+      canSeeMoney={ctx.can('manage')}
+      className={cn('pointer-events-auto', floating && 'max-w-max')}
+    />
+  )
 
   const stats = (
     <FloorStats
@@ -246,6 +313,12 @@ export default function WorkshopFloorPage() {
     onSelectBay,
     onSelectOrder,
     focusInset,
+    crew: crewMembers,
+    selectedMemberId: person?.member.id ?? null,
+    onSelectMember,
+    view,
+    onViewChange: setView,
+    highlight,
     className: 'absolute inset-0 h-full w-full',
   }
   const sceneNode = bays.isPending ? <Skeleton className="absolute inset-0 rounded-none" /> : <WorkshopScene {...sceneProps} />
@@ -303,12 +376,16 @@ export default function WorkshopFloorPage() {
         {bays.isPending ? (
           <FloorDetailSkeleton />
         ) : (
-          <FloorDetail bays={bayList} orders={orders} ordersLoading={open.isPending} resolved={resolved} selection={selection} actions={actions} onClose={closeDetail} />
+          <FloorDetail bays={bayList} orders={orders} ordersLoading={open.isPending} resolved={resolved} selection={selection} actions={actions} onClose={closeDetail} crew={crew} />
         )}
       </aside>
     ) : floating && sideContent === 'guide' ? (
       <div className="hud-panel pointer-events-auto absolute z-20 overflow-y-auto overscroll-contain p-4 floor-drawer-right" style={slotStyle}>
         {firstSteps}
+      </div>
+    ) : floating && sideContent === 'crew' ? (
+      <div className="hud-panel pointer-events-auto absolute z-20 overflow-y-auto overscroll-contain p-4 floor-drawer-right" style={slotStyle}>
+        <CrewList crew={crew} loading={members.isPending} error={members.isError} only="idle" selectedMemberId={null} onSelect={onSelectMember} />
       </div>
     ) : floating && sideContent === 'missions' ? (
       <div className="hud-panel pointer-events-auto absolute z-20 flex flex-col overflow-hidden p-4 floor-drawer-right" style={slotStyle}>
@@ -316,13 +393,18 @@ export default function WorkshopFloorPage() {
       </div>
     ) : null
 
-  const announcement = <p className="sr-only" aria-live="polite">{selectionAnnouncement(resolved)}</p>
+  const announcement = (
+    <p className="sr-only" aria-live="polite">
+      {person ? `Seleccionada ${person.member.name}: ${crewStatusText(person)}. Ficha abierta.` : selectionAnnouncement(resolved)}
+    </p>
+  )
 
   if (!floating)
     return (
       <div className="flex flex-col gap-4">
         {header}
         {stats}
+        {kpis}
         {guide && <div className="hud-panel p-4">{firstSteps}</div>}
         {bays.isPending ? <Skeleton className="h-48 rounded-card" /> : <WorkshopScene {...sceneProps} flat className="hud-panel" />}
         {!guide && showMissions && <div className="hud-panel p-4">{missionsPanel}</div>}
@@ -340,6 +422,7 @@ export default function WorkshopFloorPage() {
         <div ref={topRef} className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start gap-3">
           {header}
           {stats}
+          {kpis}
         </div>
         {fleet}
         {slotPanel}

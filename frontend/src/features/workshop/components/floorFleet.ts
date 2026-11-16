@@ -14,8 +14,11 @@ export function fleetRowId(orderId: number): string {
   return `floor-row-${orderId}`
 }
 
-/** Filtro de la tabla. Cada tarjeta de cifras activa uno; `all` es «En taller». */
-export type FloorFilter = 'all' | 'bay' | 'waiting' | 'ready' | 'late'
+/**
+ * Filtro de la tabla. Cada tarjeta de cifras activa uno; `all` es «En taller». `stuck` («Atascadas»): esperan piezas,
+ * o están en un elevador y van con retraso (el elevador está ocupado y la orden no avanza a tiempo).
+ */
+export type FloorFilter = 'all' | 'bay' | 'waiting' | 'ready' | 'late' | 'stuck'
 
 export interface FloorCounts {
   /** Órdenes abiertas. null mientras no hay datos de órdenes (cargando o error). */
@@ -26,6 +29,8 @@ export interface FloorCounts {
   waiting: number | null
   ready: number | null
   late: number | null
+  /** Esperan piezas, o en elevador y con retraso. */
+  stuck: number | null
 }
 
 export function floorCounts(bays: Bay[], orders: WorkOrder[] | undefined): FloorCounts {
@@ -38,6 +43,7 @@ export function floorCounts(bays: Bay[], orders: WorkOrder[] | undefined): Floor
     waiting: open ? open.filter((o) => matchesFilter(o, 'waiting')).length : null,
     ready: open ? open.filter((o) => matchesFilter(o, 'ready')).length : null,
     late: open ? open.filter((o) => matchesFilter(o, 'late')).length : null,
+    stuck: open ? open.filter((o) => matchesFilter(o, 'stuck')).length : null,
   }
 }
 
@@ -54,6 +60,8 @@ export function matchesFilter(o: WorkOrder, filter: FloorFilter): boolean {
       return o.status === 'ready'
     case 'late':
       return o.is_late
+    case 'stuck':
+      return o.status === 'waiting_parts' || (o.bay !== null && o.is_late)
   }
 }
 
@@ -101,6 +109,7 @@ export const FILTER_LABEL: Record<FloorFilter, string> = {
   waiting: 'Esperando',
   ready: 'Listos para entregar',
   late: 'Con retraso',
+  stuck: 'Atascadas',
 }
 
 /** Qué enseña la tabla con cada filtro, junto al título «Coches en el taller» (sin repetirlo). */
@@ -117,6 +126,8 @@ export function filterCaption(filter: FloorFilter, rows: number): string {
       return `${n} ${rows === 1 ? 'listo' : 'listos'} para entregar`
     case 'late':
       return `${n} con retraso`
+    case 'stuck':
+      return `${n} ${rows === 1 ? 'atascado' : 'atascados'} (esperan piezas o van tarde en un elevador)`
   }
 }
 
@@ -131,4 +142,31 @@ export function fleetSummary(c: FloorCounts): string {
   if (c.ready) parts.push(`${c.ready} ${c.ready === 1 ? 'listo' : 'listos'} para entregar`)
   if (c.late) parts.push(`${c.late} con retraso`)
   return parts.join(' · ')
+}
+
+export interface FloorKpis {
+  /** Días medios que llevan en el taller las órdenes abiertas (desde `received_at`). null sin órdenes abiertas. */
+  avgDaysOpen: number | null
+  /** Importe con IVA de las órdenes listas para entregar, en céntimos (entero: sin errores de coma flotante). */
+  readyCents: number
+  readyCount: number
+}
+
+/**
+ * Indicadores de la portada del taller, calculados con las órdenes abiertas que ya trae la página (fuente real).
+ * No hay OEE ni productividad: no hay fichajes ni tiempos trabajados, solo tiempos en un estado (contrato §3.11.1).
+ */
+export function floorKpis(orders: WorkOrder[], now: number): FloorKpis {
+  const open = orders.filter((o) => !isFinalStatus(o.status))
+  const ages = open.map((o) => (now - new Date(o.received_at).getTime()) / 86_400_000).filter((d) => Number.isFinite(d) && d >= 0)
+  const ready = open.filter((o) => o.status === 'ready')
+  const readyCents = ready.reduce((sum, o) => {
+    const n = Number(o.total)
+    return Number.isFinite(n) ? sum + Math.round(n * 100) : sum
+  }, 0)
+  return {
+    avgDaysOpen: ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : null,
+    readyCents,
+    readyCount: ready.length,
+  }
 }

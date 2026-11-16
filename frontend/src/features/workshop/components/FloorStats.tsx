@@ -1,14 +1,15 @@
 import type { CSSProperties } from 'react'
-import { Car, Clock, Flag, type LucideIcon, TriangleAlert, Wrench } from 'lucide-react'
+import { Car, Clock, Flag, type LucideIcon, PackageSearch, TriangleAlert, Wrench } from 'lucide-react'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
 import { FILTER_LABEL, type FloorCounts, type FloorFilter } from './floorFleet'
 
-const ICON: Record<FloorFilter, LucideIcon> = { all: Car, bay: Wrench, waiting: Clock, ready: Flag, late: TriangleAlert }
+const ICON: Record<FloorFilter, LucideIcon> = { all: Car, bay: Wrench, waiting: Clock, ready: Flag, late: TriangleAlert, stuck: PackageSearch }
 
 /**
  * Cifras de la portada del taller (todas de la API: elevadores y órdenes abiertas). Cada una es una tarjeta flotante que
- * filtra la lista de la flota; pulsar la activa vuelve a «En taller». «Con retraso» solo aparece si hay alguna orden tarde.
+ * filtra la lista de la flota (y atenúa en la maqueta lo que no coincide); pulsar la activa vuelve a «En taller».
+ * «Con retraso» solo aparece si hay alguna orden tarde; «Atascadas» siempre (un 0 también informa).
  * La activa se ve por el relleno azul suave, el aro y la marca inferior (no solo por color) y lo dice `aria-pressed`.
  */
 export function FloorStats({
@@ -35,6 +36,7 @@ export function FloorStats({
     { key: 'ready', value: counts?.ready ?? null, hint: 'esperan al cliente' },
   ]
   if (counts?.late) cells.push({ key: 'late', value: counts.late, hint: 'pasada la entrega prometida' })
+  cells.push({ key: 'stuck', value: counts?.stuck ?? null, hint: 'esperan piezas o van tarde en un elevador' })
 
   return (
     <div

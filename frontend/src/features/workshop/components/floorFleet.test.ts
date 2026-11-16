@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Bay, WorkOrder } from '@/api/types'
-import { effectiveFilter, filterCaption, fleetRows, fleetSummary, floorCounts, matchesFilter } from './floorFleet'
+import { effectiveFilter, filterCaption, fleetRows, fleetSummary, floorCounts, floorKpis, matchesFilter } from './floorFleet'
 
 function order(partial: Partial<WorkOrder>): WorkOrder {
   return {
@@ -55,7 +55,7 @@ const bays: Bay[] = [
 
 describe('cifras del taller', () => {
   it('cuenta solo órdenes abiertas y elevadores reales', () => {
-    expect(floorCounts(bays, orders)).toEqual({ open: 6, busyBays: 3, totalBays: 4, waiting: 2, ready: 2, late: 2 })
+    expect(floorCounts(bays, orders)).toEqual({ open: 6, busyBays: 3, totalBays: 4, waiting: 2, ready: 2, late: 2, stuck: 2 })
   })
 
   it('sin órdenes cargadas no inventa ceros', () => {
@@ -63,6 +63,14 @@ describe('cifras del taller', () => {
     expect(c.open).toBeNull()
     expect(c.waiting).toBeNull()
     expect(c.busyBays).toBe(3)
+  })
+
+  it('«Atascadas»: esperan piezas (estén donde estén) o van tarde en un elevador; tarde sin elevador, no', () => {
+    expect(matchesFilter(waitingUrgent, 'stuck')).toBe(true)
+    expect(matchesFilter(onBay3, 'stuck')).toBe(true)
+    expect(matchesFilter(waitingLate, 'stuck')).toBe(false)
+    expect(matchesFilter(onBay1, 'stuck')).toBe(false)
+    expect(matchesFilter(delivered, 'stuck')).toBe(false)
   })
 
   it('«Esperando» excluye las listas y las que están en elevador', () => {
@@ -102,5 +110,23 @@ describe('textos', () => {
   it('título de la lista según el filtro', () => {
     expect(filterCaption('ready', 1)).toBe('1 coche listo para entregar')
     expect(filterCaption('all', 0)).toBe('0 coches')
+  })
+})
+
+describe('indicadores del taller', () => {
+  it('días medios en taller de las abiertas e importe de las listas (en céntimos, sin redondeos raros)', () => {
+    const now = new Date('2026-11-16T12:00:00Z').getTime()
+    const a = order({ id: 1, status: 'in_progress', received_at: '2026-11-14T12:00:00Z' })
+    const b = order({ id: 2, status: 'ready', received_at: '2026-11-15T12:00:00Z', total: '100.10' })
+    const c = order({ id: 3, status: 'ready', received_at: '2026-11-16T12:00:00Z', total: '0.20' })
+    const gone = order({ id: 4, status: 'delivered', received_at: '2026-10-01T12:00:00Z', total: '999.00' })
+    const k = floorKpis([a, b, c, gone], now)
+    expect(k.avgDaysOpen).toBeCloseTo(1)
+    expect(k.readyCents).toBe(10030)
+    expect(k.readyCount).toBe(2)
+  })
+
+  it('sin órdenes abiertas no inventa una media', () => {
+    expect(floorKpis([], Date.now())).toEqual({ avgDaysOpen: null, readyCents: 0, readyCount: 0 })
   })
 })
