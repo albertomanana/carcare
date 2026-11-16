@@ -7,11 +7,14 @@ import { defineConfig, type Plugin } from 'vite'
 // y Vite reenvía /api y /sanctum: mismo origen, así las cookies de sesión de Sanctum funcionan sin CORS.
 const API_TARGET = process.env.VITE_API_TARGET ?? 'http://127.0.0.1:8000'
 
-// Chunks pesados que solo deben descargar las pantallas que los usan (R11): three.js + R3F + drei, y Recharts + d3.
-const isThree = (id: string) => id.includes('node_modules/three') || id.includes('@react-three')
+// Chunks pesados que solo deben descargar las pantallas que los usan (R11): three.js + R3F + drei, el posprocesado
+// (bloom del taller 3D: solo lo pide su escena, en diferido) y Recharts + d3.
+const isPostFx = (id: string) => /node_modules[\\/](postprocessing|n8ao)[\\/]|@react-three[\\/]postprocessing/.test(id)
+const isThree = (id: string) => (id.includes('node_modules/three') || id.includes('@react-three')) && !isPostFx(id)
 const isCharts = (id: string) => id.includes('node_modules/recharts') || id.includes('node_modules/d3-')
 const HEAVY_GROUPS = [
   { name: 'three', test: isThree },
+  { name: 'postfx', test: isPostFx },
   { name: 'charts', test: isCharts },
 ]
 
@@ -77,6 +80,8 @@ export default defineConfig({
             { name: 'react', test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/, priority: 30 },
             { name: 'vendor', test: /[\\/]node_modules[\\/](clsx|tailwind-merge|use-sync-external-store)[\\/]/, priority: 25 },
             { name: 'three', test: isThree, priority: 20 },
+            // Después de "three": las dependencias que comparte con drei (maath…) ya están allí
+            { name: 'postfx', test: isPostFx, priority: 19 },
             { name: 'charts', test: isCharts, priority: 10 },
           ],
         },
