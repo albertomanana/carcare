@@ -276,6 +276,7 @@ export type RecordType =
   | 'inspection'
   | 'tyres'
   | 'bodywork'
+  | 'modification'
   | 'other'
 
 /** Zonas del vehículo. Son las que se iluminan en el modelo 3D. */
@@ -339,6 +340,11 @@ export interface MaintenanceRecord {
   /** Gasto generado automáticamente (solo espacios personales con total_cost). */
   expense_id: ID | null
   work_order_id: ID | null
+  /**
+   * Solo en espacios personales: la intervención llegó de una orden de taller entregada (contrato §3.5.1).
+   * `repair_request_id` es la solicitud desde la que el particular siguió esa orden (null si ya no existe).
+   */
+  from_order: { number: string; repair_request_id: ID | null } | null
   documents_count: number
   archived_at: ISODateTime | null
   created_at: ISODateTime
@@ -372,6 +378,7 @@ export type ExpenseCategory =
   | 'fuel'
   | 'maintenance'
   | 'repair'
+  | 'modification'
   | 'insurance'
   | 'tax'
   | 'inspection'
@@ -383,9 +390,36 @@ export type ExpenseCategory =
 
 export type FuelUnit = 'l' | 'kwh' | 'kg'
 
+/** De dónde sale un gasto vinculado: su intervención y, si la hubo, la orden de taller (contrato §3.6.1). */
+export interface ExpenseOrigin {
+  record_id: ID
+  title: string
+  type: RecordType
+  workshop_name: string | null
+  /** Desglose, si la intervención lo tiene. Sin IVA cuando viene de una orden de taller. */
+  parts_cost: Money | null
+  labor_cost: Money | null
+  /** IVA de la orden de taller (total − piezas − mano de obra); null en intervenciones propias. */
+  tax_amount: Money | null
+  /** Número de la orden de taller entregada («OT-2026-0036») o null si la intervención la registró el usuario. */
+  work_order_number: string | null
+  /** Solicitud desde la que se siguió esa orden: es el enlace que puede abrir el particular. */
+  repair_request_id: ID | null
+}
+
+/** Próxima renovación de un gasto periódico: es un recordatorio, no un gasto futuro (contrato §3.6.1). */
+export interface ExpenseRenewal {
+  reminder_id: ID
+  title: string
+  due_date: ISODate | null
+  status: ReminderStatus
+}
+
 export interface Expense {
   id: ID
   vehicle_id: ID
+  /** Incluido en el detalle de un mes de la analítica (listado de todo el espacio). */
+  vehicle?: VehicleRef
   category: ExpenseCategory
   description: string | null
   amount: Money
@@ -400,6 +434,10 @@ export interface Expense {
   maintenance_record_id: ID | null
   /** true si lo gestiona una intervención: no se puede editar ni borrar desde Gastos. */
   is_linked: boolean
+  /** Gasto periódico: cada cuántos meses se repite (1, 3, 6 o 12) o null. Solo seguro, impuestos, aparcamiento y otros. */
+  recurrence_months: number | null
+  renewal: ExpenseRenewal | null
+  origin: ExpenseOrigin | null
   created_at: ISODateTime
   updated_at: ISODateTime
 }
@@ -414,6 +452,14 @@ export interface ExpenseInput {
   fuel_unit?: FuelUnit | null
   full_tank?: boolean | null
   confirm_mileage_drop?: boolean
+  /** Periodicidad en meses (1, 3, 6 o 12) o null para quitarla. */
+  recurrence_months?: number | null
+  /** Próxima renovación; por defecto, la fecha del gasto más la periodicidad. Crea o actualiza su recordatorio. */
+  next_due_date?: ISODate | null
+  /** Solo al crear: asociar el gasto a una intervención del vehículo que aún no tenía coste. */
+  maintenance_record_id?: ID | null
+  /** Solo al crear: registrar también la intervención (el gasto queda vinculado a ella). */
+  record?: { title: string; type?: RecordType | null; zone?: Zone | null; workshop_name?: string | null } | null
 }
 
 // ───────────────────────── Recordatorios y vencimientos ─────────────────────────
@@ -787,6 +833,32 @@ export interface WorkshopDashboard {
 }
 
 export type WorkspaceDashboard = PersonalDashboard | WorkshopDashboard
+
+/** Detalle de un mes de la analítica: GET /workspaces/{ws}/analytics/month?month=YYYY-MM (contrato §4.1). */
+export interface AnalyticsMonth {
+  month: YearMonth
+  /** personal: gasto del mes · workshop: importe de las órdenes entregadas ese mes (con IVA). */
+  total: Money
+  previous: { month: YearMonth; total: Money }
+  /** null si el mes anterior no tiene importe. */
+  change_pct: number | null
+  /** Solo personal. */
+  by_category: { category: ExpenseCategory; total: Money; count: number }[]
+  /** Solo personal: los gastos del mes, del más reciente al más antiguo, cada uno con su vehículo. */
+  expenses: Expense[]
+  /** Solo workshop: las órdenes entregadas ese mes. */
+  orders: AnalyticsMonthOrder[]
+}
+
+export interface AnalyticsMonthOrder {
+  id: ID
+  number: string
+  title: string
+  total: Money
+  delivered_at: ISODateTime
+  vehicle: VehicleRef
+  customer: CustomerRef | null
+}
 
 export interface WorkspaceAnalytics {
   period: { from: ISODate; to: ISODate }

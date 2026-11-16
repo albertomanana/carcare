@@ -203,6 +203,16 @@ Validación: `title` 2–120, `service_date` no futura, importes ≥ 0 y ≤ 999
 
 **D3‑A — Sin doble conteo:** en espacios **personales**, al guardar una intervención con `total_cost` > 0 se crea/actualiza en la misma transacción un gasto vinculado (`category = repair` si `type ∈ {repair, breakdown, bodywork}`, `inspection` si `type = inspection`, si no `maintenance`; misma fecha, km e importe; `description` = título). Si `total_cost` pasa a null/0, el gasto vinculado se elimina. Al archivar, el gasto vinculado deja de contar (se elimina; al restaurar se recrea). **Todos los totales de gasto salen solo de `expenses`.** En talleres no se generan gastos: la cifra económica es el importe de las órdenes entregadas (D12 = A: CarCare no emite facturas).
 
+#### 3.5.1 Intervención desde una orden de taller entregada
+
+Cuando el taller entrega una orden que **nació de una solicitud** (§3.13.6) y el particular conserva el vehículo de esa solicitud, en la misma transacción de la entrega se crea en **el vehículo del particular** una intervención (`type = repair`, zona de la solicitud, `workshop_name` = el taller, fecha de entrega) con las líneas facturadas, `parts_cost`, `labor_cost` (sin IVA) y `total_cost` = total de la orden con IVA. Por D3‑A, esa intervención genera su **gasto vinculado**: la reparación aparece sola en los gastos y en la analítica del particular.
+
+- **Sin duplicados**: `maintenance_records.repair_request_id` es único; una solicitud nunca deja dos intervenciones.
+- `MaintenanceRecord.from_order = { number, repair_request_id }` identifica el origen; `Expense.origin` lo repite con el desglose. El particular sigue sin acceso a la orden: el enlace es su **solicitud**.
+- No se copia el diagnóstico ni la lectura de km de la recepción: el kilometraje del particular solo cambia con sus propias lecturas.
+- La intervención es del particular: puede editarla o archivarla (archivar retira el gasto, como siempre). Si el taller borra después la orden, la intervención se queda con su número.
+- En el **taller** no cambia nada: una orden es ingreso, no gasto (ADR‑0003).
+
 ### 3.6 Gastos (permiso manage en talleres; owner en personal)
 
 | Método | Ruta | Notas |
@@ -213,6 +223,19 @@ Validación: `title` 2–120, `service_date` no futura, importes ≥ 0 y ≤ 999
 | DELETE | `/api/v1/expenses/{e}` | 204; 409 si `is_linked` |
 
 Validación: `amount` > 0; `expense_date` no futura; `fuel_quantity`, `fuel_unit` y `full_tank` solo se aceptan con `category = fuel` (si no, se guardan null); `fuel_unit` por defecto `kwh` si el vehículo es eléctrico, si no `l`.
+
+#### 3.6.1 Gasto periódico y gasto asociado a una intervención
+
+**Gasto periódico.** En `insurance`, `tax`, `parking` y `other`, `ExpenseInput.recurrence_months` (1, 3, 6 o 12) marca la periodicidad y `next_due_date` la próxima renovación (por defecto, fecha del gasto + periodicidad; tiene que ser posterior a la fecha del gasto). La renovación **es un recordatorio, no un gasto futuro**: el dinero aún no se ha pagado y no entra en ningún total. Al guardar, si el vehículo ya tiene pendiente un recordatorio de ese tipo (`insurance`, `tax`; en los demás, uno `custom` con el mismo título) se actualiza su fecha y recurrencia; si no, se crea. `Expense.renewal` lo devuelve. Quitar la periodicidad (`recurrence_months: null`) suelta el gasto del recordatorio, que sigue siendo del usuario. En otras categorías `recurrence_months` se guarda null.
+
+**Gasto asociado a una intervención** (solo al crear, solo en espacios personales, categorías `maintenance`, `repair`, `modification` e `inspection`):
+
+- `maintenance_record_id`: una intervención del mismo vehículo, no archivada y **sin coste**. Se le pone el importe como `total_cost` y el gasto pasa a ser su gasto vinculado (fecha, km y descripción los manda la intervención). 422 si no es del vehículo; 409 si ya tenía coste ("Esa intervención ya tiene su gasto.").
+- `record: { title, type?, zone?, workshop_name? }`: crea la intervención en el mismo paso (tipo según la categoría: `repair`, `modification`, `inspection` o `maintenance`) con la fecha, km e importe del gasto.
+
+En los dos casos la respuesta es el gasto vinculado (`is_linked = true`, con `origin`): hay un solo apunte, nunca dos. `maintenance_record_id` y `record` son excluyentes.
+
+Nuevos valores: `RecordType.modification` («Modificación») y `ExpenseCategory.modification` («Modificaciones»); una intervención `modification` genera su gasto en esa categoría.
 
 ### 3.7 Recordatorios
 
@@ -620,6 +643,10 @@ En los espacios personales, `vehicle_id` es el vehículo del particular. En el t
 - **`since_last`**: para `oil`, `service`, `itv` busca la última intervención no archivada con ese `service_kind`; `days` desde su fecha y `km` = `current_mileage − record.mileage` (null si falta).
 - **Diario (`journal`)**: `km_driven` de un día = lectura máxima del día − lectura anterior más reciente (null si no hay ambas). `spent` = suma de gastos del día.
 
+### 4.1 Detalle de un mes
+
+`GET /api/v1/workspaces/{ws}/analytics/month?month=YYYY-MM` (permiso manage) → `AnalyticsMonth`. `total` del mes natural, `previous` (mes anterior) y `change_pct = (total − previous) / previous × 100` con 1 decimal (null si el mes anterior es 0). En **personal**: `by_category` y `expenses` (los gastos del mes, del más reciente al más antiguo, cada uno con `vehicle`, `origin` y `renewal`). En **taller**: `orders` (las órdenes entregadas ese mes con número, título, total, vehículo y cliente). 422 si `month` falta o no es `YYYY-MM`.
+
 ## 5. Datos de demostración
 
 `php artisan db:seed --class=DemoSeeder` (nunca en producción; el seeder aborta si `APP_ENV=production`):
@@ -649,5 +676,6 @@ En los espacios personales, `vehicle_id` es el vehículo del particular. En el t
 | 2026-10-26 | **Tarea 32 (E16), solicitudes de reparación a talleres** (§3.13, [ADR‑0007](../arquitectura/ADR-0007-solicitudes-a-talleres.md)).<br>• **Rutas nuevas:** 18. Directorio (`/workshops`), perfil del directorio (`/workspaces/{ws}/directory-profile`, solo el owner lo edita), solicitudes (`/workspaces/{ws}/repair-requests` y `/repair-requests/{r}/…`) y notificaciones (`/notifications`, `/count` y `/read`).<br>• **Tipos nuevos:** `WorkshopService`, `DirectoryProfile(Input)`, `DirectoryWorkshop(Ref)`, `RepairRequest*`, `RepairQuote*`, `QuoteLineItemInput`, `QuoteDecisionInput`, `SharedHistoryEntry`, `NotificationKind`, `AppNotification`, `NotificationCount` y `MarkNotificationsReadInput`.<br>• **Reglas nuevas:**<br>– estados y transiciones de la solicitud, con 409 y 422;<br>– presupuesto en versiones inmutables, "no es una factura";<br>– la orden se crea al aceptar el cliente el presupuesto;<br>– copia fija de 7 datos del coche;<br>– historial compartido solo con consentimiento, sin importes y mientras la solicitud esté abierta;<br>– límites anti‑spam: 5 al día (429) y 1 abierta por pareja vehículo‑taller (409);<br>– actividades y notificaciones sin el nombre del particular.<br>• **Cambios en reglas existentes:**<br>– §2: única excepción al aislamiento;<br>– §3.3: borrar un vehículo personal cancela sus solicitudes abiertas;<br>– §3.12: actividades nuevas;<br>– §5: demo del directorio.<br>• **Columna interna** `vehicles.source_vehicle_id`, que no sale en el JSON.<br>Ningún tipo existente cambia: aditivo | Arquitecto (alcance pedido por Alberto el 24/10) |
 | 2026-11-13 | **Tiempos de la orden de trabajo** (§3.11.1, rediseño «Apex Telemetry», Fase 2). Nuevos `WorkOrder.status_changed_at`, `repair_seconds` y `estimated_minutes`, y `WorkOrderInput.estimated_minutes`. Dan fuente real al cronómetro del taller 3D: tiempo en el estado actual y, en reparación, comparado con lo estimado. Es tiempo en un estado, no trabajo medido. Migración con relleno desde la actividad. Aditivo | Sesión principal (decisión delegada por Alberto el 13/11: «por lo demás te dejo a ti las decisiones») |
 | 2026-11-15 | **Seguimiento de la orden desde la solicitud** (§3.13.6, «Apex Telemetry», Fase 3). `RepairRequestWorkOrder` gana `promised_at`, `bay`, `mechanic_name` (solo nombre de pila), `status_changed_at`, `repair_seconds` y `estimated_minutes`. El particular sigue sin acceso a la orden (`GET /work-orders/{o}` ⇒ 404) y sin ver importes, diagnóstico ni líneas. Aditivo | Sesión principal (decisión delegada por Alberto el 13/11) |
+| 2026-11-15 | **Órdenes → gastos, gastos periódicos y detalle del mes** («Apex Telemetry», Fase 4). §3.5.1: una orden nacida de una solicitud, al entregarse, deja una intervención en el vehículo del particular con su gasto vinculado (`MaintenanceRecord.from_order`, único por solicitud). §3.6.1: `Expense.recurrence_months`, `renewal` y `origin`; `ExpenseInput.recurrence_months`, `next_due_date`, `maintenance_record_id` y `record`; nuevos `RecordType.modification` y `ExpenseCategory.modification`. §4.1: `GET /workspaces/{ws}/analytics/month` (`AnalyticsMonth`). El ADR‑0003 sigue vigente (en talleres no hay gastos). Aditivo | Sesión principal, por delegación de Alberto («te dejo a ti las decisiones») |
 
 > **Efecto en los tests del backend (24/10).** `ContractShapeTest` compara las claves de cada interfaz de `types.ts` con `tests/Support/Contract.php`. Hasta que el paso 2 de las tareas 27 y 29 añada `source_id` a `mileageLog()` y `anonymized_at` a `customer()`, fallan los casos `MileageLog` y `Customer` del test "las especificaciones tienen las mismas claves que las interfaces de types.ts". Es el aviso previsto del *contract-first*, no una regresión de otra tarea.
