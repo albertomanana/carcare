@@ -1,7 +1,7 @@
 /**
- * Nave del taller «Apex Telemetry» (Fase 2): la misma planta de `layout.ts` con color y más detalle.
- *  - `workshopPalette`: suelo epoxi, líneas luminosas (naranja en los elevadores, ámbar en la espera, esmeralda en la
- *    entrega), carros rojos y naranjas, bidones, madera y acero. De noche manda el contraste: nave oscura y luz cálida
+ * Nave del taller «Diorama» (Fase 2): la misma planta de `layout.ts` con color y más detalle.
+ *  - `workshopPalette`: suelo epoxi, líneas luminosas (azul en los elevadores, ámbar en la espera, esmeralda en la
+ *    entrega), carros azules, bidones, madera y acero. De noche manda el contraste: nave oscura y luz azul
  *    en cada puesto con trabajo.
  *  - `buildWorkshopStatic`: losa, muros con franja, pórtico, elevadores de dos columnas con cilindro y
  *    cuadro de mando, carros de herramientas, estantería de neumáticos, bidones, compresor, banco y conos: UNA
@@ -49,16 +49,16 @@ export interface WorkshopPalette extends DioramaPalette {
 export function workshopPalette(t: ThemeTokens): WorkshopPalette {
   const base = dioramaPalette(t)
   const shared = {
-    bayLine: '#ff5500',
+    bayLine: '#2559e8',
     parkLine: '#f59e0b',
     readyLine: '#10b981',
-    stripe: '#ff5500',
+    stripe: '#2559e8',
     cartA: '#d42a2a',
-    cartB: '#ff6a1a',
+    cartB: '#4f83ff',
     drumA: '#2b86c5',
     drumB: '#16a37a',
     hazard: '#f5a70b',
-    cone: '#ff5a14',
+    cone: '#3b69f0',
   }
   if (t.light) {
     return {
@@ -86,9 +86,9 @@ export function workshopPalette(t: ThemeTokens): WorkshopPalette {
       sunColor: '#fff3e2',
       shadowOpacity: 0.2,
       halo: 0.28,
-      pool: '#ff9d57',
+      pool: '#6ea2ff',
       poolOpacity: 0.3,
-      lampColor: '#ffb070',
+      lampColor: '#8fb8ff',
       lampIntensity: 9,
     }
   }
@@ -117,9 +117,9 @@ export function workshopPalette(t: ThemeTokens): WorkshopPalette {
     sunColor: '#dfe8ff',
     shadowOpacity: 0.4,
     halo: 0.5,
-    pool: '#ff8a3d',
+    pool: '#3b69f0',
     poolOpacity: 0.42,
-    lampColor: '#ffab66',
+    lampColor: '#6ea2ff',
     lampIntensity: 22,
   }
 }
@@ -185,6 +185,11 @@ function cone(x: number, z: number, pal: WorkshopPalette): THREE.BufferGeometry[
 
 // ───────────────────────── Estático ─────────────────────────
 
+const BATTERY = '#1d2433'
+/** Pantalla del terminal de diagnóstico: altura de su centro e inclinación hacia atrás (rad). */
+export const DIAG_SCREEN_Y = 1.36
+export const DIAG_SCREEN_TILT = -0.32
+
 export function buildWorkshopStatic(L: FloorLayout, pal: WorkshopPalette): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = []
   const x0 = L.minX - WALL_T
@@ -194,7 +199,7 @@ export function buildWorkshopStatic(L: FloorLayout, pal: WorkshopPalette): THREE
   // Losa de la maqueta (la cara de arriba queda bajo el plano de epoxi)
   parts.push(colored(rbox(x1 - x0 + 0.6, SLAB_H, z1 - z0 + 0.6, 0.22, (x0 + x1) / 2, -SLAB_H / 2 - 0.004, (z0 + z1) / 2, 4), pal.slab))
 
-  // Muros del fondo y de la izquierda, con remate oscuro y una franja naranja a media altura
+  // Muros del fondo y de la izquierda, con remate oscuro y una franja azul a media altura
   const backLen = L.maxX - x0 + 0.1
   const sideLen = z1 - z0 - 0.4
   parts.push(colored(rbox(backLen, WALL_H, WALL_T, 0.08, x0 + backLen / 2, WALL_H / 2, L.backZ - WALL_T / 2), pal.wall))
@@ -225,7 +230,7 @@ export function buildWorkshopStatic(L: FloorLayout, pal: WorkshopPalette): THREE
   parts.push(colored(rbox(0.4, 0.3, LANE_W + 0.9, 0.08, portalX, 2.62, L.laneZ), pal.postDark))
   parts.push(colored(rbox(0.43, 0.08, LANE_W + 0.3, 0.03, portalX, 2.5, L.laneZ, 1), pal.stripe))
 
-  // Elevadores de dos columnas: placa con bandas, columna, cilindro, remate naranja y cuadro de mando (sin travesaño: el coche sube por encima de las columnas)
+  // Elevadores de dos columnas: placa con bandas, columna, cilindro, remate azul y cuadro de mando (sin travesaño: el coche sube por encima de las columnas)
   for (const b of L.bays) {
     for (const side of [-1, 1]) {
       const px = b.x + side * POST_X
@@ -241,7 +246,7 @@ export function buildWorkshopStatic(L: FloorLayout, pal: WorkshopPalette): THREE
     parts.push(colored(rbox(0.1, 0.06, 0.03, 0.01, b.x + POST_X, 1.2, b.z + 0.3, 1), pal.cartA))
   }
 
-  // Carros de herramientas junto al muro del fondo, entre elevadores: rojo y naranja alternos
+  // Carros de herramientas junto al muro del fondo, entre elevadores: rojo y azul alternos
   for (let i = 0; i <= L.bays.length; i++) {
     const x = L.bays.length ? L.bays[0].x - BAY_W / 2 + i * BAY_W : 0
     if (x < L.minX + 0.9 || x > L.maxX - 0.6) continue
@@ -270,6 +275,50 @@ export function buildWorkshopStatic(L: FloorLayout, pal: WorkshopPalette): THREE
   for (const dz of [0, rackLen]) for (const dx of [-0.26, 0.26]) parts.push(colored(rbox(0.06, 1.95, 0.06, 0.015, rx + dx, 0.975, rz0 + dz, 1), pal.steel))
   for (const y of [0.3, 1.1, 1.92]) parts.push(colored(rbox(0.6, 0.05, rackLen + 0.1, 0.015, rx, y, rz0 + rackLen / 2, 1), pal.propDark))
   for (const y of [0.3, 1.1]) for (let k = 0; k < 7; k++) parts.push(...tyreUpright(rx, y + 0.4, rz0 + 0.22 + k * 0.31, pal))
+
+  // Almacén de piezas: estantería contra el muro del fondo, con neumáticos tumbados abajo, baterías en medio y cajas arriba
+  const st = L.side.store
+  const sx0 = st.x - st.length / 2
+  const sx1 = st.x + st.length / 2
+  const sDepth = 0.62
+  const nBays = Math.max(1, Math.round(st.length / 1.5))
+  for (let k = 0; k <= nBays; k++) {
+    const px = sx0 + (k * st.length) / nBays
+    for (const dz of [-sDepth / 2 + 0.03, sDepth / 2 - 0.03]) parts.push(colored(rbox(0.06, 2.0, 0.06, 0.015, px, 1.0, st.z + dz, 1), pal.steel))
+  }
+  for (const y of [0.12, 0.82, 1.5]) parts.push(colored(rbox(st.length + 0.08, 0.05, sDepth, 0.015, st.x, y, st.z, 1), pal.propDark))
+  parts.push(colored(rbox(st.length + 0.1, 0.07, sDepth + 0.04, 0.02, st.x, 2.0, st.z, 1), pal.stripe))
+  for (let x = sx0 + 0.4; x < sx1 - 0.3; x += 0.72) {
+    for (let k = 0; k < 2; k++) parts.push(colored(cyl(0.3, 0.2, x, 0.25 + k * 0.21, st.z, 14), pal.tyre))
+    parts.push(colored(cyl(0.15, 0.02, x, 0.57, st.z, 10), pal.hub))
+  }
+  for (let x = sx0 + 0.3; x < sx1 - 0.2; x += 0.42) {
+    parts.push(colored(rbox(0.3, 0.22, 0.2, 0.025, x, 0.96, st.z + 0.08, 1), BATTERY))
+    parts.push(colored(cyl(0.025, 0.04, x - 0.08, 1.09, st.z + 0.08, 8), '#d42a2a'))
+    parts.push(colored(cyl(0.025, 0.04, x + 0.08, 1.09, st.z + 0.08, 8), '#2b2f38'))
+  }
+  for (let x = sx0 + 0.32, k = 0; x < sx1 - 0.25; x += 0.56, k++) {
+    const h = k % 3 === 1 ? 0.3 : 0.24
+    parts.push(colored(rbox(0.46, h, 0.42, 0.03, x, 1.525 + h / 2, st.z, 1), pal.wood))
+    parts.push(colored(rbox(0.47, 0.035, 0.12, 0.01, x, 1.525 + h * 0.62, st.z + 0.17, 1), '#e9e2d0'))
+  }
+
+  // Terminal de diagnóstico: peana, armario y marco de la pantalla (la pantalla, que se enciende, va aparte)
+  const dg = L.side.diag
+  parts.push(colored(rbox(0.9, 0.06, 0.7, 0.02, dg.x, 0.03, dg.z, 1), pal.postDark))
+  parts.push(colored(rbox(0.62, 0.95, 0.46, 0.05, dg.x, 0.535, dg.z, 1), pal.post))
+  parts.push(colored(rbox(0.66, 0.06, 0.5, 0.02, dg.x, 1.03, dg.z, 1), pal.stripe))
+  const frame = new RoundedBoxGeometry(0.78, 0.52, 0.06, 1, 0.02)
+  frame.applyQuaternion(new THREE.Quaternion().setFromAxisAngle(X_AXIS, DIAG_SCREEN_TILT))
+  frame.translate(dg.x, DIAG_SCREEN_Y, dg.z - 0.04)
+  parts.push(colored(frame, pal.propDark))
+  // cable al primer elevador
+  parts.push(colored(rbox(L.side.x1 - dg.x - 0.4, 0.03, 0.05, 0.01, (dg.x + 0.3 + L.side.x1 - 0.1) / 2, 0.02, dg.z + 0.1, 1), pal.propDark))
+
+  // Banco del equipo, hacia la calzada
+  const bn = L.side.bench
+  parts.push(colored(rbox(bn.length, 0.06, 0.42, 0.02, bn.x, 0.46, bn.z, 1), pal.wood))
+  for (const dx of [-bn.length / 2 + 0.15, bn.length / 2 - 0.15]) parts.push(colored(rbox(0.06, 0.44, 0.36, 0.015, bn.x + dx, 0.22, bn.z, 1), pal.steel))
 
   // Bidones junto al bordillo del fondo a la derecha
   parts.push(...drum(L.maxX - 0.55, L.backZ + 0.5, pal.drumA, pal))
@@ -321,7 +370,7 @@ interface GlowSeg {
 function glowSegments(L: FloorLayout, pal: WorkshopPalette): GlowSeg[] {
   const segs: GlowSeg[] = []
   const t = 0.075
-  // Elevadores: plaza abierta hacia la calzada, en naranja
+  // Elevadores: plaza abierta hacia la calzada, en azul
   const w = BAY_W - 0.6
   const d = BAY_D - 0.5
   for (const b of L.bays) {
@@ -331,6 +380,11 @@ function glowSegments(L: FloorLayout, pal: WorkshopPalette): GlowSeg[] {
     // esquinas de la boca
     for (const side of [-1, 1]) segs.push({ w: 0.7, d: t, x: b.x + side * (w / 2 - 0.35), z: b.z + d / 2, color: pal.bayLine })
   }
+  // Lateral del fondo (almacén, diagnóstico y equipo): borde peatonal en ámbar hacia los elevadores y la calzada
+  const sd = L.side
+  const edgeZ = L.bayZ + BAY_D / 2 - 0.1
+  segs.push({ w: t, d: edgeZ - (L.backZ + 0.9), x: sd.x1 - 0.3, z: (edgeZ + L.backZ + 0.9) / 2, color: pal.parkLine })
+  segs.push({ w: sd.x1 - 0.3 - (sd.x0 + 0.9), d: t, x: (sd.x1 - 0.3 + sd.x0 + 0.9) / 2, z: edgeZ, color: pal.parkLine })
   // Espera en ámbar y entrega en esmeralda
   for (const [row, color] of [[L.park, pal.parkLine], [L.ready, pal.readyLine]] as const) {
     if (!row.length) continue

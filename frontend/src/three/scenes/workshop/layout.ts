@@ -2,7 +2,7 @@
  * Maqueta isométrica del taller: distribución de la nave, plazas estables y rutas por la calzada.
  * Lógica pura (sin React ni WebGL): se prueba con Vitest.
  *
- *   fondo (−z)   [muro]  E1  E2  E3  E4  …            ← elevadores, el coche entra de morro (mira a −z)
+ *   fondo (−z)   [muro]  A D  E1  E2  E3  E4  …       ← almacén (A), diagnóstico y equipo (D) y elevadores (el coche entra de morro)
  *                ═══ carril N ═══ calzada ═══ carril S ═══ ← ENTRADA (por la derecha, +x)
  *   frente (+z)  P P P P P P   ·   L L L             ← espera (izquierda) y entrega (derecha, junto a la salida)
  *
@@ -48,11 +48,21 @@ export const R_BAY = 2.6
 export const R_REV = 2.2
 /** Distancia del pórtico de la entrada al borde de la nave (hacia la explanada): fuera de la zona de giro. */
 export const PORTAL_DX = 2.9
+/**
+ * Ancho del lateral del fondo, a la izquierda de los elevadores: almacén de piezas (contra el muro), terminal de
+ * diagnóstico y zona del equipo. Ningún coche pasa por ahí (los giros hacia el primer elevador quedan a su derecha).
+ */
+export const SIDE_W = 5.4
+/** Separación entre las figuras del equipo que no tienen orden en curso (m). */
+export const CREW_GAP = 0.8
 
-/** Altura del coche sobre el elevador según el estado (m): en reparación o esperando piezas, arriba. */
+/**
+ * Altura del coche sobre el elevador según el estado (m): en reparación o esperando piezas, arriba (inspección de bajos);
+ * en diagnóstico, a pie de suelo (se trabaja con la tableta, junto al coche); listo o recibido, abajo.
+ */
 export const LIFT_HEIGHT: Record<WorkOrderStatus, number> = {
   received: 0,
-  diagnosing: 0.5,
+  diagnosing: 0,
   waiting_parts: 1.1,
   in_progress: 1.1,
   ready: 0,
@@ -87,6 +97,20 @@ export interface FloorLayout {
   entrance: { x: number; z: number }
   /** Tramos en x de cada zona del frente (para los rótulos del suelo). */
   zones: { park: [number, number]; ready: [number, number] }
+  /** Lateral del fondo a la izquierda de los elevadores (de `minX` a `x1`). */
+  side: SideZone
+}
+
+export interface SideZone {
+  x0: number
+  x1: number
+  /** Centro de los estantes del almacén, contra el muro del fondo (y su largo en x). */
+  store: { x: number; z: number; length: number }
+  /** Terminal de diagnóstico (pantalla hacia la cámara). */
+  diag: { x: number; z: number }
+  /** Banco del equipo y puestos de las personas sin orden en curso, de izquierda a derecha. */
+  bench: { x: number; z: number; length: number }
+  crew: { x: number; z: number }[]
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
@@ -101,7 +125,7 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
   const cap = slotCapacity(bayNumbers.length)
   const bayRow = n * BAY_W
   const frontRow = cap.park * STALL_W + ZONE_GAP + cap.ready * STALL_W
-  const inner = Math.max(bayRow, frontRow, 3 * BAY_W) + 2 * MARGIN
+  const inner = Math.max(bayRow + SIDE_W, frontRow, 3 * BAY_W) + 2 * MARGIN
   const minX = -inner / 2
   const maxX = inner / 2
 
@@ -111,14 +135,32 @@ export function computeFloorLayout(bayNumbers: number[]): FloorLayout {
   const backZ = bayZ - BAY_D / 2 - 0.7
   const frontZ = stallZ + STALL_D / 2 + 1.0
 
-  const bx0 = minX + MARGIN + (inner - 2 * MARGIN - bayRow) / 2 + BAY_W / 2
+  // Elevadores centrados si cabe el lateral a su izquierda; si no, justo a su derecha
+  const bx0 = Math.max(minX + MARGIN + (inner - 2 * MARGIN - bayRow) / 2, minX + MARGIN + SIDE_W) + BAY_W / 2
   const bays = bayNumbers.map((number, i) => ({ number, x: bx0 + i * BAY_W, z: bayZ }))
   const px0 = minX + MARGIN + STALL_W / 2
   const park = Array.from({ length: cap.park }, (_, k) => ({ x: px0 + k * STALL_W, z: stallZ }))
   const rx1 = maxX - MARGIN - STALL_W / 2
   const ready = Array.from({ length: cap.ready }, (_, k) => ({ x: rx1 - (cap.ready - 1 - k) * STALL_W, z: stallZ }))
 
+  // Lateral: almacén contra el muro del fondo, terminal en medio y banco del equipo hacia la calzada (sin tocar la boca de los elevadores)
+  const sx1 = bx0 - BAY_W / 2
+  const storeX0 = minX + 2.2
+  const storeX1 = sx1 - 0.9
+  const benchZ = bayZ + 1.0
+  const crewX0 = minX + 1.4
+  const crewN = Math.max(1, Math.floor((sx1 - 0.8 - crewX0) / CREW_GAP) + 1)
+  const side: SideZone = {
+    x0: minX,
+    x1: sx1,
+    store: { x: (storeX0 + storeX1) / 2, z: bayZ - BAY_D / 2 - 0.7 + 0.45, length: storeX1 - storeX0 },
+    diag: { x: minX + 3.3, z: bayZ - 0.9 },
+    bench: { x: crewX0 + ((crewN - 1) * CREW_GAP) / 2, z: benchZ, length: (crewN - 1) * CREW_GAP + 0.7 },
+    crew: Array.from({ length: crewN }, (_, k) => ({ x: crewX0 + k * CREW_GAP, z: benchZ + 0.6 })),
+  }
+
   return {
+    side,
     bays,
     park,
     ready,

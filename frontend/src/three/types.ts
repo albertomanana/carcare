@@ -4,7 +4,7 @@
  * Cambiar esta interfaz requiere avisar al agente `frontend-react` y anotarlo en docs/equipo/TABLERO.md.
  */
 import type { ReactNode } from 'react'
-import type { Bay, BodyType, WorkOrder, Zone, ZoneStatus } from '@/api/types'
+import type { Bay, BodyType, WorkOrder, WorkspaceRole, Zone, ZoneStatus } from '@/api/types'
 
 export interface CarAppearance {
   /** null ⇒ se usa 'hatchback'. */
@@ -86,6 +86,32 @@ export interface WorkshopSceneProps {
    * Es la vista del móvil y la tableta (por debajo de 1024 px), donde se navega con botones.
    */
   flat?: boolean
+  /**
+   * Equipo del espacio (`GET /members`): una figura por persona, en un solo sitio (junto a su orden en curso o en la
+   * zona del equipo). Sin lista (cargando o error) solo se dibuja a quien está asignado a una orden de un elevador.
+   */
+  crew?: WorkshopCrewMember[] | null
+  /** Persona elegida: su figura se marca y la cámara la enfoca. */
+  selectedMemberId?: number | null
+  /** Elegir a una persona (clic en su figura o en su rótulo). */
+  onSelectMember?: (userId: number) => void
+  /**
+   * Encuadre: `general` (toda la nave), `bays` (fila de elevadores), `side` (almacén, diagnóstico y equipo) o
+   * `selected` (lo elegido; sin selección equivale a `general`).
+   */
+  view?: WorkshopView
+  /** La escena vuelve a la vista general por su cuenta (Escape, clic en el vacío o «Ver toda la nave»). */
+  onViewChange?: (view: WorkshopView) => void
+  /** Filtro de la página: atenúa todo salvo estas órdenes y personas. null ⇒ sin filtro. */
+  highlight?: { orders: number[]; members: number[] } | null
+}
+
+export type WorkshopView = 'general' | 'bays' | 'side' | 'selected'
+
+export interface WorkshopCrewMember {
+  id: number
+  name: string
+  role: WorkspaceRole | null
 }
 
 /** Un vehículo del garaje isométrico. Todo opcional salvo `id` y `name`: sin carrocería ⇒ 'hatchback'; sin color ⇒ azul, amarillo, blanco o rojo de maqueta según el id. */

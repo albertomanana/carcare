@@ -1,12 +1,15 @@
 /**
- * Rótulos HTML del taller (botones accesibles proyectados sobre la maqueta): uno por elevador y uno por coche en la
- * zona de espera o de entrega. El texto accesible describe siempre el elevador o la orden completos.
+ * Rótulos HTML del taller (botones accesibles proyectados sobre la maqueta): uno por elevador, uno por coche en la
+ * zona de espera o de entrega, el del almacén, el del terminal de diagnóstico y uno por persona sin orden en curso.
+ * El texto accesible describe siempre el elevador, la orden o la persona completos.
  */
+import { HardHat, MonitorCog, Warehouse } from 'lucide-react'
 import type { Bay, WorkOrder } from '@/api/types'
 import { isBeingWorked, overallColor } from '@/lib/mechanic'
 import { LiveTimer } from '@/components/orders/OrderTimer'
 import { orderTiming, timingSentence, useNow } from '@/lib/orderTiming'
 import { LATE, TONE_CLASSES, WORK_ORDER_STATUS } from '@/lib/status'
+import { beaconText, crewStatusText, roleLabel, type BayBeacon, type CrewPlacement } from './crew'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -14,7 +17,20 @@ function vehicleText(o: WorkOrder) {
   return o.vehicle.plate ? `${o.vehicle.display_name} (${o.vehicle.plate})` : o.vehicle.display_name
 }
 
-export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selected: boolean; compact: boolean; onSelect: (n: number | null) => void }) {
+export function BayLabel({
+  bay,
+  selected,
+  compact,
+  beacon = null,
+  onSelect,
+}: {
+  bay: Bay
+  selected: boolean
+  compact: boolean
+  /** Baliza del elevador: coche sin técnico o técnico trabajando en otro elevador (ver `crew.ts`). */
+  beacon?: BayBeacon | null
+  onSelect: (n: number | null) => void
+}) {
   const o = bay.work_order
   const st = o ? WORK_ORDER_STATUS[o.status] : null
   const tone = st ? TONE_CLASSES[st.tone] : null
@@ -25,7 +41,7 @@ export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selec
   const who = o?.assigned_to ?? null
   const aria = o
     ? `Elevador ${bay.number}: orden ${o.number}, ${vehicleText(o)}, ${st!.label}${o.is_late ? ', fuera de plazo' : ''}; ` +
-      `${who ? `${working ? 'trabaja' : 'asignada a'} ${who.name}` : 'sin mecánico asignado'}, ${o.title}; ${timingSentence(orderTiming(o, now))}`
+      `${who ? `${working ? 'trabaja' : 'asignada a'} ${who.name}` : 'sin mecánico asignado'}${beacon ? ` (${beaconText(beacon)})` : ''}, ${o.title}; ${timingSentence(orderTiming(o, now))}`
     : `Elevador ${bay.number}: libre`
   const full = !compact || selected
   if (o && st && tone)
@@ -63,8 +79,15 @@ export function BayLabel({ bay, selected, compact, onSelect }: { bay: Bay; selec
                 <span className={cx('size-2 rounded-full', tone.dot)} aria-hidden />
               )}
               {o.is_late && <LATE.icon className="size-3.5 text-danger" aria-hidden strokeWidth={2.4} />}
+              {beacon && !full && <HardHat className="size-3.5 text-warning" aria-hidden strokeWidth={2.4} />}
             </span>
           </span>
+          {full && beacon && (
+            <span className={cx('inline-flex items-center gap-1 self-start rounded-[5px] px-1.5 py-px text-[11px] font-medium', TONE_CLASSES.warning.soft)}>
+              <HardHat className="size-3" aria-hidden strokeWidth={2.4} />
+              {beacon.kind === 'awaiting_tech' ? beaconText(beacon) : `${beacon.name.split(' ')[0]} está en el elevador ${beacon.bay}`}
+            </span>
+          )}
           {full ? (
             <>
               <span className="flex min-w-0 items-center gap-1.5">
@@ -214,6 +237,140 @@ export function CarLabel({
         {selected && <span className="max-w-32 truncate text-fg-muted">{order.vehicle.plate ?? order.vehicle.display_name}</span>}
         {order.is_late && <LATE.icon className="size-3 text-danger" aria-hidden />}
       </button>
+      <span className="h-2 w-px bg-fg-subtle/60" aria-hidden />
+    </div>
+  )
+}
+
+const panelBtn = cx(
+  'flex w-full cursor-pointer items-baseline gap-1.5 rounded-[6px] px-1.5 py-0.5 text-left text-[11px] hover:bg-surface-2',
+  'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-ink',
+)
+
+/** Rótulo de una zona del lateral (almacén o diagnóstico): título, resumen y hasta tres órdenes que se pueden elegir. */
+function ZoneLabel({
+  icon: Icon,
+  title,
+  summary,
+  alert,
+  rows,
+  compact,
+  selectedOrderId,
+  onSelect,
+}: {
+  icon: typeof Warehouse
+  title: string
+  summary: string
+  alert: boolean
+  rows: { order: WorkOrder; detail: string }[]
+  compact: boolean
+  selectedOrderId: number | null
+  onSelect: (id: number) => void
+}) {
+  const shown = rows.slice(0, 3)
+  return (
+    <div className="flex flex-col items-center">
+      <section
+        aria-label={`${title}: ${summary}`}
+        className={cx(
+          'flex flex-col gap-0.5 rounded-card border bg-surface/90 px-2 py-1.5 text-xs text-fg shadow-lg backdrop-blur-md',
+          compact ? 'max-w-48' : 'w-60',
+          alert ? 'border-warning/70' : 'border-line/70',
+        )}
+      >
+        <span className="flex items-center gap-1.5 whitespace-nowrap px-0.5">
+          <Icon className={cx('size-3.5', alert ? 'text-warning' : 'text-fg-subtle')} aria-hidden strokeWidth={2.2} />
+          <span className="font-display font-semibold text-fg-subtle">{title}</span>
+          {alert && <span className="size-1.5 rounded-full bg-warning motion-safe:animate-pulse" aria-hidden />}
+        </span>
+        <span className="px-0.5 text-[11px] text-fg-muted">{summary}</span>
+        {!compact &&
+          shown.map(({ order, detail }) => (
+            <button
+              key={order.id}
+              type="button"
+              aria-pressed={selectedOrderId === order.id}
+              aria-label={`Orden ${order.number}, ${vehicleText(order)}: ${detail}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelect(order.id)
+              }}
+              className={cx(panelBtn, selectedOrderId === order.id && 'bg-surface-2 ring-1 ring-accent/50')}
+            >
+              <span className="shrink-0 font-medium tabular-nums">{order.number.split('-').pop()}</span>
+              <span className="min-w-0 truncate text-fg-muted">{detail}</span>
+            </button>
+          ))}
+        {!compact && rows.length > shown.length && <span className="px-1.5 text-[11px] text-fg-subtle">y {rows.length - shown.length} más en la lista</span>}
+      </section>
+      <span className="h-3 w-px bg-fg-subtle/70" aria-hidden />
+    </div>
+  )
+}
+
+const partsOf = (o: WorkOrder) => o.items.filter((i) => i.kind === 'part')
+
+/** Almacén de piezas: se enciende con las órdenes en «Esperando piezas» (no hay inventario: son las órdenes). */
+export function StoreLabel({ orders, compact, selectedOrderId, onSelect }: { orders: WorkOrder[]; compact: boolean; selectedOrderId: number | null; onSelect: (id: number) => void }) {
+  const n = orders.length
+  const summary = n ? `${n} ${n === 1 ? 'orden espera' : 'órdenes esperan'} piezas` : 'Ninguna orden espera piezas'
+  const rows = orders.map((o) => {
+    const parts = partsOf(o)
+    const detail = parts.length ? `${parts[0].name}${parts.length > 1 ? ` y ${parts.length - 1} más` : ''}` : 'Sin piezas anotadas'
+    return { order: o, detail }
+  })
+  return <ZoneLabel icon={Warehouse} title="Almacén" summary={summary} alert={n > 0} rows={rows} compact={compact} selectedOrderId={selectedOrderId} onSelect={onSelect} />
+}
+
+/** Terminal de diagnóstico: las órdenes en diagnóstico con lo que se ha anotado (el diagnóstico de la orden, no una lectura OBD). */
+export function DiagLabel({ orders, compact, selectedOrderId, onSelect }: { orders: WorkOrder[]; compact: boolean; selectedOrderId: number | null; onSelect: (id: number) => void }) {
+  const n = orders.length
+  const summary = n ? `${n} ${n === 1 ? 'coche' : 'coches'} en diagnóstico` : 'Ningún coche en diagnóstico'
+  const rows = orders.map((o) => ({ order: o, detail: o.diagnosis?.trim() || 'Sin diagnóstico anotado' }))
+  return <ZoneLabel icon={MonitorCog} title="Diagnóstico" summary={summary} alert={false} rows={rows} compact={compact} selectedOrderId={selectedOrderId} onSelect={onSelect} />
+}
+
+/** Persona del equipo en la maqueta: nombre con el color de su mono; con `dot`, solo el punto (nombre al pasar el puntero). */
+export function CrewLabel({ person, selected, dot, onSelect }: { person: CrewPlacement; selected: boolean; dot: boolean; onSelect: (id: number | null) => void }) {
+  const role = roleLabel(person.member.role)
+  const aria = `${person.member.name}${role ? `, ${role}` : ''}: ${crewStatusText(person)}`
+  const color = overallColor(person.member.id)
+  const click = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onSelect(selected ? null : person.member.id)
+  }
+  const first = person.member.name.split(' ')[0]
+  return (
+    <div className="group/dot relative flex flex-col items-center">
+      <button
+        type="button"
+        aria-pressed={selected}
+        aria-label={aria}
+        title={aria}
+        onClick={click}
+        className={cx(
+          'inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border text-[11px] font-medium text-fg shadow-md backdrop-blur-md',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink',
+          dot && !selected ? 'size-6 justify-center' : 'px-2 py-0.5',
+          selected ? 'border-accent bg-surface ring-2 ring-accent/35' : 'border-line/70 bg-surface/90 hover:bg-surface',
+        )}
+      >
+        <span className="size-2.5 shrink-0 rounded-full ring-1 ring-black/20" style={{ backgroundColor: color }} aria-hidden />
+        {(!dot || selected) && (
+          <>
+            <span>{first}</span>
+            {selected && role && <span className="text-fg-muted">· {role}</span>}
+          </>
+        )}
+      </button>
+      {dot && !selected && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bottom-full mb-1 hidden whitespace-nowrap rounded-full border border-line/70 bg-surface px-2 py-0.5 text-[11px] font-medium text-fg shadow-md group-focus-within/dot:block group-hover/dot:block"
+        >
+          {first}
+        </span>
+      )}
       <span className="h-2 w-px bg-fg-subtle/60" aria-hidden />
     </div>
   )

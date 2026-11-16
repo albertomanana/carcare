@@ -176,7 +176,7 @@ export function IsoRig({
       screenSpacePanning={false}
       enableZoom={interactive}
       enableDamping
-      dampingFactor={0.14}
+      dampingFactor={0.05}
       zoomSpeed={0.9}
       minZoom={overview.zoom * 0.7}
       maxZoom={overview.zoom * 5}

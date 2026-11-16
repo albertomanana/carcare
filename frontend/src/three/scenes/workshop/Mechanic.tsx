@@ -1,14 +1,16 @@
 /**
- * Mecánico de la maqueta: una figura de arcilla junto al coche del elevador, solo cuando la orden tiene de verdad una
- * persona asignada (`assigned_to`) y está en diagnóstico o en reparación. No es un dato inventado: es la orden
- * dibujada. El color del mono identifica a cada persona (sale de su id) y se repite en su rótulo.
+ * Persona del equipo en la maqueta: una figura de arcilla por persona (nunca dos: ver `crew.ts`). Junto al coche del
+ * elevador cuando tiene una orden en diagnóstico o en reparación asignada de verdad (`assigned_to`); si no, de pie en
+ * la zona del equipo. El color del mono identifica a cada persona (sale de su id) y se repite en su rótulo.
  *  - En reparación: brazos al frente con una llave, cuerpo que acompaña y un destello de trabajo en la herramienta.
  *  - En diagnóstico: una tableta encendida entre las manos y la cabeza que sube y baja de la tableta al coche.
- *  - Con movimiento reducido: pose fija, sin fotogramas continuos.
- * La figura aparece cuando su coche ya está colocado en el elevador (nunca mientras maniobra) y es clicable.
+ *  - Sin orden en curso: de pie, con un leve vaivén.
+ *  - Al cambiar de sitio (empieza o termina una orden) camina por el pasillo entre los elevadores y la calzada.
+ *  - Con movimiento reducido: pose fija y cambio de sitio directo, sin fotogramas continuos.
+ * La primera vez que aparece junto a un elevador espera a que su coche esté colocado (nunca mientras maniobra).
  */
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { colored, mergeAndDispose, rbox } from './diorama'
 import { poolTexture } from './kit'
@@ -74,6 +76,22 @@ function clayFigureHover() {
   hoverMat ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.05, emissive: '#ffffff', emissiveIntensity: 0.22 })
   return hoverMat
 }
+let dimMat: THREE.MeshStandardMaterial | null = null
+/** Atenuada: la figura no coincide con el filtro de la página. */
+function clayFigureDim() {
+  dimMat ??= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.05, color: '#4d525e' })
+  return dimMat
+}
+const ringGeo = new THREE.RingGeometry(0.36, 0.46, 32).rotateX(-Math.PI / 2)
+const ringMats = new Map<string, THREE.MeshBasicMaterial>()
+function ringMaterial(color: string) {
+  let m = ringMats.get(color)
+  if (!m) {
+    m = new THREE.MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 0.95, depthWrite: false })
+    ringMats.set(color, m)
+  }
+  return m
+}
 const tabletMat = new THREE.MeshStandardMaterial({ color: '#0f1724', emissive: '#38bdf8', emissiveIntensity: 1.1, roughness: 0.4 })
 const PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
 const proxyGeo = new THREE.BoxGeometry(0.7, 1.8, 0.7)
@@ -90,7 +108,10 @@ function sparkMaterial() {
   return sparkMat
 }
 
-export type MechanicTask = 'repair' | 'diagnose'
+export type MechanicTask = 'repair' | 'diagnose' | 'idle'
+
+/** Velocidad al caminar (m/s). */
+const WALK_SPEED = 1.8
 
 export function Mechanic({
   x,
@@ -100,10 +121,17 @@ export function Mechanic({
   task,
   reduced,
   hovered,
+  selected = false,
+  selectColor = '#ffffff',
+  dim = false,
+  aisleZ,
+  phaseSeed = 0,
+  register,
   ready,
   onSelect,
   onHover,
 }: {
+  /** Sitio donde debe estar (si cambia, camina hasta él). */
   x: number
   z: number
   /** Giro en y: la figura mira a +z con 0. */
@@ -112,8 +140,18 @@ export function Mechanic({
   task: MechanicTask
   reduced: boolean
   hovered: boolean
-  /** true cuando su coche ya está colocado en el elevador (se consulta en cada fotograma). */
-  ready: () => boolean
+  selected?: boolean
+  selectColor?: string
+  /** Atenuada: no coincide con el filtro de la página. */
+  dim?: boolean
+  /** z del pasillo por el que camina al cambiar de sitio (entre la boca de los elevadores y la calzada). */
+  aisleZ: number
+  /** Desfase de la animación (id de la persona): dos figuras no se mueven al unísono. */
+  phaseSeed?: number
+  /** Entrega el grupo de la figura (para que su rótulo la siga mientras camina). */
+  register?: (o: THREE.Object3D | null) => void
+  /** true cuando su coche ya está colocado en el elevador (se consulta en cada fotograma). Sin él, siempre lista. */
+  ready?: () => boolean
   onSelect: () => void
   onHover: (on: boolean) => void
 }) {
@@ -123,50 +161,118 @@ export function Mechanic({
   const armL = useRef<THREE.Group>(null)
   const armR = useRef<THREE.Group>(null)
   const spark = useRef<THREE.Sprite>(null)
-  // desfase propio para que dos mecánicos no se muevan al unísono
-  const phase = useMemo(() => (Math.abs(Math.round(x * 13 + z * 7)) % 10) * 0.63, [x, z])
+  const phase = (Math.abs(phaseSeed * 7919) % 10) * 0.63
+  // Posición real (va por detrás del destino mientras camina), lo que queda del camino y si ya se ha visto alguna vez
+  const pos = useRef<{ x: number; z: number; heading: number } | null>(null)
+  const path = useRef<{ x: number; z: number }[]>([])
+  const seen = useRef(false)
+  const invalidate = useThree((s) => s.invalidate)
 
-  useFrame((state) => {
+  useLayoutEffect(() => {
+    register?.(root.current)
+    return () => register?.(null)
+  }, [register])
+
+  useLayoutEffect(() => {
+    const cur = pos.current
+    if (!cur || reduced || !seen.current) {
+      pos.current = { x, z, heading }
+      path.current = []
+    } else if (Math.hypot(cur.x - x, cur.z - z) > 0.05) {
+      // Por el pasillo: sale hacia delante, va de lado y entra (en línea recta si es un paso corto)
+      path.current = Math.abs(cur.x - x) < 0.6 ? [{ x, z }] : [{ x: cur.x, z: aisleZ }, { x, z: aisleZ }, { x, z }]
+    } else {
+      cur.heading = heading
+    }
     const g = root.current
-    if (!g) return
-    const show = ready()
+    const p = pos.current
+    if (g && p) {
+      g.position.set(p.x, 0, p.z)
+      g.rotation.y = p.heading
+    }
+    invalidate()
+  }, [x, z, heading, reduced, aisleZ, invalidate])
+
+  useFrame((state, delta) => {
+    const g = root.current
+    const cur = pos.current
+    if (!g || !cur) return
+    const walking = path.current.length > 0
+    const atWork = !ready || ready()
+    const show = seen.current || walking || atWork
     if (g.visible !== show) g.visible = show
     if (!show) return
+    seen.current = true
+
+    if (walking) {
+      let step = WALK_SPEED * Math.min(delta, 0.1)
+      while (step > 0 && path.current.length) {
+        const to = path.current[0]
+        const dx = to.x - cur.x
+        const dz = to.z - cur.z
+        const d = Math.hypot(dx, dz)
+        if (d > 1e-4) cur.heading = Math.atan2(dx, dz)
+        if (d <= step) {
+          cur.x = to.x
+          cur.z = to.z
+          step -= d
+          path.current.shift()
+        } else {
+          cur.x += (dx / d) * step
+          cur.z += (dz / d) * step
+          step = 0
+        }
+      }
+      if (!path.current.length) cur.heading = heading
+      g.position.set(cur.x, 0, cur.z)
+      g.rotation.y = cur.heading
+    }
+
     const t = reduced ? 1.2 : state.clock.elapsedTime + phase
     const tr = torso.current
     const l = armL.current
     const r = armR.current
+    const pose: MechanicTask | 'walk' = walking ? 'walk' : atWork ? task : 'idle'
     if (tr && l && r) {
-      if (task === 'repair') {
+      if (spark.current) spark.current.visible = pose === 'repair' && !reduced
+      if (pose === 'walk') {
+        const s = Math.sin(state.clock.elapsedTime * 9)
+        tr.rotation.x = 0.06
+        tr.position.y = Math.abs(s) * 0.03
+        l.rotation.set(s * 0.55, 0, 0.06)
+        r.rotation.set(-s * 0.55, 0, -0.06)
+      } else if (pose === 'idle') {
+        tr.rotation.x = 0
+        tr.position.y = Math.sin(t * 1.4) * 0.008
+        l.rotation.set(Math.sin(t * 0.9) * 0.04, 0, 0.1)
+        r.rotation.set(-Math.sin(t * 0.9) * 0.04, 0, -0.1)
+      } else if (pose === 'repair') {
         const turn = Math.sin(t * 5.2)
         tr.rotation.x = 0.16 + Math.sin(t * 1.3) * 0.035
         tr.position.y = Math.sin(t * 2.6) * 0.012
-        l.rotation.x = -1.32 + Math.sin(t * 1.3) * 0.05
-        r.rotation.x = -1.45 + turn * 0.2
-        r.rotation.z = -0.1 + turn * 0.06
+        l.rotation.set(-1.32 + Math.sin(t * 1.3) * 0.05, 0, 0)
+        r.rotation.set(-1.45 + turn * 0.2, 0, -0.1 + turn * 0.06)
         if (spark.current) {
           const k = 0.5 + 0.5 * Math.sin(t * 10.4) * Math.sin(t * 3.1)
           spark.current.scale.setScalar(0.16 + k * 0.3)
-          spark.current.visible = !reduced
         }
       } else {
         const look = Math.max(0, Math.sin(t * 0.7))
         tr.rotation.x = 0.1 - look * 0.12
         tr.position.y = 0
-        l.rotation.x = -0.95
-        l.rotation.z = 0.32
-        r.rotation.x = -0.95 + Math.sin(t * 3.4) * 0.05
-        r.rotation.z = -0.32
-        if (spark.current) spark.current.visible = false
+        l.rotation.set(-0.95, 0, 0.32)
+        r.rotation.set(-0.95 + Math.sin(t * 3.4) * 0.05, 0, -0.32)
       }
     }
-    if (!reduced) state.invalidate()
+    if (!reduced || walking) state.invalidate()
   })
 
-  const mat = hovered ? clayFigureHover() : clayFigure()
+  const plain = dim && !selected ? clayFigureDim() : clayFigure()
+  const mat = hovered ? clayFigureHover() : plain
   return (
-    <group ref={root} position={[x, 0, z]} rotation-y={heading} visible={false} name="mecanico">
+    <group ref={root} visible={false} name="mecanico">
       <mesh geometry={flatGeo} material={blobShadow()} scale={[0.95, 1, 0.95]} position={[0, 0.013, 0.02]} renderOrder={-1} />
+      {(selected || hovered) && <mesh geometry={ringGeo} material={ringMaterial(selected ? selectColor : '#ffffff')} position={[0, 0.016, 0]} renderOrder={3} />}
       <group ref={torso}>
         <mesh geometry={fig.body} material={mat} />
         <group ref={armL} position={[-0.26, 1.33, 0]}>
@@ -176,7 +282,7 @@ export function Mechanic({
           <mesh geometry={fig.arm} material={mat} />
           {task === 'repair' && <mesh geometry={wrench()} material={mat} />}
         </group>
-        {task === 'diagnose' && <mesh geometry={tabletGeo} material={tabletMat} position={[0, 1.02, 0.47]} rotation-x={-0.6} />}
+        {task === 'diagnose' && <mesh geometry={tabletGeo} material={dim && !selected ? plain : tabletMat} position={[0, 1.02, 0.47]} rotation-x={-0.6} />}
         {task === 'repair' && <sprite ref={spark} material={sparkMaterial()} position={[0.26, 1.24, 0.9]} scale={0.3} renderOrder={5} />}
       </group>
       <mesh

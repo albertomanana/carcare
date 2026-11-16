@@ -9,11 +9,16 @@
  *    de tráfico (`workshop/traffic.ts`) planifica las salidas para que nunca se toquen y las lleva con GSAP.
  *  - Con `prefers-reduced-motion`: sin trayectos, sin entrada y sin vuelos de cámara (posición final directa).
  *  - Rótulos HTML accesibles (un botón por elevador y por coche aparcado) proyectados sobre la escena.
+ *  - Equipo: una figura por persona del espacio, nunca repetida (`workshop/crew.ts`): junto a su orden en curso o en
+ *    la zona del equipo; los elevadores con coche y sin técnico llevan una baliza.
+ *  - Lateral del fondo: almacén (se enciende con las órdenes «Esperando piezas») y terminal de diagnóstico.
+ *  - Encuadres: general, elevadores, lateral y lo elegido (`view`).
+ *  - Bloom selectivo y viñeta (`workshop/Effects.tsx`) en pantallas grandes sin movimiento reducido.
  * Un único <Canvas>, `frameloop="demand"` (no pinta nada en reposo) y sombras que solo se recalculan cuando algo se mueve.
  */
 import { MeshReflectorMaterial, useCursor } from '@react-three/drei'
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as THREE from 'three'
 import type { Bay, WorkOrder, WorkOrderStatus } from '@/api/types'
 import { isBeingWorked, overallColor } from '@/lib/mechanic'
@@ -32,8 +37,9 @@ import { buildDecals, selectionOutline } from './workshop/diorama'
 import { boxPoints, CAM_DIST, focusFrom, ISO_DIR, useCompileGate, useDevHook, useEscape, useRedraw, useSize, useTrafficController, type CamFocus } from './workshop/iso'
 import { clayVertex } from './workshop/clayCar'
 import { CarMesh, IsoRig, StudioLights } from './workshop/IsoParts'
-import { buildFloorPaint, buildGlow, buildWorkshopStatic, haloTexture, poolTexture, workshopCarriage, workshopPalette, type WorkshopPalette } from './workshop/kit'
-import { BayLabel, CarLabel } from './workshop/labels'
+import { buildFloorPaint, buildGlow, buildWorkshopStatic, DIAG_SCREEN_TILT, DIAG_SCREEN_Y, haloTexture, poolTexture, workshopCarriage, workshopPalette, type WorkshopPalette } from './workshop/kit'
+import { assignCrew, type BayBeacon, type CrewAssignment } from './workshop/crew'
+import { BayLabel, CarLabel, CrewLabel, DiagLabel, StoreLabel } from './workshop/labels'
 import { Mechanic } from './workshop/Mechanic'
 import {
   assignSpots,
@@ -41,8 +47,10 @@ import {
   BAY_W,
   clayColor,
   computeFloorLayout,
+  CREW_GAP,
   entrancePose,
   floorObstacles,
+  LANE_GAP,
   mechanicSpot,
   planRoute,
   POST_H,
@@ -64,6 +72,46 @@ import type { CarHandle, Desired, TrafficWorld } from './workshop/traffic'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
+/** Bloom y viñeta en un chunk aparte: no se descarga si no se usa (pantalla pequeña o movimiento reducido). */
+const WorkshopEffects = lazy(() => import('./workshop/Effects').then((m) => ({ default: m.WorkshopEffects })))
+/** Factor por el que se multiplican los colores que deben florecer cuando hay bloom (sin él se quedan como están). */
+const BLOOM_BOOST = 2.4
+
+/** Si el posprocesado falla (driver, memoria), la escena sigue sin él: quedan los halos pintados. */
+class EffectsBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch() {
+    this.props.onError()
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
+
+/** Dónde está la figura de cada persona: junto a su elevador o en la zona del equipo (por orden de la lista). */
+type CrewSpot = { x: number; z: number; heading: number }
+function crewSpots(layout: FloorLayout, crew: CrewAssignment): Map<number, CrewSpot> {
+  const out = new Map<number, CrewSpot>()
+  const spots = layout.side.crew
+  let k = 0
+  for (const p of crew.people) {
+    const bay = p.bay != null ? layout.bays.find((b) => b.number === p.bay) : null
+    if (bay) {
+      out.set(p.member.id, mechanicSpot(bay))
+      continue
+    }
+    // Primera fila delante del banco; si no caben, una segunda fila un poco más adelante y desplazada
+    const row = Math.floor(k / spots.length)
+    const s = spots[k % spots.length]
+    out.set(p.member.id, { x: s.x + (row % 2) * (CREW_GAP / 2), z: s.z + row * 0.7, heading: 0 })
+    k++
+  }
+  return out
+}
+
 // ───────────────────────── Componente público ─────────────────────────
 
 export default function WorkshopCanvas({
@@ -75,6 +123,12 @@ export default function WorkshopCanvas({
   onSelectOrder,
   className,
   focusInset,
+  crew = null,
+  selectedMemberId = null,
+  onSelectMember,
+  view = 'selected',
+  onViewChange,
+  highlight = null,
 }: WorkshopSceneProps) {
   const tokens = useThemeTokens()
   const reduced = usePrefersReducedMotion()
@@ -95,11 +149,22 @@ export default function WorkshopCanvas({
   if (!sameSlots(prevSlots, assignment.slots)) setPrevSlots(assignment.slots)
   const cars = assignment.cars
 
-  // Selección: un coche (de cualquier zona) o un elevador
+  // Equipo: una figura por persona, en un solo sitio
+  const crewAssign = useMemo(() => assignCrew(crew, sorted, waiting), [crew, sorted, waiting])
+  const spots = useMemo(() => crewSpots(layout, crewAssign), [layout, crewAssign])
+  const selMember = selectedMemberId != null ? (crewAssign.people.find((p) => p.member.id === selectedMemberId) ?? null) : null
+  const selMemberSpot = selMember ? (spots.get(selMember.member.id) ?? null) : null
+
+  // Órdenes del almacén y del terminal (todas las abiertas, también las que no caben en las plazas)
+  const openOrders = useMemo(() => [...sorted.flatMap((b) => (b.work_order ? [b.work_order] : [])), ...waiting], [sorted, waiting])
+  const storeOrders = useMemo(() => openOrders.filter((o) => o.status === 'waiting_parts'), [openOrders])
+  const diagOrders = useMemo(() => openOrders.filter((o) => o.status === 'diagnosing'), [openOrders])
+
+  // Selección: un coche (de cualquier zona), un elevador o una persona
   const selCar = selectedOrderId != null ? (cars.find((c) => c.order.id === selectedOrderId) ?? null) : null
-  const focusBay = selCar ? (selCar.spot.kind === 'bay' ? selCar.spot.bay : null) : selectedBay
+  const focusBay = selCar ? (selCar.spot.kind === 'bay' ? selCar.spot.bay : null) : selMember ? null : selectedBay
   const focusStall = selCar && selCar.spot.kind !== 'bay' ? selCar.spot : null
-  const hasSelection = selCar != null || selectedBay != null
+  const hasSelection = selCar != null || selectedBay != null || selMember != null
 
   // Encuadres (px del lienzo): general y del elemento elegido, dejando libre lo que tapen los paneles de la página
   const [recenter, setRecenter] = useState(0)
@@ -114,29 +179,53 @@ export default function WorkshopCanvas({
     const pts = boxPoints(layout.minX - WALL_T, layout.apronX - 0.4, -0.3, WALL_H, layout.backZ - WALL_T, layout.frontZ)
     return focusFrom(pts, size.w, size.h, { left: 6, right: insetR + 6, top: insetT + 10, bottom: insetB + 4 }, size.w < 520 ? 4 : 6)
   }, [layout, size.w, size.h, insetR, insetT, insetB])
+  const smx = selMemberSpot?.x ?? null
+  const smz = selMemberSpot?.z ?? null
   const focus = useMemo<CamFocus | null>(() => {
     if (!overview) return null
     const inset = { right: insetR, top: insetT + 36, bottom: insetB + 16 }
     let pts: THREE.Vector3[] | null = null
-    if (focusBay != null) {
-      const b = layout.bays.find((x) => x.number === focusBay)
-      if (b) pts = boxPoints(b.x - BAY_W / 2 - 2, b.x + BAY_W / 2 + 2, 0, POST_H + 0.5, b.z - BAY_D / 2 - 0.5, b.z + BAY_D / 2 + 2.2)
-    } else if (focusStall) {
-      const s = spotPose(layout, focusStall, 'received')
-      if (s) pts = boxPoints(s.x - STALL_W / 2 - 3, s.x + STALL_W / 2 + 3, 0, 2.2, s.z - STALL_D / 2 - 2.4, s.z + STALL_D / 2 + 1.2)
+    let near = true
+    if (view === 'bays' && layout.bays.length) {
+      const b0 = layout.bays[0]
+      const b1 = layout.bays[layout.bays.length - 1]
+      pts = boxPoints(b0.x - BAY_W / 2 - 0.4, b1.x + BAY_W / 2 + 0.4, 0, POST_H + 0.5, layout.backZ, layout.bayZ + BAY_D / 2 + 1.2)
+      near = false
+    } else if (view === 'side') {
+      pts = boxPoints(layout.side.x0 - WALL_T, layout.side.x1 + 0.6, 0, WALL_H, layout.backZ - WALL_T, layout.bayZ + BAY_D / 2 + 0.8)
+      near = false
+    } else if (view === 'selected') {
+      if (focusBay != null) {
+        const b = layout.bays.find((x) => x.number === focusBay)
+        if (b) pts = boxPoints(b.x - BAY_W / 2 - 2, b.x + BAY_W / 2 + 2, 0, POST_H + 0.5, b.z - BAY_D / 2 - 0.5, b.z + BAY_D / 2 + 2.2)
+      } else if (focusStall) {
+        const s = spotPose(layout, focusStall, 'received')
+        if (s) pts = boxPoints(s.x - STALL_W / 2 - 3, s.x + STALL_W / 2 + 3, 0, 2.2, s.z - STALL_D / 2 - 2.4, s.z + STALL_D / 2 + 1.2)
+      } else if (smx != null && smz != null) {
+        pts = boxPoints(smx - 2.6, smx + 2.6, 0, 2, smz - 2.6, smz + 2)
+      }
     }
     if (!pts) return overview
     const f = focusFrom(pts, size.w, size.h, inset, 30)
-    // siempre más cerca que la vista general (aunque el hueco libre sea pequeño, como con la hoja de detalle a 768 px)
+    // lo elegido, siempre más cerca que la vista general (aunque el hueco libre sea pequeño, como con la hoja de detalle a 768 px)
+    if (!near) return { ...f, zoom: Math.min(Math.max(f.zoom, overview.zoom), overview.zoom * 2.6) }
     return { ...f, zoom: Math.min(Math.max(f.zoom, overview.zoom * 1.3), overview.zoom * 2.6) }
-  }, [overview, layout, focusBay, focusStall, size.w, size.h, insetR, insetT, insetB])
-  const selKey = `${selCar ? `o${selCar.order.id}` : ''}|${selectedBay ?? ''}|${recenter}`
+  }, [overview, layout, view, focusBay, focusStall, smx, smz, size.w, size.h, insetR, insetT, insetB])
+  const selKey = `${view}|${selCar ? `o${selCar.order.id}` : ''}|${selectedBay ?? ''}|${selMember ? `m${selMember.member.id}` : ''}|${recenter}`
 
   const deselect = useCallback(() => {
     onSelectBay?.(null)
+    onViewChange?.('general')
     setUserMoved(false)
     setRecenter((r) => r + 1)
-  }, [onSelectBay])
+  }, [onSelectBay, onViewChange])
+  const selectMember = useCallback(
+    (id: number | null) => {
+      if (id == null) deselect()
+      else onSelectMember?.(id)
+    },
+    [deselect, onSelectMember],
+  )
   const selectOrder = useCallback(
     (id: number | null) => {
       if (id == null) deselect()
@@ -153,7 +242,7 @@ export default function WorkshopCanvas({
   )
   const onUserMove = useCallback(() => setUserMoved(true), [])
 
-  const canReset = hasSelection || userMoved
+  const canReset = hasSelection || userMoved || view === 'bays' || view === 'side'
   useEscape(canReset, deselect)
 
   // Rótulos compactos si los elevadores quedan a menos de ~175 px en pantalla, y los coches en espera, solo un punto
@@ -169,7 +258,9 @@ export default function WorkshopCanvas({
     `Taller 3D, maqueta isométrica: ${sorted.length} ${sorted.length === 1 ? 'elevador' : 'elevadores'} (${occupied} ${occupied === 1 ? 'ocupado' : 'ocupados'}, ` +
     `${sorted.length - occupied} ${sorted.length - occupied === 1 ? 'libre' : 'libres'})` +
     (nPark ? `, ${nPark} ${nPark === 1 ? 'orden' : 'órdenes'} en espera` : '') +
-    (nReady ? `, ${nReady} ${nReady === 1 ? 'lista' : 'listas'} para entregar` : '')
+    (nReady ? `, ${nReady} ${nReady === 1 ? 'lista' : 'listas'} para entregar` : '') +
+    crewSentence(crewAssign) +
+    (storeOrders.length ? `; almacén: ${storeOrders.length} ${storeOrders.length === 1 ? 'orden espera' : 'órdenes esperan'} piezas` : '')
 
   const statuses = useMemo(() => {
     const set = new Set<WorkOrderStatus>()
@@ -178,8 +269,19 @@ export default function WorkshopCanvas({
   }, [cars])
 
   const parked = cars.filter((c) => c.spot.kind !== 'bay')
-  const ids = useMemo(() => [...sorted.map((b) => `bay-${b.number}`), ...parked.map((c) => `car-${c.order.id}`)], [sorted, parked])
+  // Rótulo propio solo para quien no está en un elevador (el del elevador ya dice quién trabaja) y para la persona elegida
+  const labelled = crewAssign.people.filter((p) => p.bay == null || p.member.id === selectedMemberId)
+  const ids = useMemo(
+    () => ['side-store', 'side-diag', ...sorted.map((b) => `bay-${b.number}`), ...parked.map((c) => `car-${c.order.id}`), ...labelled.map((p) => `crew-${p.member.id}`)],
+    [sorted, parked, labelled],
+  )
   const inset = useMemo(() => ({ right: insetR, top: insetT, bottom: insetB }), [insetR, insetT, insetB])
+
+  // Bloom: pantallas grandes y sin movimiento reducido; si falla al compilar, se queda apagado
+  const [bloomFailed, setBloomFailed] = useState(false)
+  const bloom = !reduced && !bloomFailed && size.w >= 640
+
+  const hl = useMemo(() => (highlight ? { orders: new Set(highlight.orders), members: new Set(highlight.members) } : null), [highlight])
 
   return (
     <div ref={wrap} className={cx('relative isolate overflow-hidden', className)}>
@@ -221,7 +323,22 @@ export default function WorkshopCanvas({
             selKey={selKey}
             onUserMove={onUserMove}
             inset={inset}
+            crew={crewAssign}
+            crewSpots={spots}
+            selectedMemberId={selMember?.member.id ?? null}
+            onSelectMember={selectMember}
+            storeActive={storeOrders.length > 0}
+            diagActive={diagOrders.length > 0}
+            highlight={hl}
+            bloom={bloom}
           />
+        )}
+        {focus && overview && bloom && (
+          <EffectsBoundary onError={() => setBloomFailed(true)}>
+            <Suspense fallback={null}>
+              <WorkshopEffects dark={!tokens.light} />
+            </Suspense>
+          </EffectsBoundary>
         )}
       </Canvas>
 
@@ -229,15 +346,26 @@ export default function WorkshopCanvas({
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[24%] backdrop-blur-[2.5px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[22%] backdrop-blur-[3px] [mask-image:linear-gradient(to_top,black,transparent)]" />
 
-      <OverlayLayer store={overlay} ids={ids} label="Elevadores y coches del taller">
+      <OverlayLayer store={overlay} ids={ids} label="Elevadores, coches y equipo del taller">
+        <OverlayItem store={overlay} id="side-store">
+          <StoreLabel orders={storeOrders} compact={compact && view !== 'side'} selectedOrderId={selCar?.order.id ?? null} onSelect={selectOrder} />
+        </OverlayItem>
+        <OverlayItem store={overlay} id="side-diag">
+          <DiagLabel orders={diagOrders} compact={compact && view !== 'side'} selectedOrderId={selCar?.order.id ?? null} onSelect={selectOrder} />
+        </OverlayItem>
         {sorted.map((b) => (
           <OverlayItem key={b.number} store={overlay} id={`bay-${b.number}`}>
-            <BayLabel bay={b} selected={focusBay === b.number} compact={compact} onSelect={selectBay} />
+            <BayLabel bay={b} selected={focusBay === b.number} compact={compact} beacon={crewAssign.beacons.get(b.number) ?? null} onSelect={selectBay} />
           </OverlayItem>
         ))}
         {parked.map((c) => (
           <OverlayItem key={c.order.id} store={overlay} id={`car-${c.order.id}`}>
             <CarLabel order={c.order} zone={c.spot.kind === 'ready' ? 'ready' : 'park'} selected={selCar?.order.id === c.order.id} compact={compact} dot={dots} onSelect={selectOrder} />
+          </OverlayItem>
+        ))}
+        {labelled.map((p) => (
+          <OverlayItem key={p.member.id} store={overlay} id={`crew-${p.member.id}`}>
+            <CrewLabel person={p} selected={selMember?.member.id === p.member.id} dot={dots && view !== 'side'} onSelect={selectMember} />
           </OverlayItem>
         ))}
       </OverlayLayer>
@@ -294,7 +422,11 @@ function FloorLegend({
               {overflowReady > 0 && <>Entrega: se ven {cap.ready} de {cap.ready + overflowReady}.</>}
             </p>
           )}
-          <p className="mt-1.5 text-fg-subtle">Arrastra para desplazarte; rueda o pellizco para acercar. Escape vuelve a la vista general.</p>
+          <p className="mt-1.5 text-fg-subtle">
+            Luz ámbar intermitente en un elevador: coche sin técnico o con su técnico en otro elevador. Luz del almacén: hay órdenes esperando piezas.
+            Las figuras son el equipo, una por persona, según sus órdenes (no hay fichaje).
+          </p>
+          <p className="mt-1.5 text-fg-subtle">Arrastra para desplazarte; rueda o pellizco para acercar. Teclas 1 a 4: vistas. Escape vuelve a la vista general.</p>
         </div>
       )}
       <button
@@ -308,6 +440,19 @@ function FloorLegend({
       </button>
     </div>
   )
+}
+
+/** Resumen del equipo para el texto accesible del lienzo. */
+function crewSentence(c: CrewAssignment): string {
+  if (!c.people.length) return ''
+  const working = c.people.filter((p) => p.status === 'working').length
+  const idle = c.people.length - working
+  const parts: string[] = []
+  if (working) parts.push(`${working} ${working === 1 ? 'persona trabajando' : 'personas trabajando'}`)
+  if (idle) parts.push(`${idle} sin orden en curso`)
+  const waitingTech = [...c.beacons.values()].filter((b) => b.kind === 'awaiting_tech').length
+  if (waitingTech) parts.push(`${waitingTech} ${waitingTech === 1 ? 'coche espera' : 'coches esperan'} técnico`)
+  return `; equipo: ${parts.join(', ')}`
 }
 
 function sameSlots(a: Map<number, Spot>, b: Map<number, Spot>) {
@@ -336,6 +481,14 @@ interface WorldProps {
   selKey: string
   onUserMove: () => void
   inset: { right: number; top: number; bottom: number }
+  crew: CrewAssignment
+  crewSpots: Map<number, CrewSpot>
+  selectedMemberId: number | null
+  onSelectMember: (id: number | null) => void
+  storeActive: boolean
+  diagActive: boolean
+  highlight: { orders: Set<number>; members: Set<number> } | null
+  bloom: boolean
 }
 
 function WorkshopWorld({
@@ -356,6 +509,14 @@ function WorkshopWorld({
   selKey,
   onUserMove,
   inset,
+  crew,
+  crewSpots,
+  selectedMemberId,
+  onSelectMember,
+  storeActive,
+  diagActive,
+  highlight,
+  bloom,
 }: WorldProps) {
   useCanvasLabel(label)
   const pal = useMemo(() => workshopPalette(tokens), [tokens])
@@ -365,6 +526,8 @@ function WorkshopWorld({
   // Objetos que mueve el controlador de tráfico: los coches y los carros de los elevadores
   const [handles] = useState(() => new Map<number, CarHandle>())
   const [carriages] = useState(() => new Map<number, THREE.Object3D>())
+  // Figuras del equipo, por persona (para que los rótulos las sigan mientras caminan)
+  const [figures] = useState(() => new Map<number, THREE.Object3D>())
   const [registerCar] = useState(() => (id: number, h: CarHandle | null) => {
     if (h) handles.set(id, h)
     else handles.delete(id)
@@ -415,27 +578,47 @@ function WorkshopWorld({
           const o = handles.get(d.id)?.root
           return o ? [{ id: d.id, x: o.position.x, z: o.position.z, heading: o.rotation.y, visible: o.visible, length: d.dims.length, width: d.dims.width }] : []
         }),
+      /** Figuras del equipo que hay en la escena (una por persona): id, posición y si se ven. */
+      crew: () => [...figures.entries()].map(([id, o]) => ({ id, x: o.position.x, z: o.position.z, visible: o.visible })),
     }),
-    [markShadows, layout, handles, desired],
+    [markShadows, layout, handles, desired, figures],
   )
   useDevHook('__workshop3d', devExtra)
 
   const [hover, setHover] = useState<string | null>(null)
   useCursor(!!hover, 'pointer', '', gl.domElement)
 
+  const anyFocus = focusBay != null || focusStall != null || selectedMemberId != null
   const anchors: OverlayAnchor[] = useMemo(() => {
-    const list: OverlayAnchor[] = layout.bays.map((b) => {
+    const outOfFilter = (orderId: number | null | undefined) => !!highlight && (orderId == null || !highlight.orders.has(orderId))
+    const list: OverlayAnchor[] = [
+      {
+        id: 'side-store',
+        position: [layout.side.store.x, 2.25, layout.side.store.z],
+        pivot: 'bottom',
+        priority: storeActive ? 4 : 1,
+        dim: anyFocus || !!highlight,
+      },
+      {
+        id: 'side-diag',
+        position: [layout.side.diag.x, 1.85, layout.side.diag.z],
+        pivot: 'bottom',
+        priority: diagActive ? 3 : 1,
+        dim: anyFocus || !!highlight,
+      },
+    ]
+    for (const b of layout.bays) {
       const bay = bays.find((x) => x.number === b.number)
       const sel = focusBay === b.number
-      return {
+      list.push({
         id: `bay-${b.number}`,
         position: [b.x - POST_X * 0.2, POST_H + 0.45, b.z],
         pivot: 'bottom',
         priority: sel ? 10 : bay?.work_order ? 3 : 2,
         fixed: sel,
-        dim: (focusBay != null || focusStall != null) && !sel,
-      }
-    })
+        dim: (anyFocus && !sel) || (!sel && outOfFilter(bay?.work_order?.id)),
+      })
+    }
     for (const c of cars) {
       if (c.spot.kind === 'bay') continue
       const id = c.order.id
@@ -448,11 +631,25 @@ function WorkshopWorld({
         pivot: 'bottom',
         priority: sel ? 9 : 1,
         fixed: sel,
-        dim: (focusBay != null || focusStall != null) && !sel,
+        dim: (anyFocus && !sel) || (!sel && outOfFilter(id)),
+      })
+    }
+    for (const p of crew.people) {
+      const id = p.member.id
+      const sel = selectedMemberId === id
+      if (p.bay != null && !sel) continue
+      list.push({
+        id: `crew-${id}`,
+        position: [0, 1.95, 0],
+        track: () => figures.get(id),
+        pivot: 'bottom',
+        priority: sel ? 9 : 1,
+        fixed: sel,
+        dim: (anyFocus && !sel) || (!!highlight && !sel && !highlight.members.has(id)),
       })
     }
     return list
-  }, [layout, bays, cars, focusBay, focusStall, selectedOrderId, handles])
+  }, [layout, bays, cars, focusBay, selectedOrderId, handles, crew, selectedMemberId, figures, anyFocus, highlight, storeActive, diagActive])
 
   const selStallPose = focusStall ? spotPose(layout, focusStall, 'received') : null
   const selBayPos = focusBay != null ? layout.bays.find((b) => b.number === focusBay) : null
@@ -463,21 +660,14 @@ function WorkshopWorld({
     const [kind, raw] = hover.split('-')
     const n = Number(raw)
     if (kind === 'bay') return { kind: 'bay', bay: n }
+    if (kind !== 'car') return null
     return cars.find((c) => c.order.id === n)?.spot ?? null
   }, [hover, cars])
   const hoverBay = hoverSpot?.kind === 'bay' && hoverSpot.bay !== focusBay ? layout.bays.find((b) => b.number === hoverSpot.bay) : null
   const hoverStall = hoverSpot && hoverSpot.kind !== 'bay' && !sameSpot(hoverSpot, focusStall) ? spotPose(layout, hoverSpot, 'received') : null
 
-  // Mecánicos: una figura por elevador cuya orden tiene persona asignada y está en diagnóstico o en reparación
-  const crew = useMemo(
-    () =>
-      layout.bays.flatMap((b) => {
-        const o = bays.find((x) => x.number === b.number)?.work_order
-        if (!o || !o.assigned_to || !isBeingWorked(o.status)) return []
-        return [{ bay: b, orderId: o.id, userId: o.assigned_to.id, task: o.status === 'in_progress' ? ('repair' as const) : ('diagnose' as const) }]
-      }),
-    [layout, bays],
-  )
+  const aisleZ = layout.bayZ + BAY_D / 2 + LANE_GAP / 2
+  const boost = bloom ? BLOOM_BOOST : 1
   const lightBox = useMemo(
     () => ({ x0: layout.minX - 2, x1: layout.apronX + 3, z0: layout.backZ - 3, z1: layout.frontZ + 1, y0: -SLAB_H, y1: WALL_H + 1.6 }),
     [layout],
@@ -488,7 +678,8 @@ function WorkshopWorld({
     <>
       <color attach="background" args={[pal.background]} />
       <StudioLights box={lightBox} pal={pal} small={gl.domElement.clientWidth < 640} />
-      <Diorama layout={layout} pal={pal} />
+      <Diorama layout={layout} pal={pal} boost={boost} />
+      <SideZone layout={layout} pal={pal} tokens={tokens} storeActive={storeActive} diagActive={diagActive} reduced={reduced} boost={boost} />
       {layout.bays.map((b) => {
         const bay = bays.find((x) => x.number === b.number)
         const st = bay?.work_order ? WORK_ORDER_STATUS[bay.work_order.status] : null
@@ -500,6 +691,9 @@ function WorkshopWorld({
             z={b.z}
             pal={pal}
             lamp={st ? toneColor(st.tone, tokens) : pal.postDark}
+            glow={st ? boost : 1}
+            beacon={crew.beacons.get(b.number) ?? null}
+            reduced={reduced}
             register={(o) => {
               if (o) carriages.set(b.number, o)
               else carriages.delete(b.number)
@@ -509,34 +703,60 @@ function WorkshopWorld({
           />
         )
       })}
-      {cars.map((c) => (
-        <CarMesh
-          key={c.order.id}
-          id={c.order.id}
-          body={resolveBody(c.order.vehicle.body_type)}
-          color={clayColor(c.order.vehicle.color_hex, c.order.vehicle.id)}
-          register={registerCar}
-          onSelect={() => onSelectOrder(selectedOrderId === c.order.id ? null : c.order.id)}
-          onHover={(on) => setHover(on ? `car-${c.order.id}` : null)}
-        />
-      ))}
+      {cars.map((c) => {
+        const color = clayColor(c.order.vehicle.color_hex, c.order.vehicle.id)
+        const dimmed = !!highlight && !highlight.orders.has(c.order.id) && selectedOrderId !== c.order.id
+        return (
+          <CarMesh
+            key={c.order.id}
+            id={c.order.id}
+            body={resolveBody(c.order.vehicle.body_type)}
+            color={dimmed ? dimColor(color, pal.background) : color}
+            register={registerCar}
+            onSelect={() => onSelectOrder(selectedOrderId === c.order.id ? null : c.order.id)}
+            onHover={(on) => setHover(on ? `car-${c.order.id}` : null)}
+          />
+        )
+      })}
       <BayLights layout={layout} bays={bays} pal={pal} />
-      {crew.map((m) => (
-        <Mechanic
-          key={m.orderId}
-          {...mechanicSpot(m.bay)}
-          color={overallColor(m.userId)}
-          task={m.task}
-          reduced={reduced}
-          hovered={hover === `mech-${m.orderId}`}
-          ready={() => {
-            const o = handles.get(m.orderId)?.root
-            return !!o && o.visible && Math.abs(o.position.x - m.bay.x) < 0.08 && Math.abs(o.position.z - m.bay.z) < 0.08
-          }}
-          onSelect={() => onSelectOrder(selectedOrderId === m.orderId ? null : m.orderId)}
-          onHover={(on) => setHover(on ? `mech-${m.orderId}` : null)}
-        />
-      ))}
+      {crew.people.map((p) => {
+        const id = p.member.id
+        const spot = crewSpots.get(id)
+        if (!spot) return null
+        const bay = p.bay != null ? layout.bays.find((b) => b.number === p.bay) : null
+        const orderId = p.orderId
+        return (
+          <Mechanic
+            key={id}
+            x={spot.x}
+            z={spot.z}
+            heading={spot.heading}
+            color={overallColor(id)}
+            task={bay ? (p.task ?? 'idle') : 'idle'}
+            reduced={reduced}
+            hovered={hover === `mech-${id}`}
+            selected={selectedMemberId === id}
+            selectColor={tokens.accent}
+            dim={!!highlight && !highlight.members.has(id)}
+            aisleZ={aisleZ}
+            phaseSeed={id}
+            register={(o) => {
+              if (o) figures.set(id, o)
+              else figures.delete(id)
+            }}
+            ready={
+              bay && orderId != null
+                ? () => {
+                    const o = handles.get(orderId)?.root
+                    return !!o && o.visible && Math.abs(o.position.x - bay.x) < 0.08 && Math.abs(o.position.z - bay.z) < 0.08
+                  }
+                : undefined
+            }
+            onSelect={() => onSelectMember(selectedMemberId === id ? null : id)}
+            onHover={(on) => setHover(on ? `mech-${id}` : null)}
+          />
+        )
+      })}
       {hoverBay && <SelectionOutline kind="bay" x={hoverBay.x} z={hoverBay.z} color="#ffffff" opacity={0.5} />}
       {hoverStall && <SelectionOutline kind="stall" x={hoverStall.x} z={hoverStall.z} color="#ffffff" opacity={0.5} />}
       {selBayPos && <SelectionOutline kind="bay" x={selBayPos.x} z={selBayPos.z} color={tokens.accent} />}
@@ -588,15 +808,22 @@ function BayLights({ layout, bays, pal }: { layout: FloorLayout; bays: Bay[]; pa
   )
 }
 
-function Diorama({ layout, pal }: { layout: FloorLayout; pal: WorkshopPalette }) {
+/** Color de un coche que no coincide con el filtro: se funde con el fondo. */
+function dimColor(color: string, background: string): string {
+  return `#${new THREE.Color(color).lerp(new THREE.Color(background), 0.62).getHexString()}`
+}
+
+function Diorama({ layout, pal, boost }: { layout: FloorLayout; pal: WorkshopPalette; boost: number }) {
   const statics = useMemo(() => buildWorkshopStatic(layout, pal), [layout, pal])
   const marks = useMemo(() => buildFloorPaint(layout, pal), [layout, pal])
   const glow = useMemo(() => buildGlow(layout, pal), [layout, pal])
-  const glowMat = useMemo(() => new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }), [])
+  // Con bloom, el trazo pasa de 1 y florece; el halo pintado se queda a la mitad (el bloom ya da el resplandor)
+  const glowMat = useMemo(() => new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, color: new THREE.Color(boost, boost, boost) }), [boost])
   const haloMat = useMemo(() => {
     const map = haloTexture()
-    return map ? new THREE.MeshBasicMaterial({ map, vertexColors: true, transparent: true, opacity: pal.halo, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }) : null
-  }, [pal.halo])
+    const opacity = boost > 1 ? pal.halo * 0.5 : pal.halo
+    return map ? new THREE.MeshBasicMaterial({ map, vertexColors: true, transparent: true, opacity, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }) : null
+  }, [pal.halo, boost])
   useEffect(
     () => () => {
       glow.core.dispose()
@@ -673,16 +900,95 @@ function Diorama({ layout, pal }: { layout: FloorLayout; pal: WorkshopPalette })
 
 const lampGeo = new THREE.SphereGeometry(0.13, 16, 10)
 const lampCache = new Map<string, THREE.MeshStandardMaterial>()
-function lampMaterial(color: string) {
-  let m = lampCache.get(color)
+/** Lámpara de estado del elevador; con `glow` > 1 (bloom activo) brilla por encima del umbral y florece. */
+function lampMaterial(color: string, glow = 1) {
+  const key = `${color}|${glow}`
+  let m = lampCache.get(key)
   if (!m) {
-    m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55, roughness: 0.5, metalness: 0 })
-    lampCache.set(color, m)
+    m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.55 * glow, roughness: 0.5, metalness: 0 })
+    lampCache.set(key, m)
   }
   return m
 }
 const PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
 const unitBox = new THREE.BoxGeometry(1, 1, 1)
+
+// ───────────────────────── Balizas (coche sin técnico) y lateral ─────────────────────────
+
+const BEACON = '#f5a70b'
+const beaconGeo = new THREE.CylinderGeometry(0.11, 0.13, 0.24, 16)
+const beaconCapGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16)
+
+/**
+ * Luz intermitente ámbar (se apaga y se enciende 1 vez por segundo). Pide fotogramas solo mientras existe y no hay
+ * movimiento reducido (entonces queda encendida fija). `strength` > 1 la hace florecer con el bloom.
+ */
+function BlinkLight({ position, strength, reduced, geometry = beaconGeo, color = BEACON }: { position: [number, number, number]; strength: number; reduced: boolean; geometry?: THREE.BufferGeometry; color?: string }) {
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(strength), toneMapped: false }), [color, strength])
+  useEffect(() => () => mat.dispose(), [mat])
+  const base = useMemo(() => new THREE.Color(color).multiplyScalar(strength), [color, strength])
+  const off = useMemo(() => new THREE.Color(color).multiplyScalar(0.25), [color])
+  useFrame((state) => {
+    if (reduced) {
+      mat.color.copy(base)
+      return
+    }
+    const k = 0.5 + 0.5 * Math.sin(state.clock.elapsedTime * Math.PI * 2)
+    mat.color.copy(off).lerp(base, k * k)
+    state.invalidate()
+  })
+  return <mesh geometry={geometry} material={mat} position={position} renderOrder={2} />
+}
+
+const screenGeo = new THREE.PlaneGeometry(0.68, 0.42)
+
+/**
+ * Lateral del fondo: pantalla del terminal de diagnóstico (encendida si hay coches en diagnóstico, en reposo si no)
+ * y luz del almacén (intermitente si alguna orden espera piezas; apagada si no). La estantería y el armario son
+ * geometría estática de `kit.ts`.
+ */
+function SideZone({
+  layout,
+  pal,
+  tokens,
+  storeActive,
+  diagActive,
+  reduced,
+  boost,
+}: {
+  layout: FloorLayout
+  pal: WorkshopPalette
+  tokens: ThemeTokens
+  storeActive: boolean
+  diagActive: boolean
+  reduced: boolean
+  boost: number
+}) {
+  const screenMat = useMemo(() => {
+    const c = new THREE.Color(diagActive ? '#38bdf8' : '#1f3346')
+    if (diagActive) c.multiplyScalar(boost * 0.9)
+    return new THREE.MeshBasicMaterial({ color: c, toneMapped: false })
+  }, [diagActive, boost])
+  useEffect(() => () => screenMat.dispose(), [screenMat])
+  const d = layout.side.diag
+  const s = layout.side.store
+  return (
+    <group>
+      <mesh
+        geometry={screenGeo}
+        material={screenMat}
+        position={[d.x, DIAG_SCREEN_Y + Math.sin(-DIAG_SCREEN_TILT) * 0.035, d.z - 0.04 + Math.cos(DIAG_SCREEN_TILT) * 0.035]}
+        rotation-x={DIAG_SCREEN_TILT}
+      />
+      {storeActive ? (
+        <BlinkLight position={[s.x, 2.17, s.z]} strength={boost * 1.1} reduced={reduced} />
+      ) : (
+        <mesh geometry={beaconGeo} material={lampMaterial(pal.postDark)} position={[s.x, 2.17, s.z]} />
+      )}
+      <mesh geometry={beaconCapGeo} material={lampMaterial(tokens.light ? '#3a3f4b' : '#20242c')} position={[s.x, 2.31, s.z]} />
+    </group>
+  )
+}
 
 function Lift({
   number,
@@ -690,6 +996,9 @@ function Lift({
   z,
   pal,
   lamp,
+  glow,
+  beacon,
+  reduced,
   register,
   onSelect,
   onHover,
@@ -699,6 +1008,11 @@ function Lift({
   z: number
   pal: WorkshopPalette
   lamp: string
+  /** Factor de brillo de la lámpara (bloom). */
+  glow: number
+  /** Coche sin técnico (o con su técnico en otro elevador): baliza ámbar sobre la columna derecha. */
+  beacon: BayBeacon | null
+  reduced: boolean
   register: (o: THREE.Object3D | null) => void
   onSelect: () => void
   onHover: (on: boolean) => void
@@ -707,7 +1021,8 @@ function Lift({
   return (
     <group>
       <mesh ref={register} name={`elevador-${number}`} geometry={carriage} material={clayVertex()} position={[x, 0, z]} castShadow receiveShadow />
-      <mesh geometry={lampGeo} material={lampMaterial(lamp)} position={[x - POST_X, POST_H + 0.22, z]} />
+      <mesh geometry={lampGeo} material={lampMaterial(lamp, glow)} position={[x - POST_X, POST_H + 0.22, z]} />
+      {beacon && <BlinkLight position={[x + POST_X, POST_H + 0.25, z]} strength={Math.max(glow, 1)} reduced={reduced} />}
       {/* Zona de clic (invisible): la plaza del elevador */}
       <mesh
         geometry={unitBox}

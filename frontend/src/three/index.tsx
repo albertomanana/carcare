@@ -26,6 +26,9 @@ const GarageDioramaCanvas = lazy(() => import('./scenes/GarageDioramaCanvas'))
 const HeroCanvas = lazy(() => import('./scenes/HeroCanvas'))
 
 export { useWebGLAvailable } from './env'
+/** Equipo del taller (lógica pura, sin three.js): una persona en un solo sitio, balizas y frases para la ficha y la lista. */
+export { assignCrew, beaconText, crewStatusText, roleLabel } from './scenes/workshop/crew'
+export type { BayBeacon, CrewAssignment, CrewPlacement } from './scenes/workshop/crew'
 
 /**
  * Coche 3D principal (ficha del vehículo). El lienzo, y con él la descarga de three.js, se monta cuando la sección

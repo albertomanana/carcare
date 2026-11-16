@@ -362,3 +362,25 @@ describe('mecánico del elevador', () => {
     }
   })
 })
+
+describe('lateral del fondo: almacén, diagnóstico y equipo', () => {
+  it('queda a la izquierda del primer elevador, dentro de la nave y por detrás de la calzada', async () => {
+    const { computeFloorLayout, BAY_W, BAY_D, LANE_W, MECHANIC_R } = await import('./layout')
+    for (const n of [1, 3, 4, 8, 12]) {
+      const L = computeFloorLayout(Array.from({ length: n }, (_, i) => i + 1))
+      const firstBayEdge = L.bays[0].x - BAY_W / 2
+      expect(L.side.x1).toBeCloseTo(firstBayEdge)
+      expect(L.side.x1 - L.side.x0).toBeGreaterThanOrEqual(5.4)
+      const pts = [L.side.diag, { x: L.side.store.x - L.side.store.length / 2, z: L.side.store.z }, { x: L.side.store.x + L.side.store.length / 2, z: L.side.store.z }, ...L.side.crew]
+      for (const p of pts) {
+        expect(p.x).toBeGreaterThan(L.minX)
+        expect(p.x).toBeLessThan(firstBayEdge - 0.5)
+        expect(p.z).toBeGreaterThan(L.backZ)
+        // lejos de la boca de los elevadores y de la calzada (por donde maniobran los coches)
+        expect(p.z + MECHANIC_R).toBeLessThan(L.bayZ + BAY_D / 2)
+        expect(p.z).toBeLessThan(L.laneZ - LANE_W / 2)
+      }
+      expect(L.side.crew.length).toBeGreaterThanOrEqual(4)
+    }
+  })
+})

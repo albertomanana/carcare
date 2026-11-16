@@ -4,6 +4,7 @@
  */
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Bay, WorkOrder, Zone, ZoneStatus } from '@/api/types'
+import { overallColor } from '@/lib/mechanic'
 import { WORK_ORDER_STATUS } from '@/lib/status'
 import type { CarAppearance, CarViewerProps, GarageSceneProps, WorkshopSceneProps } from './types'
 import { getCarLayout } from './car/anchors'
@@ -14,6 +15,7 @@ import { CarSilhouette } from './silhouette/CarSilhouette'
 import { describeCar } from './silhouette/describe'
 import { getSilhouettePaths } from './silhouette/paths'
 import { vehicleAria } from './scenes/garage/layout'
+import { assignCrew, beaconText, crewStatusText } from './scenes/workshop/crew'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -102,10 +104,25 @@ export function ZoneMap2D({
   )
 }
 
-/** Taller sin WebGL: rejilla de elevadores como botones, y debajo la espera y la entrega (misma información que la maqueta). */
-export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrderId = null, onSelectBay, onSelectOrder, className }: WorkshopSceneProps) {
+/**
+ * Taller sin WebGL: rejilla de elevadores como botones (con quién trabaja o la baliza «En espera de técnico»), debajo la
+ * espera, la entrega y el equipo (misma información que la maqueta).
+ */
+export function Workshop2D({
+  bays,
+  waiting = [],
+  selectedBay = null,
+  selectedOrderId = null,
+  onSelectBay,
+  onSelectOrder,
+  crew = null,
+  selectedMemberId = null,
+  onSelectMember,
+  className,
+}: WorkshopSceneProps) {
   const parked = waiting.filter((o) => o.status !== 'ready')
   const ready = waiting.filter((o) => o.status === 'ready')
+  const team = assignCrew(crew, bays, waiting)
   const group = (title: string, list: WorkOrder[]) =>
     list.length > 0 && (
       <div>
@@ -139,6 +156,7 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrd
           const o = b.work_order
           const st = o ? WORK_ORDER_STATUS[o.status] : null
           const sel = selectedBay === b.number || (o != null && selectedOrderId === o.id)
+          const beacon = team.beacons.get(b.number) ?? null
           return (
             <li key={b.number}>
               <button
@@ -157,6 +175,11 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrd
                     <span className="tabular text-fg-muted">{o.number}</span>
                     <span className="truncate text-sm font-medium text-fg">{o.vehicle.display_name}</span>
                     {st && <span className="text-fg-muted">{st.label}</span>}
+                    {beacon ? (
+                      <span className="font-medium text-warning">{beaconText(beacon)}</span>
+                    ) : (
+                      o.assigned_to && <span className="truncate text-fg-muted">{o.assigned_to.name}</span>
+                    )}
                   </>
                 ) : (
                   <span className="py-4 text-fg-subtle">Libre</span>
@@ -168,6 +191,34 @@ export function Workshop2D({ bays, waiting = [], selectedBay = null, selectedOrd
       </ul>
       {group('En espera', parked)}
       {group('Listas para entregar', ready)}
+      {team.people.length > 0 && (
+        <div>
+          <p className="mb-1 text-xs font-medium text-fg-muted">Equipo</p>
+          <ul className="flex flex-wrap gap-2">
+            {team.people.map((p) => {
+              const sel = selectedMemberId === p.member.id
+              return (
+                <li key={p.member.id}>
+                  <button
+                    type="button"
+                    aria-pressed={sel}
+                    onClick={() => (sel ? onSelectBay?.(null) : onSelectMember?.(p.member.id))}
+                    className={cx(
+                      'flex min-h-12 items-center gap-2 rounded-control border px-3 text-left text-sm text-fg',
+                      sel ? 'border-accent bg-accent-soft' : 'border-line-strong/45 bg-surface-2',
+                    )}
+                  >
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: overallColor(p.member.id) }} aria-hidden />
+                    <span>
+                      {p.member.name} · <span className="text-fg-muted">{crewStatusText(p)}</span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
