@@ -35,6 +35,10 @@ class MaintenanceRecordResource extends ApiResource
             'items' => LineItemResource::collection($record->items),
             'expense_id' => $record->expense?->id,
             'work_order_id' => $record->workOrder?->id,
+            'from_order' => $record->work_order_number === null ? null : [
+                'number' => $record->work_order_number,
+                'repair_request_id' => $record->repair_request_id,
+            ],
             'documents_count' => (int) $record->documents_count,
             'archived_at' => self::iso($record->archived_at),
             'created_at' => self::iso($record->created_at),

@@ -191,6 +191,8 @@ class WorkOrderService
                 $order->save();
                 $record = $this->maintenance->createFromWorkOrder($order);
                 $order->maintenance_record_id = $record->id;
+                // Si la orden nació de una solicitud, queda también en el historial y los gastos del particular (§3.5.1)
+                $this->maintenance->createFromDeliveredRequest($order);
             }
 
             $order->save();

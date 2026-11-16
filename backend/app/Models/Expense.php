@@ -17,7 +17,7 @@ class Expense extends Model
 
     protected $fillable = [
         'vehicle_id', 'maintenance_record_id', 'category', 'description', 'amount', 'currency',
-        'expense_date', 'mileage', 'fuel_quantity', 'fuel_unit', 'full_tank',
+        'expense_date', 'mileage', 'fuel_quantity', 'fuel_unit', 'full_tank', 'recurrence_months', 'reminder_id',
     ];
 
     protected function casts(): array
@@ -30,6 +30,7 @@ class Expense extends Model
             'fuel_quantity' => 'decimal:2',
             'fuel_unit' => FuelUnit::class,
             'full_tank' => 'boolean',
+            'recurrence_months' => 'integer',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
@@ -43,6 +44,12 @@ class Expense extends Model
     public function maintenanceRecord(): BelongsTo
     {
         return $this->belongsTo(MaintenanceRecord::class);
+    }
+
+    /** Recordatorio de la próxima renovación de un gasto periódico (§3.6.1). */
+    public function reminder(): BelongsTo
+    {
+        return $this->belongsTo(Reminder::class);
     }
 
     /** Lo gestiona una intervención: no se edita ni borra desde Gastos (409). */

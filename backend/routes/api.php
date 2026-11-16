@@ -68,6 +68,7 @@ Route::prefix('v1')->group(function () {
             Route::get('activity', [WorkspaceOverviewController::class, 'activity'])->can('view', 'workspace');
             Route::get('reminders', [WorkspaceOverviewController::class, 'reminders'])->can('view', 'workspace');
             Route::get('analytics', [WorkspaceOverviewController::class, 'analytics'])->can('manage', 'workspace');
+            Route::get('analytics/month', [WorkspaceOverviewController::class, 'analyticsMonth'])->can('manage', 'workspace');
 
             Route::get('vehicles', [VehicleController::class, 'index'])->can('view', 'workspace');
             Route::post('vehicles', [VehicleController::class, 'store'])->can('operate', 'workspace');

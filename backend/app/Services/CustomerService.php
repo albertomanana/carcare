@@ -15,7 +15,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Clientes del taller, con los derechos RGPD del contrato §3.10.1 (ADR‑0005): exportar sus datos y
+ * Clientes del taller, con los derechos RGPD del contrato §4.1 (ADR‑0005): exportar sus datos y
  * anonimizarlo. El nombre del cliente solo aparece en la frase de `customer.created`, y se quita de
  * ahí al anonimizarlo o eliminarlo.
  */

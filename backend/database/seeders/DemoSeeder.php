@@ -470,6 +470,23 @@ class DemoSeeder extends Seeder
                 $this->topUpPersonalVehicle($ws, $user, $key, $vehicle, $spec);
             }
             $this->repairDocumentFiles($vehicle);
+            $this->linkInsuranceRenewal($vehicle);
+        }
+    }
+
+    /**
+     * Fase 4 (§3.6.1): el seguro anual de la demo es un gasto periódico y el último pago queda unido al recordatorio
+     * «Renovar el seguro». Idempotente: solo toca lo que aún no está marcado.
+     */
+    private function linkInsuranceRenewal(Vehicle $vehicle): void
+    {
+        Expense::query()->where('vehicle_id', $vehicle->id)->where('category', 'insurance')->whereNull('recurrence_months')
+            ->update(['recurrence_months' => 12]);
+
+        $reminder = Reminder::query()->where('vehicle_id', $vehicle->id)->where('kind', 'insurance')->where('status', 'pending')->orderBy('due_date')->first();
+        $last = Expense::query()->where('vehicle_id', $vehicle->id)->where('category', 'insurance')->orderByDesc('expense_date')->first();
+        if ($reminder !== null && $last !== null && $last->reminder_id === null) {
+            $last->forceFill(['reminder_id' => $reminder->id])->saveQuietly();
         }
     }
 

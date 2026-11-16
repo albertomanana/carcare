@@ -24,6 +24,7 @@ function resourceEndpoints(): array
         'actividad' => ['GET', '/workspaces/{pws}/activity'],
         'agenda de recordatorios' => ['GET', '/workspaces/{pws}/reminders'],
         'analítica' => ['GET', '/workspaces/{pws}/analytics'],
+        'detalle de un mes de la analítica' => ['GET', '/workspaces/{pws}/analytics/month'],
         'listar vehículos' => ['GET', '/workspaces/{pws}/vehicles'],
         'crear vehículo' => ['POST', '/workspaces/{pws}/vehicles'],
         'listar clientes' => ['GET', '/workspaces/{wws}/customers'],

@@ -399,6 +399,17 @@ it('WorkspaceAnalytics personal y de taller', function () {
         ->and($workshop->json('data.by_vehicle'))->not->toBeEmpty();
 });
 
+it('AnalyticsMonth personal y de taller', function () {
+    $w = contractWorld();
+    $month = now()->format('Y-m');
+
+    $personal = expectShape($this->getJson("/api/v1/workspaces/{$w->pws->id}/analytics/month?month={$month}")->assertOk(), Contract::analyticsMonth());
+    expect($personal->json('data.orders'))->toBe([]);
+
+    $workshop = expectShape($this->getJson("/api/v1/workspaces/{$w->wws->id}/analytics/month?month={$month}")->assertOk(), Contract::analyticsMonth());
+    expect($workshop->json('data.expenses'))->toBe([]);
+});
+
 // ───────────────────────── E16: directorio, solicitudes y notificaciones (§3.13) ─────────────────────────
 
 it('las entradas de E16 validan exactamente los campos de types.ts', function (string $interface, string $request) {

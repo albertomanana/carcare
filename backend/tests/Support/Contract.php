@@ -311,6 +311,7 @@ final class Contract
             'items' => self::listOf(self::lineItem()),
             'expense_id' => '?int',
             'work_order_id' => '?int',
+            'from_order' => self::nullable(['number' => 'string', 'repair_request_id' => '?int']),
             'documents_count' => 'int',
             'archived_at' => '?datetime',
             'created_at' => 'datetime',
@@ -332,11 +333,14 @@ final class Contract
         ];
     }
 
-    public static function expense(): array
+    public static function expense(bool $withVehicle = false): array
     {
-        return [
-            'id' => 'int',
-            'vehicle_id' => 'int',
+        $head = ['id' => 'int', 'vehicle_id' => 'int'];
+        if ($withVehicle) {
+            $head['vehicle'] = self::vehicleRef();
+        }
+
+        return $head + [
             'category' => self::enum(ExpenseCategory::class),
             'description' => '?string',
             'amount' => 'money',
@@ -348,6 +352,24 @@ final class Contract
             'full_tank' => '?bool',
             'maintenance_record_id' => '?int',
             'is_linked' => 'bool',
+            'recurrence_months' => '?int',
+            'renewal' => self::nullable([
+                'reminder_id' => 'int',
+                'title' => 'string',
+                'due_date' => '?date',
+                'status' => self::enum(ReminderStatus::class),
+            ]),
+            'origin' => self::nullable([
+                'record_id' => 'int',
+                'title' => 'string',
+                'type' => self::enum(RecordType::class),
+                'workshop_name' => '?string',
+                'parts_cost' => '?money',
+                'labor_cost' => '?money',
+                'tax_amount' => '?money',
+                'work_order_number' => '?string',
+                'repair_request_id' => '?int',
+            ]),
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -640,6 +662,32 @@ final class Contract
         ];
     }
 
+    public static function analyticsMonth(): array
+    {
+        return [
+            'month' => 'month',
+            'total' => 'money',
+            'previous' => ['month' => 'month', 'total' => 'money'],
+            'change_pct' => '?number',
+            'by_category' => self::listOf(self::byCategory()),
+            'expenses' => self::listOf(self::expense(true)),
+            'orders' => self::listOf(self::analyticsMonthOrder()),
+        ];
+    }
+
+    public static function analyticsMonthOrder(): array
+    {
+        return [
+            'id' => 'int',
+            'number' => 'string',
+            'title' => 'string',
+            'total' => 'money',
+            'delivered_at' => 'datetime',
+            'vehicle' => self::vehicleRef(),
+            'customer' => self::nullable(self::customerRef()),
+        ];
+    }
+
     public static function workspaceAnalytics(): array
     {
         return [
@@ -849,7 +897,7 @@ final class Contract
             'MileageLog' => self::mileageLog(),
             'LineItem' => self::lineItem(),
             'MaintenanceRecord' => self::maintenanceRecord(),
-            'Expense' => self::expense(),
+            'Expense' => self::expense(true),
             'Reminder' => self::reminder(true),
             'CompleteReminderResult' => self::completeReminderResult(),
             'ZoneStatus' => self::zoneStatus(),
@@ -866,6 +914,8 @@ final class Contract
             'PersonalDashboard' => self::personalDashboard(),
             'WorkshopDashboard' => self::workshopDashboard(),
             'WorkspaceAnalytics' => self::workspaceAnalytics(),
+            'AnalyticsMonth' => self::analyticsMonth(),
+            'AnalyticsMonthOrder' => self::analyticsMonthOrder(),
             'PageMeta' => self::pageMeta(),
             'DirectoryProfile' => self::directoryProfile(),
             'DirectoryWorkshop' => self::directoryWorkshop(),

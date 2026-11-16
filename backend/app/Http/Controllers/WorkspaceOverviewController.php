@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ListRequest;
+use App\Http\Requests\MonthRequest;
 use App\Http\Requests\PeriodRequest;
 use App\Http\Requests\Reminder\ReminderIndexRequest;
 use App\Http\Resources\ActivityResource;
@@ -72,5 +73,11 @@ class WorkspaceOverviewController extends Controller
         [$from, $to] = $request->period(fn (CarbonImmutable $to) => $to->startOfMonth()->subMonths(11));
 
         return $this->data($analytics->forWorkspace($workspace, $from, $to));
+    }
+
+    /** Detalle de un mes de la analítica (`?month=YYYY-MM`). Solo manage. */
+    public function analyticsMonth(MonthRequest $request, Workspace $workspace, AnalyticsService $analytics): JsonResponse
+    {
+        return $this->data($analytics->month($workspace, $request->month()));
     }
 }

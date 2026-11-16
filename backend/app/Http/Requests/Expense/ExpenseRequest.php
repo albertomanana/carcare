@@ -4,6 +4,8 @@ namespace App\Http\Requests\Expense;
 
 use App\Enums\ExpenseCategory;
 use App\Enums\FuelUnit;
+use App\Enums\RecordType;
+use App\Enums\Zone;
 use App\Http\Requests\ApiRequest;
 use App\Models\Expense;
 use Illuminate\Validation\Rule;
@@ -29,6 +31,16 @@ class ExpenseRequest extends ApiRequest
             'fuel_unit' => ['sometimes', 'nullable', Rule::enum(FuelUnit::class)],
             'full_tank' => ['sometimes', 'nullable', 'boolean'],
             'confirm_mileage_drop' => ['sometimes', 'boolean'],
+            // Gasto periódico (§3.6.1): mensual, trimestral, semestral o anual, con su próxima renovación
+            'recurrence_months' => ['sometimes', 'nullable', 'integer', Rule::in([1, 3, 6, 12])],
+            'next_due_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            // Asociar a una intervención sin coste o crearla en el mismo paso (solo al crear el gasto)
+            'maintenance_record_id' => ['sometimes', 'nullable', 'integer', 'prohibits:record'],
+            'record' => ['sometimes', 'nullable', 'array'],
+            'record.title' => ['required_with:record', 'string', 'min:2', 'max:120'],
+            'record.type' => ['sometimes', 'nullable', Rule::enum(RecordType::class)],
+            'record.zone' => ['sometimes', 'nullable', Rule::enum(Zone::class)],
+            'record.workshop_name' => ['sometimes', 'nullable', 'string', 'max:120'],
         ];
     }
 

@@ -13,7 +13,7 @@ class Customer extends Model
     /** @use HasFactory<CustomerFactory> */
     use HasFactory;
 
-    /** Nombre que queda al anonimizar (contrato §3.10.1). */
+    /** Nombre que queda al anonimizar (contrato §4.1). */
     public const ANONYMIZED_NAME = 'Cliente anonimizado';
 
     /** `anonymized_at` no es asignable en masa: solo lo fija CustomerService::anonymize. */

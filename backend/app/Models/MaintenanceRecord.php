@@ -22,6 +22,7 @@ class MaintenanceRecord extends Model
     protected $fillable = [
         'vehicle_id', 'type', 'zone', 'service_kind', 'title', 'description', 'service_date',
         'mileage', 'workshop_name', 'parts_cost', 'labor_cost', 'total_cost', 'currency', 'archived_at',
+        'repair_request_id', 'work_order_number',
     ];
 
     protected function casts(): array
@@ -61,6 +62,12 @@ class MaintenanceRecord extends Model
     public function workOrder(): HasOne
     {
         return $this->hasOne(WorkOrder::class);
+    }
+
+    /** Solicitud de reparación cuya orden, al entregarse, dejó esta intervención en el garaje del particular (§3.5.1). */
+    public function repairRequest(): BelongsTo
+    {
+        return $this->belongsTo(RepairRequest::class);
     }
 
     public function documents(): HasMany

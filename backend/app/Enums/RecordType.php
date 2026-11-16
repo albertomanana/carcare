@@ -13,6 +13,7 @@ enum RecordType: string
     case Inspection = 'inspection';
     case Tyres = 'tyres';
     case Bodywork = 'bodywork';
+    case Modification = 'modification';
     case Other = 'other';
 
     public function label(): string
@@ -24,6 +25,7 @@ enum RecordType: string
             self::Inspection => 'Inspección',
             self::Tyres => 'Neumáticos',
             self::Bodywork => 'Carrocería',
+            self::Modification => 'Modificación',
             self::Other => 'Otro',
         };
     }
@@ -34,6 +36,7 @@ enum RecordType: string
         return match ($this) {
             self::Repair, self::Breakdown, self::Bodywork => ExpenseCategory::Repair,
             self::Inspection => ExpenseCategory::Inspection,
+            self::Modification => ExpenseCategory::Modification,
             default => ExpenseCategory::Maintenance,
         };
     }

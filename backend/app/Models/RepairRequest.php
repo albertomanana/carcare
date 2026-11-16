@@ -79,6 +79,12 @@ class RepairRequest extends Model
         return $this->belongsTo(WorkOrder::class);
     }
 
+    /** Intervención que dejó en el garaje del particular la orden de esta solicitud al entregarse (§3.5.1). */
+    public function maintenanceRecord(): HasOne
+    {
+        return $this->hasOne(MaintenanceRecord::class);
+    }
+
     /** Todas las versiones, de la más reciente a la más antigua. */
     public function quotes(): HasMany
     {

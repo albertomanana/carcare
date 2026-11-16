@@ -24,6 +24,7 @@ class ExpenseController extends Controller
         $categories = $request->categories();
 
         $expenses = $vehicle->expenses()
+            ->with(ExpenseResource::eagerLoad())
             ->when($request->filled('from'), fn (Builder $q) => $q->where('expense_date', '>=', $request->query('from')))
             ->when($request->filled('to'), fn (Builder $q) => $q->where('expense_date', '<=', $request->query('to')))
             ->when($categories !== null, fn (Builder $q) => $q->whereIn('category', $categories))

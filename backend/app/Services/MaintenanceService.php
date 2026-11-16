@@ -6,7 +6,9 @@ use App\Enums\MileageSource;
 use App\Enums\RecordType;
 use App\Enums\Zone;
 use App\Models\Expense;
+use App\Enums\ItemKind;
 use App\Models\MaintenanceRecord;
+use App\Models\RepairRequest;
 use App\Models\Vehicle;
 use App\Models\WorkOrder;
 use App\Support\ActivityPhrase;
@@ -152,6 +154,73 @@ class MaintenanceService
         ])->all());
 
         return $record;
+    }
+
+    /**
+     * Fase 4 (contrato §3.5.1): la orden entregada nació de una solicitud ⇒ deja en el vehículo del particular una
+     * intervención con lo facturado (líneas, piezas, mano de obra y total con IVA) y, por D3-A, su gasto vinculado.
+     * Idempotente: `repair_request_id` es único, así que una solicitud nunca genera dos. No copia el diagnóstico ni
+     * la lectura de km de la recepción: el kilometraje del particular solo cambia con sus propias lecturas.
+     * Devuelve null si la orden no viene de una solicitud o el particular ya no tiene ese vehículo.
+     */
+    public function createFromDeliveredRequest(WorkOrder $order): ?MaintenanceRecord
+    {
+        $request = RepairRequest::query()->where('work_order_id', $order->id)->first();
+        $vehicle = $request?->vehicle;
+        if ($request === null || $vehicle === null) {
+            return null;
+        }
+
+        $existing = MaintenanceRecord::query()->where('repair_request_id', $request->id)->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $order->loadMissing(['items', 'workspace']);
+        $labor = 0;
+        $parts = 0;
+        foreach ($order->items as $item) {
+            $kind = $item->kind instanceof ItemKind ? $item->kind : ItemKind::tryFrom((string) $item->kind);
+            if ($kind === ItemKind::Labor) {
+                $labor += Money::toCents($item->total);
+            } else {
+                $parts += Money::toCents($item->total);
+            }
+        }
+        $record = new MaintenanceRecord([
+            'type' => RecordType::Repair,
+            'zone' => $request->zone ?? Zone::General,
+            'title' => $order->title,
+            'service_date' => ($order->delivered_at ?? now())->toDateString(),
+            'mileage' => null,
+            'workshop_name' => $order->workspace->name,
+            'parts_cost' => $order->items->isEmpty() ? null : Money::format($parts),
+            'labor_cost' => $order->items->isEmpty() ? null : Money::format($labor),
+            'total_cost' => $order->total,
+            'currency' => 'EUR',
+            'repair_request_id' => $request->id,
+            'work_order_number' => $order->number,
+        ]);
+        $record->vehicle()->associate($vehicle);
+        $record->save();
+
+        $record->items()->createMany($order->items->map(fn ($item) => [
+            'kind' => $item->kind,
+            'name' => $item->name,
+            'part_number' => $item->part_number,
+            'quantity' => $item->quantity,
+            'unit_price' => $item->unit_price,
+            'total' => $item->total,
+            'position' => $item->position,
+        ])->all());
+
+        $this->syncLinkedExpense($record);
+
+        $this->activity->logWithoutUser($vehicle->workspace_id, 'maintenance.created', 'maintenance_record', $record->id,
+            "{$order->workspace->name} entregó {$vehicle->displayName()}: la orden {$order->number} quedó en su historial y en sus gastos",
+            $vehicle->id, ['type' => $record->type->value, 'zone' => $record->zone->value, 'source' => 'work_order']);
+
+        return $record->refresh();
     }
 
     /**
